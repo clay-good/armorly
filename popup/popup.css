@@ -1,0 +1,483 @@
+/**
+ * Popup Styles for Armorly - Modern Monochrome Design
+ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 320px;
+    min-height: 180px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+    color: #111827;
+    background: #ffffff;
+}
+
+.container {
+    padding: 24px;
+}
+
+/* Header */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo-icon {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+}
+
+h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #000000;
+    letter-spacing: -0.5px;
+}
+
+.status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: #f9fafb;
+    border-radius: 20px;
+    border: 1px solid #e5e7eb;
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #000000;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.status-text {
+    font-size: 11px;
+    font-weight: 600;
+    color: #000000;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Protection Toggle */
+.protection-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: #f9fafb;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border: 1px solid #e5e7eb;
+}
+
+.toggle-label {
+    font-weight: 600;
+    font-size: 14px;
+    color: #000000;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 28px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #d1d5db;
+    transition: 0.3s;
+    border-radius: 28px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+input:checked + .slider {
+    background-color: #000000;
+}
+
+input:checked + .slider:before {
+    transform: translateX(24px);
+}
+
+/* Statistics */
+.stats-section {
+    margin-bottom: 20px;
+}
+
+h2 {
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.stat-card {
+    background: #f9fafb;
+    padding: 20px 16px;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid #e5e7eb;
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: #000000;
+    margin-bottom: 6px;
+    letter-spacing: -1px;
+}
+
+.stat-label {
+    font-size: 11px;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+/* AI Agent Status */
+.ai-agent-status {
+    background: linear-gradient(135deg, #000000 0%, #1f2937 100%);
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    border: 2px solid #000000;
+    animation: pulse-border 2s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+    0%, 100% {
+        border-color: #000000;
+        box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.4);
+    }
+    50% {
+        border-color: #374151;
+        box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
+    }
+}
+
+.ai-agent-indicator {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ai-icon {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.ai-info {
+    flex: 1;
+}
+
+.ai-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+
+.ai-type {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.3px;
+}
+
+.ai-multiplier {
+    font-size: 12px;
+    font-weight: 800;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 6px 12px;
+    border-radius: 8px;
+    letter-spacing: 0.3px;
+}
+
+/* Page Status */
+.page-status {
+    background: #f9fafb;
+    padding: 18px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border: 1px solid #e5e7eb;
+}
+
+.page-info {
+    margin-bottom: 14px;
+}
+
+.page-url {
+    font-size: 13px;
+    color: #000000;
+    margin-bottom: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.threat-badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.threat-badge.safe {
+    background: #000000;
+    color: #ffffff;
+}
+
+.threat-badge.medium {
+    background: #6b7280;
+    color: #ffffff;
+}
+
+.threat-badge.high {
+    background: #374151;
+    color: #ffffff;
+}
+
+/* Buttons */
+.btn {
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-primary {
+    background: #000000;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #1f2937;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-secondary {
+    background: #f3f4f6;
+    color: #000000;
+    margin-bottom: 10px;
+    border: 1px solid #e5e7eb;
+}
+
+.btn-secondary:hover {
+    background: #e5e7eb;
+    transform: translateY(-1px);
+}
+
+.btn-secondary:active {
+    transform: translateY(0);
+}
+
+/* Threats Section */
+.threats-section {
+    margin-bottom: 20px;
+}
+
+.threat-list {
+    background: #f9fafb;
+    border-radius: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+}
+
+.empty-state {
+    padding: 40px 20px;
+    text-align: center;
+    color: #6b7280;
+}
+
+.empty-icon {
+    font-size: 40px;
+    display: block;
+    margin-bottom: 12px;
+    color: #000000;
+    font-weight: bold;
+}
+
+.threat-item {
+    padding: 12px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.threat-item:last-child {
+    border-bottom: none;
+}
+
+.threat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.threat-type {
+    font-weight: 500;
+    font-size: 13px;
+}
+
+.threat-time {
+    font-size: 11px;
+    color: #9ca3af;
+}
+
+.threat-domain {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+/* Actions Section */
+.actions-section {
+    margin-bottom: 20px;
+}
+
+/* Dashboard Section */
+.dashboard-section {
+    margin-bottom: 20px;
+}
+
+.dashboard-button {
+    width: 100%;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.dashboard-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.dashboard-button:active {
+    transform: translateY(0);
+}
+
+/* Footer */
+.footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    border-top: 2px solid #f3f4f6;
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.version {
+    font-weight: 600;
+    color: #000000;
+}
+
+.footer a {
+    color: #000000;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.footer a:hover {
+    text-decoration: underline;
+}
+
+/* Scrollbar */
+.threat-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.threat-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.threat-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.threat-list::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+

@@ -1,0 +1,91 @@
+{
+  "manifest_version": 3,
+  "name": "Armorly",
+  "version": "1.0.0",
+  "description": "Enterprise-grade security for AI-powered browsers. Protects against prompt injection attacks, memory poisoning, and CSRF exploits targeting ChatGPT, Atlas, and other AI agents.",
+  
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    },
+    "default_title": "Armorly - AI Browser Security"
+  },
+
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": [
+        "lib/performance-monitor-global.js",
+        "lib/pattern-library-global.js",
+        "lib/universal-prompt-patterns-global.js",
+        "content/content-sanitizer.js",
+        "content/mutation-blocker.js",
+        "content/clipboard-protector.js",
+        "content/privacy-shield.js",
+        "content/memory-protector.js",
+        "content/form-interceptor.js",
+        "content/output-validator.js",
+        "content/action-authorizer.js",
+        "content/context-analyzer.js",
+        "content/confidence-scorer.js",
+        "content/dom-scanner.js",
+        "content/content-script.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs",
+    "scripting",
+    "webRequest",
+    "declarativeNetRequest",
+    "declarativeNetRequestFeedback",
+    "alarms"
+  ],
+
+  "host_permissions": [
+    "<all_urls>"
+  ],
+
+  "web_accessible_resources": [
+    {
+      "resources": ["armorly.jpg"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+
+  "options_page": "options/options.html",
+
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; base-uri 'self'; form-action 'self';"
+  },
+
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "csrf_protection_rules",
+        "enabled": true,
+        "path": "rules/csrf-rules.json"
+      }
+    ]
+  }
+}
+

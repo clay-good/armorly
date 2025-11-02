@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "block"
+    },
+    "condition": {
+      "urlFilter": "*://chat.openai.com/backend-api/memories*",
+      "initiatorDomains": ["*"],
+      "excludedInitiatorDomains": ["chat.openai.com", "chatgpt.com"],
+      "resourceTypes": ["xmlhttprequest"]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 1,
+    "action": {
+      "type": "block"
+    },
+    "condition": {
+      "urlFilter": "*://chatgpt.com/backend-api/memories*",
+      "initiatorDomains": ["*"],
+      "excludedInitiatorDomains": ["chat.openai.com", "chatgpt.com"],
+      "resourceTypes": ["xmlhttprequest"]
+    }
+  }
+]
+
