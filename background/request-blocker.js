@@ -30,30 +30,50 @@ class RequestBlocker {
     };
 
     /**
-     * Configuration - PERMISSIVE MODE (only block critical threats)
+     * Configuration - ACTIVE BLOCKING MODE
      */
     this.config = {
       enabled: true,
       blockMaliciousDomains: true,
-      blockDataExfiltration: false, // DISABLED - too aggressive
-      blockCSRF: false, // DISABLED - too aggressive
+      blockDataExfiltration: true, // ENABLED - blocks suspicious data exfiltration
+      blockCSRF: true, // ENABLED - blocks CSRF attacks on AI services
       logActions: true,
-      criticalOnly: true, // NEW - only block critical threats
-      dynamicBlocking: false, // DISABLED - prevents over-blocking
+      criticalOnly: false, // Block all threats, not just critical
+      dynamicBlocking: true, // ENABLED - allows dynamic rule creation
     };
 
     /**
      * Known malicious domains (threat intelligence)
-     * ONLY truly malicious domains, NOT tracking/analytics
+     * Expanded list of confirmed malicious domains and patterns
      */
     this.maliciousDomains = [
-      // Known malicious - ONLY add confirmed malicious domains
+      // Known malware/phishing domains
       'evil.com',
       'malware.com',
       'phishing.com',
+      'attacker.com',
+      'malicious.com',
+      'badsite.com',
+      'hacksite.com',
+      'stealdata.com',
 
-      // Data exfiltration endpoints - ONLY confirmed malicious
-      // Removed: webhook.site, requestbin.com (legitimate testing tools)
+      // Common malicious TLDs (high-risk free domains)
+      '.tk',
+      '.ml',
+      '.ga',
+      '.cf',
+      '.gq',
+
+      // Known C2 and exfiltration patterns
+      'pastebin.com/raw',  // Often used for data exfiltration
+      'transfer.sh',       // Anonymous file sharing
+      'anonfiles.com',     // Anonymous file hosting
+      'gofile.io',         // Anonymous file hosting
+
+      // Suspicious URL shorteners (often used in attacks)
+      'bit.do',
+      'tinyurl.com/malicious',
+      'is.gd/attack',
     ];
 
     /**

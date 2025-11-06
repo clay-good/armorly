@@ -24,6 +24,7 @@ import { AIAgentDetector } from './ai-agent-detector.js';
 import { ThreatIntelligence } from './threat-intelligence.js';
 import { RequestBlocker } from './request-blocker.js';
 import { TokenConsumptionMonitor } from './token-consumption-monitor.js';
+import { NetworkInterceptor } from './network-interceptor.js';
 
 console.log('[Armorly] Service worker starting...');
 
@@ -49,6 +50,24 @@ requestBlocker.initialize().then(() => {
 }).catch(error => {
   console.error('[Armorly] Request Blocker initialization failed:', error);
 });
+
+/**
+ * Initialize Network Interceptor (Advanced Network Protection)
+ */
+const networkInterceptor = new NetworkInterceptor();
+networkInterceptor.setThreatCallback((threat) => {
+  console.log('[Armorly] Network threat detected:', threat);
+  // Log threat to storage
+  logThreat({
+    type: 'network',
+    severity: threat.severity || 'high',
+    description: threat.description,
+    url: threat.url,
+    timestamp: Date.now(),
+    details: threat
+  });
+});
+console.log('[Armorly] Network Interceptor initialized - ADVANCED NETWORK PROTECTION ACTIVE');
 
 /**
  * Initialize Token Consumption Monitor (DoS Protection)
