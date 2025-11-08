@@ -1,0 +1,99 @@
+{
+  "name": "armorly",
+  "version": "1.0.0",
+  "description": "Universal Security Extension for AI-Powered Browsers - Protects against prompt injection attacks, memory poisoning, and AI-specific threats",
+  "main": "background/service-worker.js",
+  "type": "module",
+  "scripts": {
+    "test": "node tests/run-tests.js",
+    "test:watch": "nodemon --watch tests --watch lib --watch background --watch content --exec npm test",
+    "test:security": "node tests/security-components.test.js",
+    "lint": "eslint background/ content/ lib/ popup/ options/ --ext .js",
+    "lint:fix": "eslint background/ content/ lib/ popup/ options/ --ext .js --fix",
+    "build": "./build.sh",
+    "build:verify": "./verify-build.sh",
+    "build:sync": "./sync-to-build.sh",
+    "clean": "rm -rf build/ && rm -f armorly-extension.zip",
+    "package": "npm run build && cd build && zip -r ../armorly-extension.zip .",
+    "dev": "npm run build && npm run build:verify",
+    "validate:manifest": "node scripts/validate-manifest.js",
+    "audit:security": "npm audit && node tests/security-audit.js",
+    "format": "prettier --write '**/*.{js,json,md}'",
+    "format:check": "prettier --check '**/*.{js,json,md}'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/armorly.git"
+  },
+  "keywords": [
+    "security",
+    "ai",
+    "browser-extension",
+    "prompt-injection",
+    "csrf",
+    "chatgpt",
+    "chrome-extension",
+    "threat-detection",
+    "xss-protection",
+    "memory-poisoning"
+  ],
+  "author": "Armorly Security Team",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yourusername/armorly/issues"
+  },
+  "homepage": "https://github.com/yourusername/armorly#readme",
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-security": "^2.1.1",
+    "nodemon": "^3.0.3",
+    "prettier": "^3.2.4",
+    "web-ext": "^7.10.0"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "eslintConfig": {
+    "env": {
+      "browser": true,
+      "es2021": true,
+      "webextensions": true
+    },
+    "extends": [
+      "eslint:recommended",
+      "plugin:security/recommended",
+      "prettier"
+    ],
+    "parserOptions": {
+      "ecmaVersion": "latest",
+      "sourceType": "module"
+    },
+    "globals": {
+      "chrome": "readonly"
+    },
+    "rules": {
+      "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+      "no-console": "off",
+      "security/detect-object-injection": "off",
+      "security/detect-non-literal-regexp": "warn"
+    }
+  },
+  "prettier": {
+    "semi": true,
+    "singleQuote": true,
+    "tabWidth": 2,
+    "trailingComma": "es5",
+    "printWidth": 100,
+    "arrowParens": "always"
+  },
+  "nodemonConfig": {
+    "watch": ["tests", "lib", "background", "content"],
+    "ext": "js",
+    "ignore": ["build/*", "node_modules/*"],
+    "exec": "npm test"
+  }
+}

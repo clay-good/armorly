@@ -42,18 +42,22 @@ class ContentSanitizer {
       removeComments: true,
       sanitizeAttributes: true,
       blockHiddenContent: true,
-      logActions: true,
+      logActions: false, // Reduced console noise - set to true for debugging
     };
 
     /**
-     * Whitelist for legitimate sites
+     * Whitelist - REMOVED FOR SECURITY
+     *
+     * Previously had a whitelist for "trusted" sites (GitHub, Stack Overflow, etc.)
+     * but this was a security vulnerability because:
+     * 1. These sites can contain user-generated malicious content
+     * 2. AI agents reading compromised repos/answers can still be attacked
+     * 3. No user control over what gets whitelisted
+     *
+     * If users want to disable protection on specific sites, they should use
+     * browser extension controls or we should add per-site toggles in the popup.
      */
-    this.whitelist = [
-      'github.com',
-      'stackoverflow.com',
-      'developer.mozilla.org',
-      'docs.google.com',
-    ];
+    this.whitelist = [];
 
     /**
      * Dangerous attributes to remove
@@ -72,10 +76,13 @@ class ContentSanitizer {
 
   /**
    * Check if current site is whitelisted
+   *
+   * NOTE: Whitelist functionality removed for security reasons.
+   * This method is kept for backwards compatibility but always returns false.
    */
   isWhitelisted() {
-    const hostname = window.location.hostname;
-    return this.whitelist.some(domain => hostname.includes(domain));
+    // Whitelist removed - see comment in constructor
+    return false;
   }
 
   /**
@@ -84,10 +91,7 @@ class ContentSanitizer {
    */
   sanitizePage() {
     if (!this.config.enabled) return;
-    if (this.isWhitelisted()) {
-      console.log('[Armorly Sanitizer] Site whitelisted, skipping sanitization');
-      return;
-    }
+    // Whitelist check removed - protection now active on all sites
 
     const startTime = performance.now();
 
@@ -128,6 +132,12 @@ class ContentSanitizer {
    * Remove HTML comments containing prompt injections
    */
   removeComments() {
+    // Safety check: document.body might not exist at document_start
+    if (!document.body) {
+      console.warn('[Armorly Sanitizer] document.body not ready, skipping comment removal');
+      return;
+    }
+
     const walker = document.createTreeWalker(
       document.body,
       NodeFilter.SHOW_COMMENT,
@@ -156,10 +166,14 @@ class ContentSanitizer {
 
     // Remove malicious comments
     commentsToRemove.forEach(comment => {
-      if (this.config.logActions) {
-        console.log('[Armorly Sanitizer] Removed malicious comment:', comment.textContent.substring(0, 100));
+      try {
+        if (this.config.logActions) {
+          console.log('[Armorly Sanitizer] Removed malicious comment:', comment.textContent.substring(0, 100));
+        }
+        comment.remove();
+      } catch (error) {
+        console.error('[Armorly Sanitizer] Failed to remove comment:', error);
       }
-      comment.remove();
     });
   }
 
@@ -205,19 +219,23 @@ class ContentSanitizer {
 
     // Remove malicious hidden elements
     elementsToRemove.forEach(({ element, reason, text }) => {
-      if (this.config.logActions) {
-        console.log(`[Armorly Sanitizer] Removed ${reason}:`, text);
-      }
-      
-      // Store for potential restoration
-      this.removedElements.push({
-        element: element.cloneNode(true),
-        parent: element.parentNode,
-        reason,
-        timestamp: Date.now(),
-      });
+      try {
+        if (this.config.logActions) {
+          console.log(`[Armorly Sanitizer] Removed ${reason}:`, text);
+        }
 
-      element.remove();
+        // Store for potential restoration
+        this.removedElements.push({
+          element: element.cloneNode(true),
+          parent: element.parentNode,
+          reason,
+          timestamp: Date.now(),
+        });
+
+        element.remove();
+      } catch (error) {
+        console.error(`[Armorly Sanitizer] Failed to remove element (${reason}):`, error);
+      }
     });
   }
 
@@ -266,6 +284,12 @@ class ContentSanitizer {
    * Sanitize text nodes for prompt injections
    */
   sanitizeTextNodes() {
+    // Safety check: document.body might not exist at document_start
+    if (!document.body) {
+      console.warn('[Armorly Sanitizer] document.body not ready, skipping text node sanitization');
+      return;
+    }
+
     const walker = document.createTreeWalker(
       document.body,
       NodeFilter.SHOW_TEXT,
@@ -322,23 +346,27 @@ class ContentSanitizer {
     const iframes = document.querySelectorAll('iframe');
 
     iframes.forEach(iframe => {
-      const src = iframe.getAttribute('src');
-      
-      if (src) {
-        // Check if iframe src contains injection patterns
-        const threats = analyzeTextForPromptInjection(src, {
-          source: 'iframe-src',
-          url: window.location.href,
-        });
+      try {
+        const src = iframe.getAttribute('src');
 
-        if (threats.length > 0) {
-          if (this.config.logActions) {
-            console.log('[Armorly Sanitizer] Blocked malicious iframe:', src);
+        if (src) {
+          // Check if iframe src contains injection patterns
+          const threats = analyzeTextForPromptInjection(src, {
+            source: 'iframe-src',
+            url: window.location.href,
+          });
+
+          if (threats.length > 0) {
+            if (this.config.logActions) {
+              console.log('[Armorly Sanitizer] Blocked malicious iframe:', src);
+            }
+            iframe.remove();
+            this.stats.elementsRemoved++;
+            this.stats.totalThreatsBlocked++;
           }
-          iframe.remove();
-          this.stats.elementsRemoved++;
-          this.stats.totalThreatsBlocked++;
         }
+      } catch (error) {
+        console.error('[Armorly Sanitizer] Failed to remove iframe:', error);
       }
     });
   }

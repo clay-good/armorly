@@ -17,10 +17,8 @@
  */
 
 // Use global universal prompt injection patterns (loaded via universal-prompt-patterns-global.js)
-const analyzeTextForPromptInjection = window.UniversalPromptPatterns?.analyzeTextForPromptInjection || function() { return []; };
-const analyzeNodeForPromptInjection = window.UniversalPromptPatterns?.analyzeNodeForPromptInjection || function() { return []; };
-const isNodeHidden = window.UniversalPromptPatterns?.isNodeHidden || function() { return false; };
-const calculateThreatScore = window.UniversalPromptPatterns?.calculateThreatScore || function() { return 0; };
+// Don't redeclare - these are already available globally from the pattern library
+// Just reference them directly to avoid "already declared" errors
 
 class DOMScanner {
   constructor() {

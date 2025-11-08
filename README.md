@@ -2,11 +2,19 @@
 
 **Universal Security Extension for AI-Powered Browsers**
 
-Armorly is a security extension designed to protect users of AI-powered browsers (ChatGPT, Perplexity, BrowserOS, etc.) from prompt injection attacks, memory poisoning, and other AI-specific threats. It provides real-time detection and blocking of malicious content targeting AI agents.
+Armorly is a security extension designed to protect users of AI-powered browsers (ChatGPT, Perplexity, BrowserOS, etc.) from prompt injection attacks, memory poisoning, and other AI-specific threats. It provides real-time detection and limited blocking of malicious content targeting AI agents.
 
-> **Version 0.2.0** - Active blocking now enabled! NetworkInterceptor integrated, 20 blocking rules active, CSRF protection expanded.
+> **Version 1.0.0** - Security fixes applied! XSS vulnerabilities patched, fake domains removed, permissions documented.
 >
-> ⚠️ **Development Status**: This extension is in active development (v0.2.0). Core blocking infrastructure is now functional. See [Gap Analysis](#gap-analysis) for remaining work before v1.0.
+> ⚠️ **IMPORTANT - PROOF OF CONCEPT STATUS**
+>
+> This extension demonstrates AI-specific security techniques but has significant limitations:
+> - **Network blocking is DETECTION ONLY** due to Chrome Manifest V3 restrictions
+> - **Threat intelligence is limited** (~15 rules vs. millions needed for real protection)
+> - **No auto-updates** for threat patterns
+> - **Not ready for production** without integration of real threat feeds
+>
+> See [Limitations](#limitations) below for full details.
 
 ---
 
@@ -23,9 +31,10 @@ Armorly is a security extension designed to protect users of AI-powered browsers
 - **Form Interception**: Monitors and sanitizes form inputs before submission
 
 #### Network Protection
-- **CSRF Protection**: Blocks unauthorized cross-origin requests to ChatGPT memory API
-- **Request Monitoring**: Logs suspicious network activity (detection only, limited blocking)
-- **Credential Detection**: Identifies potential credential leaks in request payloads
+- **CSRF Protection**: Blocks unauthorized cross-origin requests to ChatGPT/Claude/Perplexity APIs (15 declarativeNetRequest rules)
+- **Request Monitoring**: **DETECTION ONLY** - Chrome Manifest V3 does not allow webRequest API to block
+- **Credential Detection**: Identifies potential credential leaks in request payloads (detection, no blocking)
+- **Note**: NetworkInterceptor can detect threats but cannot prevent them. Only declarativeNetRequest rules can block.
 
 #### AI Agent Detection
 - **Platform Detection**: Identifies ChatGPT, Perplexity, BrowserOS, and other AI platforms
@@ -81,8 +90,8 @@ Armorly is a security extension designed to protect users of AI-powered browsers
 |-------|-----------|----------|--------|
 | DOM | Content Sanitizer | Removes malicious elements | ✅ Active |
 | DOM | Mutation Blocker | Monitors dynamic changes | ✅ Active |
-| Network | Request Blocker | Blocks malicious requests | ⚠️ Limited |
-| Network | CSRF Rules | Blocks memory poisoning | ✅ Active |
+| Network | NetworkInterceptor | **Detection only** (MV3 limitation) | ⚠️ Detection |
+| Network | CSRF Rules (declarativeNetRequest) | Blocks CSRF attacks | ✅ Active (15 rules) |
 | Input | Form Interceptor | Sanitizes user input | ✅ Active |
 | Storage | Memory Protector | Monitors localStorage | ✅ Active |
 
@@ -90,126 +99,157 @@ Armorly is a security extension designed to protect users of AI-powered browsers
 
 ## 🧪 Testing
 
-To test the extension:
-
 ```bash
-# Run automated tests
-node tests/run-tests.js
+# Install dependencies
+npm install
 
-# Test on known attack vectors
-# 1. Visit a page with hidden text
-# 2. Check badge for threat count
-# 3. Open popup to view detected threats
+# Run automated tests
+npm test
+
+# Run security audit
+npm run audit:security
+
+# Validate manifest.json
+npm run validate:manifest
+
+# Build extension
+npm run build
+
+# Build and verify
+npm run dev
 ```
 
 See `tests/TESTING-GUIDE.md` for detailed testing instructions.
 
 ---
 
-## 📊 Gap Analysis
+## ⚠️ Limitations
 
-### ✅ Recently Fixed (v0.2.0)
+### Chrome Manifest V3 Restrictions
 
-#### 1. **Network Request Blocking Enabled** ✅
-- **Status**: FIXED - `NetworkInterceptor` now imported and initialized in `service-worker.js`
-- **Impact**: Advanced network-level blocking of data exfiltration and malicious domains is now active
-- **Current State**: NetworkInterceptor monitors all requests with credential detection and payload analysis
-- **Code Location**: `background/service-worker.js` lines 57-70
+**Network Blocking is Detection-Only**: Chrome Manifest V3 removed the ability to block network requests via `webRequest` API. This means:
+- ❌ Cannot dynamically block malicious requests based on payload analysis
+- ❌ Cannot prevent data exfiltration in real-time
+- ❌ Cannot block credential leaks detected in request bodies
+- ✅ CAN block via static `declarativeNetRequest` rules (but only 15 active)
+- ✅ CAN detect and log all threats for user awareness
 
-#### 2. **Request Blocker Active Mode Enabled** ✅
-- **Status**: FIXED - `RequestBlocker` switched from permissive to active blocking mode
-- **Changes**:
-  - `blockDataExfiltration: true` ✅
-  - `blockCSRF: true` ✅
-  - `dynamicBlocking: true` ✅
-- **Impact**: Now actively blocks threats instead of just logging them
-- **Code Location**: `background/request-blocker.js` lines 32-43
+**Implications**: The extension can WARN you about threats but cannot prevent all of them. Real blocking requires adding domains to `declarativeNetRequest` rules beforehand.
 
-#### 3. **Expanded Blocking Rules** ✅
-- **Status**: FIXED - Expanded from 2 to 20 declarativeNetRequest rules
-- **New Coverage**:
-  - ChatGPT & Claude memory API protection (CSRF)
-  - Perplexity API protection
-  - Malicious TLDs (.tk, .ml, .ga, .cf, .gq)
-  - Data exfiltration endpoints (pastebin.com/raw, transfer.sh, anonfiles.com)
-  - JavaScript injection patterns (eval, javascript:, data:text/html)
-  - Known malicious domains (evil.com, malware.com, phishing.com, etc.)
-- **Code Location**: `rules/csrf-rules.json` (20 rules)
+### Limited Threat Intelligence
 
-#### 4. **Expanded Malicious Domain List** ✅
-- **Status**: IMPROVED - Expanded from 3 to 30+ malicious domains and patterns
-- **Current State**: Includes malicious TLDs, C2 patterns, anonymous file hosts, and URL shorteners
-- **Code Location**: `background/request-blocker.js` lines 45-77
+Current coverage: **~15 blocking rules**
+Required for production: **10,000+ rules**
+
+The extension includes only demonstration-level threat data:
+- ❌ Fake domains (evil.com, malware.com) have been **removed**
+- ✅ Real patterns included: malicious TLDs (.tk, .ml, etc.), data exfiltration services
+- ❌ No integration with live threat feeds (abuse.ch, PhishTank, etc.)
+- ❌ No auto-updates for threat patterns
+- ❌ Static patterns cannot detect zero-day attacks
+
+**To make production-ready**: Must integrate threat intelligence feeds and implement auto-update mechanism.
+
+### Security Vulnerabilities Fixed (v1.0.0)
+
+- ✅ **XSS in popup.js** - Fixed by using safe DOM methods instead of innerHTML
+- ✅ **XSS in action-authorizer.js** - Fixed by using createElement/textContent
+- ✅ **HTML injection in pattern-library.js** - Fixed by using DOMParser
+- ✅ **Service worker browser API usage** - Added defensive error handling
+- ✅ **Over-privileged permissions** - Removed unused "scripting" permission
+
+See [CHANGELOG.md](CHANGELOG.md) for full security fix details.
 
 ---
 
-### � Remaining Critical Gaps
+## 📊 What Was Actually Fixed (v1.0.0)
 
-#### 5. **Limited Threat Intelligence Scale**
-- **Issue**: Only 30+ malicious domains vs millions in mature blocklists
+### ✅ Critical Security Fixes
+
+#### 1. **NetworkInterceptor - Clarified MV3 Limitations** ✅
+- **Status**: DOCUMENTED - NetworkInterceptor is detection-only, cannot block in MV3
+- **Changes**: Removed misleading `return { cancel: true }` statements, added clear documentation
+- **Impact**: Users now understand extension detects but cannot always block threats
+- **Code Location**: `background/network-interceptor.js`
+
+#### 2. **XSS Vulnerabilities Patched** ✅
+- **Status**: FIXED - All innerHTML usage with user data replaced with safe DOM methods
+- **Files Fixed**:
+  - `popup/popup.js` - Safe DOM manipulation for threat display
+  - `content/action-authorizer.js` - Safe dialog creation
+  - `lib/pattern-library.js` - DOMParser instead of innerHTML
+- **Impact**: Extension no longer vulnerable to XSS attacks via malicious threat data
+
+#### 3. **Fake Malicious Domains Removed** ✅
+- **Status**: FIXED - Placeholder domains (evil.com, malware.com, etc.) removed
+- **Changes**: Reduced from 20 to 15 rules, removed 5 fake domain rules
+- **Documentation**: Added clear disclaimers about proof-of-concept status
+- **Code Location**: `rules/csrf-rules.json`, `background/request-blocker.js`
+
+#### 4. **Permissions Documented** ✅
+- **Status**: FIXED - All permissions justified, unused "scripting" removed
+- **Documentation**: Created `PERMISSIONS.md` with Chrome Web Store justifications
+- **Code Location**: `manifest.json`
+
+#### 5. **Development Infrastructure Added** ✅
+- **Status**: ADDED - Complete package.json with test framework and scripts
+- **Features**:
+  - npm scripts for testing, linting, building
+  - Manifest validator
+  - Security audit tool
+  - ESLint configuration
+- **Code Location**: `package.json`, `scripts/`, `tests/`
+
+---
+
+## 🚧 Remaining Gaps for Production
+
+### 🔴 Critical Gaps
+
+#### Limited Threat Intelligence
+- **Issue**: Only 15 blocking rules vs. millions in mature blocklists
 - **Impact**: Won't block most real-world malicious domains
-- **Current State**: Manually curated list of common attack patterns
-- **Fix Required**: Integrate threat intelligence feeds (e.g., abuse.ch, PhishTank)
-- **Estimated Effort**: 2-3 weeks to integrate and test
+- **Fix Required**: Integrate threat intelligence feeds (abuse.ch, PhishTank, URLhaus)
+- **Estimated Effort**: 3-4 weeks
 
-### �🟡 Moderate Gaps (Detection vs Prevention)
+#### No Auto-Updates for Threat Patterns
+- **Issue**: Pattern library is static, cannot update without releasing new version
+- **Impact**: Won't detect new attack patterns without manual updates
+- **Fix Required**: Implement dynamic rule updates via declarativeNetRequest API
+- **Estimated Effort**: 2-3 weeks
 
-#### 6. **Content Sanitizer Not Aggressive Enough**
-- **Issue**: `aggressiveMode: false` by default
-- **Impact**: May miss sophisticated obfuscation techniques
-- **Current State**: Conservative blocking to avoid false positives
-- **Trade-off**: More aggressive = more false positives
-- **Code Location**: `content/content-sanitizer.js` line 41
+### 🟡 Moderate Gaps
 
-#### 7. **No Persistent Threat Intelligence Updates**
-- **Issue**: Pattern library is static, no auto-updates
-- **Impact**: Won't detect new attack patterns without extension updates
-- **Current State**: Patterns hardcoded in `lib/pattern-library.js`
-- **Fix Required**: Implement auto-update mechanism for patterns
-- **Partial Implementation**: `ThreatIntelligence` class exists but not fully integrated
+#### Limited Test Coverage
+- **Issue**: Only 2 test files for 28,334 lines of code (~5% coverage)
+- **Impact**: High risk of bugs and regressions
+- **Fix Required**: Achieve 70% test coverage minimum
+- **Estimated Effort**: 4-6 weeks
 
-#### 8. **Limited Browser-Specific Protection**
-- **Issue**: Generic implementation, not optimized for specific AI browsers
-- **Impact**: Missing browser-specific attack vectors
-- **Current State**: Only basic platform detection, no specialized blocking
-- **Fix Required**: Implement browser-specific interceptors for Atlas, Comet, BrowserOS
-- **Code Location**: `background/browseros-api-interceptor.js` exists but minimal
-
-### 🟢 Minor Gaps (Polish & Features)
-
-#### 9. **No User Whitelist Management**
-- **Issue**: Hardcoded whitelist, users can't add trusted sites
-- **Impact**: May block legitimate sites, no way to disable per-site
-- **Fix Required**: Add whitelist UI in options page
-- **Code Location**: `options/options.html` exists but minimal
-
-#### 10. **No Export/Import of Threat Logs**
-- **Issue**: Can't export threat data for analysis
-- **Impact**: Limited forensics capability
-- **Fix Required**: Add export button in popup
-
-#### 11. **Performance Monitoring Not Exposed**
-- **Issue**: Performance stats collected but not shown to user
-- **Impact**: Users can't see extension overhead
-- **Fix Required**: Add performance tab in popup
+#### No ML-Based Detection
+- **Issue**: Only regex pattern matching, no anomaly detection
+- **Impact**: Cannot detect sophisticated zero-day attacks
+- **Fix Required**: Implement machine learning models
+- **Estimated Effort**: 8-12 weeks
 
 ---
 
 ## 🆚 Comparison to uBlock Origin
 
-| Feature | uBlock Origin | Armorly (v0.2.0) | Status |
-|---------|---------------|------------------|--------|
-| **Domain Blocking** | ✅ Millions of domains | ⚠️ 30+ domains/patterns | � Improved |
-| **Request Blocking** | ✅ Real-time via rules | ✅ 20 declarative rules | 🟢 Active |
-| **Network Interception** | ✅ Full monitoring | ✅ Full monitoring | 🟢 Active |
-| **Pattern Updates** | ✅ Auto-updates | ❌ Static | 🟡 Moderate |
-| **User Whitelisting** | ✅ Full UI | ❌ Hardcoded | 🟢 Minor |
-| **Performance** | ✅ <5ms | ✅ <50ms | ✅ Good |
-| **AI-Specific Detection** | ❌ None | ✅ 50+ patterns | ✅ Unique |
-| **Prompt Injection** | ❌ None | ✅ Advanced | ✅ Unique |
-| **Memory Poisoning** | ❌ None | ✅ CSRF protection | ✅ Unique |
+| Feature | uBlock Origin | Armorly (v1.0.0) | Notes |
+|---------|---------------|------------------|-------|
+| **Domain Blocking** | ✅ Millions of domains | ⚠️ 15 rules | Need threat feeds |
+| **Request Blocking** | ✅ Dynamic blocking | ⚠️ Static rules only | MV3 limitation |
+| **Network Monitoring** | ✅ Full control | ⚠️ Detection only | MV3 limitation |
+| **Pattern Updates** | ✅ Auto-updates | ❌ Static | Need to implement |
+| **User Whitelisting** | ✅ Full UI | ❌ Hardcoded | Need UI |
+| **Performance** | ✅ <5ms | ✅ <50ms | Good |
+| **AI-Specific Detection** | ❌ None | ✅ 50+ patterns | **Unique** |
+| **Prompt Injection** | ❌ None | ✅ Advanced | **Unique** |
+| **Memory Poisoning** | ❌ None | ✅ CSRF protection | **Unique** |
+| **XSS Protection** | ❌ None | ✅ Fixed in v1.0.0 | **Secure** |
 
-**Verdict**: Armorly v0.2.0 now has active blocking infrastructure with unique AI-specific detection. Still needs larger threat intelligence feeds to match uBlock Origin's scale.
+**Verdict**: Armorly v1.0.0 provides unique AI-specific protections that uBlock Origin doesn't have, but lacks the scale and maturity for general web security. Best used **alongside** uBlock Origin, not as a replacement.
 
 ---
 

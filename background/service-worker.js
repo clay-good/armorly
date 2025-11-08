@@ -557,9 +557,18 @@ async function handleAIAgentDetected(tab) {
   aiAgentTabs.add(tab.id);
 
   // Run full AI agent detection with context
+  // FIXED: Properly handle fallback for service worker context
+  // navigator.userAgent IS available in Chrome service workers
   const userAgent = await chrome.tabs.sendMessage(tab.id, {
     type: 'GET_USER_AGENT'
-  }).catch(() => ({ userAgent: navigator.userAgent }));
+  }).catch(() => {
+    // Fallback to service worker's navigator.userAgent (available in Chrome MV3)
+    try {
+      return { userAgent: navigator.userAgent };
+    } catch (e) {
+      return { userAgent: 'Chrome' }; // Safe fallback
+    }
+  });
 
   const domIndicators = await aiAgentDetector.requestDOMIndicators(tab.id);
 
@@ -689,8 +698,15 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     if (aiPlatform.isAIBrowser) {
       console.log(`[Armorly] Navigated to AI platform: ${aiPlatform.platform}`);
       // Detect agent with basic context
+      // FIXED: Safe access to navigator.userAgent in service worker
+      let userAgent = 'Chrome'; // Safe fallback
+      try {
+        userAgent = navigator.userAgent || 'Chrome';
+      } catch (e) {
+        console.warn('[Armorly] Could not access navigator.userAgent:', e);
+      }
       await aiAgentDetector.detectAgent(tabId, tab.url, {
-        userAgent: navigator.userAgent
+        userAgent: userAgent
       });
     } else {
       // Clear AI agent detection when navigating away

@@ -473,29 +473,71 @@ class ActionAuthorizer {
         box-shadow: 0 8px 32px rgba(0,0,0,0.3);
       `;
 
-      dialog.innerHTML = `
-        <h2 style="margin: 0 0 15px 0; color: #ff4444;">🛡️ Armorly Authorization Required</h2>
-        <p style="margin: 0 0 10px 0; color: #333;">
-          An AI agent is attempting to perform a <strong>${action.riskLevel}</strong> risk action:
-        </p>
-        <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0;">
-          <strong>Type:</strong> ${action.type}<br>
-          <strong>Method:</strong> ${action.method || 'N/A'}<br>
-          <strong>URL:</strong> ${action.url || 'N/A'}<br>
-          ${action.text ? `<strong>Action:</strong> ${action.text}<br>` : ''}
-        </div>
-        <p style="margin: 15px 0; color: #666;">
-          Do you want to allow this action?
-        </p>
-        <div style="display: flex; gap: 10px; justify-content: flex-end;">
-          <button id="armorly-deny" style="padding: 10px 20px; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer;">
-            Deny
-          </button>
-          <button id="armorly-allow" style="padding: 10px 20px; border: none; background: #4CAF50; color: white; border-radius: 6px; cursor: pointer;">
-            Allow
-          </button>
-        </div>
-      `;
+      // SECURITY FIX: Use safe DOM methods instead of innerHTML to prevent XSS
+      // Build dialog content safely
+
+      // Header
+      const header = document.createElement('h2');
+      header.style.cssText = 'margin: 0 0 15px 0; color: #ff4444;';
+      header.textContent = '🛡️ Armorly Authorization Required';
+
+      // Intro text
+      const intro = document.createElement('p');
+      intro.style.cssText = 'margin: 0 0 10px 0; color: #333;';
+      intro.textContent = 'An AI agent is attempting to perform a ';
+      const riskStrong = document.createElement('strong');
+      riskStrong.textContent = action.riskLevel || 'unknown'; // Safe: textContent escapes HTML
+      intro.appendChild(riskStrong);
+      intro.appendChild(document.createTextNode(' risk action:'));
+
+      // Action details box
+      const detailsBox = document.createElement('div');
+      detailsBox.style.cssText = 'background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0;';
+
+      // Helper function to add detail line
+      const addDetail = (label, value) => {
+        const strong = document.createElement('strong');
+        strong.textContent = label + ': ';
+        detailsBox.appendChild(strong);
+        detailsBox.appendChild(document.createTextNode(value)); // Safe: escapes HTML
+        detailsBox.appendChild(document.createElement('br'));
+      };
+
+      addDetail('Type', action.type || 'N/A');
+      addDetail('Method', action.method || 'N/A');
+      addDetail('URL', action.url || 'N/A');
+      if (action.text) {
+        addDetail('Action', action.text);
+      }
+
+      // Question text
+      const question = document.createElement('p');
+      question.style.cssText = 'margin: 15px 0; color: #666;';
+      question.textContent = 'Do you want to allow this action?';
+
+      // Button container
+      const buttonContainer = document.createElement('div');
+      buttonContainer.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
+
+      const denyButton = document.createElement('button');
+      denyButton.id = 'armorly-deny';
+      denyButton.style.cssText = 'padding: 10px 20px; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer;';
+      denyButton.textContent = 'Deny';
+
+      const allowButton = document.createElement('button');
+      allowButton.id = 'armorly-allow';
+      allowButton.style.cssText = 'padding: 10px 20px; border: none; background: #4CAF50; color: white; border-radius: 6px; cursor: pointer;';
+      allowButton.textContent = 'Allow';
+
+      buttonContainer.appendChild(denyButton);
+      buttonContainer.appendChild(allowButton);
+
+      // Assemble dialog
+      dialog.appendChild(header);
+      dialog.appendChild(intro);
+      dialog.appendChild(detailsBox);
+      dialog.appendChild(question);
+      dialog.appendChild(buttonContainer);
 
       modal.appendChild(dialog);
       document.body.appendChild(modal);

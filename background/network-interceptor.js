@@ -1,16 +1,25 @@
 /**
  * Armorly - Advanced Network Interceptor
- * 
- * Deep packet inspection for data exfiltration, credential theft detection,
- * and suspicious domain blocking across all chromium-based agentic browsers.
- * 
+ *
+ * Deep packet inspection for data exfiltration and credential theft detection
+ * across all chromium-based agentic browsers.
+ *
+ * IMPORTANT - Manifest V3 Limitation:
+ * This module performs DETECTION ONLY. Chrome Manifest V3 does not support
+ * blocking requests via webRequest API. Actual blocking must be implemented
+ * using declarativeNetRequest rules (see rules/csrf-rules.json).
+ *
  * Features:
- * - Request/response interception
+ * - Request/response monitoring (detection only)
  * - Data exfiltration detection
- * - Credential theft prevention
- * - Suspicious domain blocking
+ * - Credential leak detection
+ * - Suspicious domain detection
  * - Payload analysis
- * - Rate limiting
+ * - Rate limiting detection
+ *
+ * For actual blocking, use:
+ * - chrome.declarativeNetRequest.updateDynamicRules() for runtime blocking
+ * - rules/csrf-rules.json for static blocking rules
  */
 
 export class NetworkInterceptor {
@@ -53,9 +62,12 @@ export class NetworkInterceptor {
     this.rateLimits = new Map(); // domain -> [timestamps]
 
     // Statistics
+    // NOTE: "blockedRequests" is a misnomer - these are DETECTED threats
+    // that would be blocked if MV3 allowed it. Actual blocking requires
+    // declarativeNetRequest rules.
     this.statistics = {
       totalRequests: 0,
-      blockedRequests: 0,
+      blockedRequests: 0, // Actually "detectedThreats" - naming kept for compatibility
       suspiciousRequests: 0,
       credentialLeaks: 0,
       dataExfiltration: 0,
@@ -109,6 +121,12 @@ export class NetworkInterceptor {
 
   /**
    * Handle request before it's sent
+   *
+   * NOTE: This function CANNOT block requests in Manifest V3.
+   * It only detects threats and reports them. The `return` statements
+   * are kept for compatibility but have no blocking effect.
+   *
+   * To actually block requests, add rules to declarativeNetRequest.
    */
   handleBeforeRequest(details) {
     this.statistics.totalRequests++;
@@ -123,16 +141,17 @@ export class NetworkInterceptor {
       return; // Invalid URL
     }
 
-    // Check rate limiting
+    // Detect rate limiting (detection only - cannot block)
     if (this.isRateLimited(domain)) {
-      this.blockRequest(details, 'RATE_LIMITED');
-      return { cancel: true };
+      this.detectThreat(details, 'RATE_LIMITED');
+      // Note: In MV3, we cannot block here. Consider adding dynamic
+      // declarativeNetRequest rules for persistent rate limit violations.
     }
 
-    // Check suspicious domain
+    // Detect suspicious domain (detection only - cannot block)
     if (this.isSuspiciousDomain(domain)) {
-      this.blockRequest(details, 'SUSPICIOUS_DOMAIN');
-      return { cancel: true };
+      this.detectThreat(details, 'SUSPICIOUS_DOMAIN');
+      // Note: For blocking, add domain to declarativeNetRequest rules
     }
 
     // Analyze request body for sensitive data
@@ -140,10 +159,11 @@ export class NetworkInterceptor {
       const threat = this.analyzeRequestBody(requestBody, url);
       if (threat) {
         this.reportThreat(threat);
-        
+
         if (threat.severity === 'CRITICAL') {
-          this.blockRequest(details, threat.type);
-          return { cancel: true };
+          this.detectThreat(details, threat.type);
+          // Note: Cannot block in MV3 via webRequest API
+          // Consider implementing dynamic declarativeNetRequest rules
         }
       }
     }
@@ -158,6 +178,7 @@ export class NetworkInterceptor {
       type,
     });
 
+    // MV3: No blocking capability via return value
     return {};
   }
 
@@ -323,30 +344,37 @@ export class NetworkInterceptor {
   }
 
   /**
-   * Block request
+   * Detect threat in request
+   *
+   * NOTE: Despite the name "blockedRequests", this method ONLY DETECTS threats
+   * in Manifest V3. It cannot actually block the request. The statistics and
+   * naming are preserved for backwards compatibility, but understand that
+   * "blocked" means "detected and would be blocked if browser API allowed it".
+   *
+   * For actual blocking, implement declarativeNetRequest dynamic rules.
    */
-  blockRequest(details, reason) {
-    this.statistics.blockedRequests++;
+  detectThreat(details, reason) {
+    this.statistics.blockedRequests++; // Misleading name, actually "detected threats"
 
-    const blocked = {
+    const detected = {
       ...details,
       reason,
       timestamp: Date.now(),
     };
 
-    this.blockedRequests.push(blocked);
+    this.blockedRequests.push(detected); // Misleading name, actually "detected threats"
 
     // Report as threat
     this.reportThreat({
-      type: 'BLOCKED_REQUEST',
+      type: 'DETECTED_THREAT',
       severity: 'HIGH',
       url: details.url,
       reason,
       timestamp: Date.now(),
-      description: `Request blocked: ${reason}`,
+      description: `Threat detected (MV3 cannot block): ${reason}`,
     });
 
-    // Limit blocked requests history
+    // Limit detected requests history
     if (this.blockedRequests.length > 1000) {
       this.blockedRequests = this.blockedRequests.slice(-1000);
     }
@@ -400,18 +428,25 @@ export class NetworkInterceptor {
 
   /**
    * Get statistics
+   *
+   * NOTE: "blockedRequests" actually means "detected threats that would be
+   * blocked if the browser API supported it". In Manifest V3, webRequest
+   * cannot block - only detect.
    */
   getStatistics() {
     return {
       ...this.statistics,
       activeRequests: this.requests.size,
-      recentBlocked: this.blockedRequests.slice(-10),
+      recentBlocked: this.blockedRequests.slice(-10), // Actually "detected threats"
       recentSuspicious: this.suspiciousRequests.slice(-10),
     };
   }
 
   /**
-   * Get blocked requests
+   * Get detected threats (misleadingly named "blocked requests")
+   *
+   * NOTE: These are threats that were DETECTED, not actually blocked.
+   * Manifest V3 does not allow webRequest API to block requests.
    */
   getBlockedRequests(limit = 50) {
     return this.blockedRequests.slice(-limit).reverse();

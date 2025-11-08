@@ -232,24 +232,28 @@ class MutationBlocker {
    * Block a node
    */
   blockNode(node, reason) {
-    if (this.config.logActions) {
-      console.log(`[Armorly MutationBlocker] Blocking node (${reason}):`, node);
+    try {
+      if (this.config.logActions) {
+        console.log(`[Armorly MutationBlocker] Blocking node (${reason}):`, node);
+      }
+
+      // Store for debugging
+      this.blockedMutations.push({
+        node: node.cloneNode(true),
+        reason,
+        timestamp: Date.now(),
+      });
+
+      // Remove the node
+      if (node.parentNode) {
+        node.parentNode.removeChild(node);
+      }
+
+      this.stats.nodesBlocked++;
+      this.stats.totalBlocked++;
+    } catch (error) {
+      console.error(`[Armorly MutationBlocker] Failed to block node (${reason}):`, error);
     }
-
-    // Store for debugging
-    this.blockedMutations.push({
-      node: node.cloneNode(true),
-      reason,
-      timestamp: Date.now(),
-    });
-
-    // Remove the node
-    if (node.parentNode) {
-      node.parentNode.removeChild(node);
-    }
-
-    this.stats.nodesBlocked++;
-    this.stats.totalBlocked++;
   }
 
   /**

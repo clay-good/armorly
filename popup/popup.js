@@ -433,6 +433,9 @@ async function loadThreatLog() {
  * Display threats in the UI
  *
  * @param {Array} threats - Array of threat objects
+ *
+ * SECURITY: Uses safe DOM manipulation to prevent XSS attacks.
+ * Never uses innerHTML with user-controlled data.
  */
 function displayThreats(threats) {
     debugLog(`displayThreats: Called with ${threats?.length || 0} threats`);
@@ -445,6 +448,7 @@ function displayThreats(threats) {
 
     if (!threats || threats.length === 0) {
         debugLog('displayThreats: No threats to display, showing empty state');
+        // Safe: This is static HTML with no user data
         threatList.innerHTML = `
             <div class="empty-state">
                 <span class="empty-icon">✓</span>
@@ -455,24 +459,57 @@ function displayThreats(threats) {
     }
 
     try {
-        threatList.innerHTML = threats.map(threat => {
-            const url = new URL(threat.url);
-            const timeAgo = formatTimeAgo(threat.timestamp);
+        // Clear existing content
+        threatList.textContent = '';
 
-            return `
-                <div class="threat-item">
-                    <div class="threat-header">
-                        <span class="threat-type">${threat.severity} Threat</span>
-                        <span class="threat-time">${timeAgo}</span>
-                    </div>
-                    <div class="threat-domain">${url.hostname}</div>
-                </div>
-            `;
-        }).join('');
+        // Build threat items using safe DOM methods (prevents XSS)
+        threats.forEach(threat => {
+            const threatItem = document.createElement('div');
+            threatItem.className = 'threat-item';
+
+            // Create header
+            const threatHeader = document.createElement('div');
+            threatHeader.className = 'threat-header';
+
+            const threatType = document.createElement('span');
+            threatType.className = 'threat-type';
+            // Safe: textContent escapes HTML
+            threatType.textContent = `${threat.severity || 'Unknown'} Threat`;
+
+            const threatTime = document.createElement('span');
+            threatTime.className = 'threat-time';
+            threatTime.textContent = formatTimeAgo(threat.timestamp);
+
+            threatHeader.appendChild(threatType);
+            threatHeader.appendChild(threatTime);
+
+            // Create domain display
+            const threatDomain = document.createElement('div');
+            threatDomain.className = 'threat-domain';
+
+            // Safe URL parsing with error handling
+            try {
+                const url = new URL(threat.url);
+                // Safe: textContent escapes HTML, and URL.hostname is already parsed
+                threatDomain.textContent = url.hostname;
+            } catch (urlError) {
+                // Fallback for invalid URLs
+                threatDomain.textContent = 'Invalid URL';
+                debugLog(`displayThreats: Invalid URL in threat: ${threat.url}`);
+            }
+
+            threatItem.appendChild(threatHeader);
+            threatItem.appendChild(threatDomain);
+            threatList.appendChild(threatItem);
+        });
+
         debugLog(`displayThreats: Successfully displayed ${threats.length} threats`);
     } catch (error) {
         console.error('[Armorly] Error displaying threats:', error);
         debugLog('displayThreats: FAILED with error', error.message);
+
+        // Show error state safely
+        threatList.textContent = 'Error loading threats';
     }
 }
 

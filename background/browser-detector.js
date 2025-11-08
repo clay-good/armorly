@@ -32,13 +32,17 @@ export class BrowserDetector {
 
   /**
    * Detect browser type and capabilities
+   * @param {string} userAgent - Optional user agent string (uses navigator.userAgent if not provided)
    * @returns {Promise<Object>} Detection results
+   *
+   * NOTE: In service worker context, navigator.userAgent IS available in Chrome,
+   * but other navigator properties may not be. Pass userAgent explicitly when possible.
    */
-  async detect() {
+  async detect(userAgent = null) {
     console.log('[Armorly Browser Detector] Starting detection...');
 
     // Detect browser type
-    await this.detectBrowserType();
+    await this.detectBrowserType(userAgent);
 
     // Detect capabilities
     await this.detectCapabilities();
@@ -57,8 +61,12 @@ export class BrowserDetector {
 
   /**
    * Detect browser type
+   * @param {string} userAgent - Optional user agent string
+   *
+   * SECURITY: Safe for service worker context. Uses navigator.userAgent as fallback
+   * which IS available in Chrome service workers, but with defensive error handling.
    */
-  async detectBrowserType() {
+  async detectBrowserType(userAgent = null) {
     // Check for BrowserOS
     if (typeof chrome !== 'undefined' && chrome.browserOS) {
       this.browserType = 'browseros';
@@ -67,44 +75,67 @@ export class BrowserDetector {
       return;
     }
 
+    // Get user agent safely (service worker compatible)
+    let ua = userAgent;
+    if (!ua) {
+      try {
+        // navigator.userAgent IS available in Chrome service workers
+        ua = (typeof navigator !== 'undefined' && navigator.userAgent)
+          ? navigator.userAgent
+          : 'Chrome'; // Fallback
+      } catch (e) {
+        console.warn('[Armorly Browser Detector] Could not access navigator.userAgent:', e);
+        ua = 'Chrome'; // Safe fallback
+      }
+    }
+
     // Check for ChatGPT Atlas
     // Atlas uses OWL architecture with specific user agent patterns
-    const userAgent = navigator.userAgent;
-    if (userAgent.includes('Atlas') || userAgent.includes('OWL')) {
+    if (ua.includes('Atlas') || ua.includes('OWL')) {
       this.browserType = 'atlas';
-      this.browserVersion = this.extractVersionFromUA(userAgent, 'Atlas');
+      this.browserVersion = this.extractVersionFromUA(ua, 'Atlas');
       console.log('[Armorly Browser Detector] Detected: ChatGPT Atlas');
       return;
     }
 
     // Check for Perplexity Comet
     // Comet may have specific APIs or user agent patterns
-    if (userAgent.includes('Comet') || userAgent.includes('Perplexity')) {
+    if (ua.includes('Comet') || ua.includes('Perplexity')) {
       this.browserType = 'comet';
-      this.browserVersion = this.extractVersionFromUA(userAgent, 'Comet');
+      this.browserVersion = this.extractVersionFromUA(ua, 'Comet');
       console.log('[Armorly Browser Detector] Detected: Perplexity Comet');
       return;
     }
 
     // Check for Brave Browser
-    if (navigator.brave && await navigator.brave.isBrave()) {
-      this.browserType = 'brave';
-      this.browserVersion = this.extractVersionFromUA(userAgent, 'Chrome');
-      console.log('[Armorly Browser Detector] Detected: Brave Browser');
-      return;
+    // NOTE: navigator.brave is NOT available in service workers
+    // Check for Brave-specific extension APIs instead
+    try {
+      if (typeof navigator !== 'undefined' &&
+          navigator.brave &&
+          typeof navigator.brave.isBrave === 'function' &&
+          await navigator.brave.isBrave()) {
+        this.browserType = 'brave';
+        this.browserVersion = this.extractVersionFromUA(ua, 'Chrome');
+        console.log('[Armorly Browser Detector] Detected: Brave Browser');
+        return;
+      }
+    } catch (e) {
+      // navigator.brave not available (service worker context) - that's OK
+      // Brave detection will fall through to Chrome
     }
 
     // Check for Arc Browser (The Browser Company)
-    if (userAgent.includes('Arc')) {
+    if (ua.includes('Arc')) {
       this.browserType = 'arc';
-      this.browserVersion = this.extractVersionFromUA(userAgent, 'Arc');
+      this.browserVersion = this.extractVersionFromUA(ua, 'Arc');
       console.log('[Armorly Browser Detector] Detected: Arc Browser');
       return;
     }
 
     // Default to standard Chrome
     this.browserType = 'chrome';
-    this.browserVersion = this.extractVersionFromUA(userAgent, 'Chrome');
+    this.browserVersion = this.extractVersionFromUA(ua, 'Chrome');
     console.log('[Armorly Browser Detector] Detected: Standard Chrome');
   }
 

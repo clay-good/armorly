@@ -30,15 +30,24 @@ class OutputValidator {
     };
 
     /**
+     * AI Platform Detection
+     * Auto-enable output validation only on AI platforms
+     */
+    const isAIPlatform = this.isAIPlatform();
+
+    /**
      * Configuration
+     *
+     * UPDATED: Auto-enable on AI platforms only to avoid false positives.
+     * This validator is designed for AI-generated content, not regular web pages.
      */
     this.config = {
-      enabled: true,
-      sanitizeOutputs: true,
-      detectPII: true,
-      detectXSS: true,
-      detectCodeInjection: true,
-      logActions: true,
+      enabled: isAIPlatform, // Auto-detect AI platforms
+      sanitizeOutputs: isAIPlatform,
+      detectPII: isAIPlatform,
+      detectXSS: isAIPlatform,
+      detectCodeInjection: isAIPlatform,
+      logActions: false, // Reduce console noise
     };
 
     /**
@@ -121,6 +130,12 @@ class OutputValidator {
    * Validate existing content
    */
   validateExistingContent() {
+    // Safety check: document.body might not exist at document_start
+    if (!document.body) {
+      console.warn('[Armorly OutputValidator] document.body not ready, skipping initial validation');
+      return;
+    }
+
     // Validate all text nodes
     const walker = document.createTreeWalker(
       document.body,
@@ -397,6 +412,34 @@ class OutputValidator {
    */
   setEnabled(enabled) {
     this.config.enabled = enabled;
+  }
+
+  /**
+   * Detect if we're on an AI platform
+   * Returns true for ChatGPT, Claude, Perplexity, Gemini, etc.
+   */
+  isAIPlatform() {
+    const hostname = window.location.hostname.toLowerCase();
+
+    const aiPlatforms = [
+      'chatgpt.com',
+      'chat.openai.com',
+      'openai.com',
+      'claude.ai',
+      'anthropic.com',
+      'perplexity.ai',
+      'gemini.google.com',
+      'bard.google.com',
+      'bing.com/chat',
+      'you.com',
+      'poe.com',
+      'character.ai',
+      'huggingface.co/chat',
+      'phind.com',
+      'codeium.com',
+    ];
+
+    return aiPlatforms.some(platform => hostname.includes(platform));
   }
 }
 

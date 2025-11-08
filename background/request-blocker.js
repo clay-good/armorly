@@ -44,36 +44,50 @@ class RequestBlocker {
 
     /**
      * Known malicious domains (threat intelligence)
-     * Expanded list of confirmed malicious domains and patterns
+     *
+     * ⚠️ IMPORTANT - PROOF OF CONCEPT ONLY ⚠️
+     *
+     * This list contains only a small sample of malicious domains and patterns
+     * for demonstration purposes. It does NOT provide comprehensive protection
+     * against real-world threats.
+     *
+     * For production use, you should:
+     * 1. Integrate threat intelligence feeds (e.g., abuse.ch, PhishTank, URLhaus)
+     * 2. Subscribe to commercial threat feeds
+     * 3. Implement auto-update mechanisms for threat data
+     * 4. Use ML-based anomaly detection
+     *
+     * Current coverage: ~50 patterns (vs. millions needed for real protection)
      */
     this.maliciousDomains = [
-      // Known malware/phishing domains
-      'evil.com',
-      'malware.com',
-      'phishing.com',
-      'attacker.com',
-      'malicious.com',
-      'badsite.com',
-      'hacksite.com',
-      'stealdata.com',
+      // REMOVED: Fake placeholder domains (evil.com, malware.com, etc.)
+      // These were test data and provided no real protection.
 
-      // Common malicious TLDs (high-risk free domains)
-      '.tk',
-      '.ml',
-      '.ga',
-      '.cf',
-      '.gq',
+      // Common malicious TLDs (high-risk free domains often used in attacks)
+      '.tk',    // Tokelau - frequently abused for phishing
+      '.ml',    // Mali - frequently abused for malware
+      '.ga',    // Gabon - frequently abused for spam
+      '.cf',    // Central African Republic - frequently abused
+      '.gq',    // Equatorial Guinea - frequently abused
 
-      // Known C2 and exfiltration patterns
+      // Known data exfiltration and C2 infrastructure
       'pastebin.com/raw',  // Often used for data exfiltration
-      'transfer.sh',       // Anonymous file sharing
+      'transfer.sh',       // Anonymous file sharing service
       'anonfiles.com',     // Anonymous file hosting
       'gofile.io',         // Anonymous file hosting
+      'file.io',           // Temporary file sharing
 
-      // Suspicious URL shorteners (often used in attacks)
-      'bit.do',
-      'tinyurl.com/malicious',
-      'is.gd/attack',
+      // Suspicious URL shorteners (can hide malicious destinations)
+      'bit.do',            // URL shortener
+      'cutt.ly',           // URL shortener
+      'shorturl.at',       // URL shortener
+
+      // NOTE: For comprehensive protection, integrate real threat feeds:
+      // - abuse.ch (URLhaus, malware URLs)
+      // - PhishTank (phishing URLs)
+      // - OpenPhish (phishing URLs)
+      // - CERT feeds
+      // - Commercial threat intelligence
     ];
 
     /**
