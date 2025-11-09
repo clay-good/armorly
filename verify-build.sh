@@ -39,8 +39,8 @@ if [ ! -f "build/popup/popup.css" ]; then
 fi
 echo "✅ build/popup/popup.css exists"
 
-# Check if popup.js has the new debug code
-if grep -q "DEBUG_MODE = true" build/popup/popup.js; then
+# Check if popup.js has the DEBUG_MODE constant (can be true or false)
+if grep -q "const DEBUG_MODE = " build/popup/popup.js; then
     echo "✅ build/popup/popup.js has DEBUG_MODE"
 else
     echo "❌ build/popup/popup.js missing DEBUG_MODE - needs sync!"

@@ -194,8 +194,10 @@ export class XSSMonitor {
     
     // Check for dangerous attributes
     for (const attr of this.dangerousAttributes) {
-      const attrPattern = new RegExp(attr + '\\s*=', 'gi');
-      
+      // SECURITY: Escape special regex characters to prevent ReDoS
+      const escapedAttr = attr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const attrPattern = new RegExp(escapedAttr + '\\s*=', 'gi');
+
       if (attrPattern.test(content)) {
         threats.push({
           type: 'DANGEROUS_ATTRIBUTE_XSS',

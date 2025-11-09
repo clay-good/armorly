@@ -429,13 +429,27 @@ class ConfidenceScorer {
       color: #856404;
     `;
 
-    warning.innerHTML = `
-      <strong>⚠️ Armorly Confidence Warning</strong><br>
-      This AI response has a low confidence score (${Math.round(score.confidence * 100)}%).<br>
-      <ul style="margin: 8px 0 0 20px; padding: 0;">
-        ${score.suggestions.map(s => `<li>${s}</li>`).join('')}
-      </ul>
-    `;
+    // SECURITY: Use safe DOM methods instead of innerHTML to prevent XSS
+    const strong = document.createElement('strong');
+    strong.textContent = '⚠️ Armorly Confidence Warning';
+    warning.appendChild(strong);
+
+    warning.appendChild(document.createElement('br'));
+
+    const confidenceText = document.createTextNode(
+      `This AI response has a low confidence score (${Math.round(score.confidence * 100)}%).`
+    );
+    warning.appendChild(confidenceText);
+    warning.appendChild(document.createElement('br'));
+
+    const ul = document.createElement('ul');
+    ul.style.cssText = 'margin: 8px 0 0 20px; padding: 0;';
+    score.suggestions.forEach(suggestion => {
+      const li = document.createElement('li');
+      li.textContent = suggestion; // Safe: textContent escapes HTML
+      ul.appendChild(li);
+    });
+    warning.appendChild(ul);
 
     // Insert before the element
     element.parentNode?.insertBefore(warning, element);

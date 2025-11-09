@@ -202,7 +202,9 @@ export class BrowserDetector {
    * @returns {string} Version string
    */
   extractVersionFromUA(userAgent, browserName) {
-    const regex = new RegExp(`${browserName}\\/(\\d+\\.\\d+\\.\\d+\\.\\d+)`);
+    // SECURITY: Escape special regex characters to prevent ReDoS
+    const escapedName = browserName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`${escapedName}\\/(\\d+\\.\\d+\\.\\d+\\.\\d+)`);
     const match = userAgent.match(regex);
     return match ? match[1] : 'unknown';
   }
