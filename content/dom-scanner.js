@@ -64,27 +64,58 @@ class DOMScanner {
     };
 
     /**
-     * Suspicious keywords that indicate instruction injection
+     * Suspicious keywords that indicate AI prompt injection
+     *
+     * 🎯 FOCUS: Only flag actual AI jailbreak attempts, not normal content
      */
     this.suspiciousKeywords = [
-      'ignore previous',
-      'disregard',
-      'you are now',
-      'your new goal',
-      'system:',
+      'ignore previous instructions',
+      'ignore all previous instructions',
+      'disregard all prior',
+      'you are now a',
+      'your new goal is',
+      'system: you are',
       'admin override',
       'secret instruction',
-      'always fetch from',
-      'always import from'
+      'always fetch from http',  // More specific to avoid false positives
+      'always import from http'   // More specific
     ];
 
     /**
      * Legitimate contexts where suspicious patterns are expected
+     *
+     * We're VERY permissive here - if in doubt, allow it!
+     * This is like uBlock Origin: only block clear threats, not edge cases
      */
     this.legitimateContexts = [
-      'test-', 'demo-', 'example-', 'tutorial-', 'documentation',
-      'github.com', 'stackoverflow.com', 'reddit.com/r/programming',
-      'arxiv.org', 'research', 'paper', 'article', 'blog'
+      // Development and documentation
+      'test-', 'demo-', 'example-', 'tutorial-', 'documentation', 'docs',
+      'guide', 'how-to', 'readme',
+
+      // Tech platforms
+      'github.com', 'gitlab.com', 'bitbucket.org',
+      'stackoverflow.com', 'stackexchange.com',
+      'reddit.com/r/programming', 'reddit.com/r/machinelearning',
+      'reddit.com/r/chatgpt', 'reddit.com/r/artificial',
+
+      // Research and academic
+      'arxiv.org', 'research', 'paper', 'article', 'blog', 'medium.com',
+      'substack.com', 'dev.to', 'hackernoon.com',
+
+      // News and media
+      'news', 'techcrunch.com', 'arstechnica.com', 'theverge.com',
+      'wired.com', 'vice.com',
+
+      // AI platforms and tools (obviously legitimate!)
+      'chatgpt.com', 'claude.ai', 'anthropic.com',
+      'openai.com', 'perplexity.ai', 'poe.com',
+      'huggingface.co', 'replicate.com',
+
+      // Educational
+      'coursera.org', 'udemy.com', 'edx.org', 'khanacademy.org',
+
+      // Code playgrounds
+      'codesandbox.io', 'codepen.io', 'jsfiddle.net', 'repl.it'
     ];
   }
 

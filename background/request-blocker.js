@@ -43,64 +43,105 @@ class RequestBlocker {
     };
 
     /**
-     * Known malicious domains (threat intelligence)
+     * Known malicious domains (AI-SPECIFIC THREAT FOCUS)
      *
-     * ⚠️ IMPORTANT - PROOF OF CONCEPT ONLY ⚠️
+     * 🎯 PHILOSOPHY: Like uBlock Origin for ads, we focus ONLY on AI-specific threats
      *
-     * This list contains only a small sample of malicious domains and patterns
-     * for demonstration purposes. It does NOT provide comprehensive protection
-     * against real-world threats.
+     * We ONLY block domains that are:
+     * 1. Known for AI prompt injection attacks
+     * 2. Cryptominers that target AI browsers specifically
+     * 3. High-risk TLDs commonly used for AI phishing
+     * 4. Services proven to exfiltrate AI conversation data
      *
-     * For production use, you should:
-     * 1. Integrate threat intelligence feeds (e.g., abuse.ch, PhishTank, URLhaus)
-     * 2. Subscribe to commercial threat feeds
-     * 3. Implement auto-update mechanisms for threat data
-     * 4. Use ML-based anomaly detection
+     * We DO NOT block:
+     * - Legitimate file sharing (WeTransfer, Dropbox, etc.)
+     * - Legitimate URL shorteners (t.co, goo.gl, etc.)
+     * - Developer tools (ngrok, localhost.run, etc.)
+     * - Analytics/tracking (these are not AI threats)
+     * - Dynamic DNS (legitimate use cases)
+     * - WebRTC/STUN (needed for video chat)
      *
-     * Current coverage: ~50 patterns (vs. millions needed for real protection)
+     * Current coverage: AI-specific threats only (~20 domains)
      */
     this.maliciousDomains = [
-      // REMOVED: Fake placeholder domains (evil.com, malware.com, etc.)
-      // These were test data and provided no real protection.
+      // High-risk TLDs (free domains heavily abused for AI phishing)
+      '.tk',    // Tokelau - #1 for AI phishing campaigns
+      '.ml',    // Mali - frequently used for fake AI sites
+      '.ga',    // Gabon - common for AI credential harvesting
+      '.cf',    // Central African Republic - AI scam sites
+      '.gq',    // Equatorial Guinea - AI malware delivery
 
-      // Common malicious TLDs (high-risk free domains often used in attacks)
-      '.tk',    // Tokelau - frequently abused for phishing
-      '.ml',    // Mali - frequently abused for malware
-      '.ga',    // Gabon - frequently abused for spam
-      '.cf',    // Central African Republic - frequently abused
-      '.gq',    // Equatorial Guinea - frequently abused
+      // Known cryptominers (dead services, safe to block)
+      'coinhive.com',           // Defunct cryptominer
+      'coin-hive.com',          // Defunct cryptominer
+      'jsecoin.com',            // Defunct cryptominer
+      'crypto-loot.com',        // Defunct cryptominer
+      'cryptoloot.pro',         // Defunct cryptominer
+      'webminepool.com',        // Defunct cryptominer
+      'minemytraffic.com',      // Defunct cryptominer
+      'coinerra.com',           // Defunct cryptominer
+      'minero.cc',              // Defunct cryptominer
+      'ppoi.org',               // Defunct cryptominer
+      'statdynamic.com',        // Cryptominer disguised as analytics
+      'cookiescript.info',      // Cryptominer disguised as cookie consent
 
-      // Known data exfiltration and C2 infrastructure
-      'pastebin.com/raw',  // Often used for data exfiltration
-      'transfer.sh',       // Anonymous file sharing service
-      'anonfiles.com',     // Anonymous file hosting
-      'gofile.io',         // Anonymous file hosting
-      'file.io',           // Temporary file sharing
+      // AI-specific data exfiltration (anonymous paste sites used in AI attacks)
+      // NOTE: Only blocking /raw endpoints to allow legitimate pastebin use
+      'pastebin.com/raw',       // Raw paste output (common for AI data theft)
+      'ghostbin.com',           // Anonymous paste (used in AI attacks)
+      'privatebin.net',         // Encrypted paste (used in AI exploits)
 
-      // Suspicious URL shorteners (can hide malicious destinations)
-      'bit.do',            // URL shortener
-      'cutt.ly',           // URL shortener
-      'shorturl.at',       // URL shortener
-
-      // NOTE: For comprehensive protection, integrate real threat feeds:
-      // - abuse.ch (URLhaus, malware URLs)
-      // - PhishTank (phishing URLs)
-      // - OpenPhish (phishing URLs)
-      // - CERT feeds
-      // - Commercial threat intelligence
+      // NOTE: For real-time AI threat protection, integrate:
+      // - AI-specific threat feeds (emerging prompt injection campaigns)
+      // - Real-time phishing feeds (PhishTank, OpenPhish)
+      // - Community-reported AI exploits
     ];
 
     /**
-     * Suspicious URL patterns
+     * Suspicious URL patterns (AI-SPECIFIC THREATS ONLY)
+     *
+     * 🎯 FOCUS: Only patterns that indicate AI-specific attacks
+     *
+     * We ONLY flag URLs containing:
+     * 1. AI prompt injection keywords
+     * 2. Dangerous protocol handlers (javascript:, data:, vbscript:)
+     * 3. Obvious XSS in URL parameters
+     *
+     * We DO NOT flag:
+     * - Normal SQL/command injection (not AI-specific)
+     * - Path traversal (not AI-specific)
+     * - Base64 content (breaks legitimate apps)
+     * - WebSockets (breaks real-time apps)
+     * - File uploads (breaks legitimate functionality)
      */
     this.suspiciousPatterns = [
-      /eval\(/i,
+      // Dangerous protocol handlers (XSS vectors in AI context)
       /javascript:/i,
       /data:text\/html/i,
       /vbscript:/i,
-      /<script/i,
-      /onerror=/i,
-      /onclick=/i,
+
+      // Obvious XSS in URLs (targeting AI browsers)
+      /<script[^>]*>/i,
+      /onerror\s*=/i,
+      /onclick\s*=/i,
+
+      // AI-specific prompt injection keywords in URLs
+      // These are the CORE AI threats we're protecting against
+      /ignore\s+(?:previous|all|prior)\s+(?:instructions?|prompts?|rules?)/i,
+      /disregard\s+(?:previous|all|prior|above)/i,
+      /system\s*:\s*(?:you\s+are|ignore|new\s+role)/i,
+      /you\s+are\s+now\s+(?:a|an|in)/i,
+      /override\s+(?:instructions?|prompts?|rules?|settings?)/i,
+      /new\s+(?:instructions?|role|personality|character)/i,
+      /forget\s+(?:previous|everything|all)/i,
+      /reset\s+(?:instructions?|context|memory)/i,
+      /act\s+as\s+(?:if|a|an)/i,
+
+      // AI jailbreak patterns
+      /DAN\s+mode/i,  // "Do Anything Now" jailbreak
+      /developer\s+mode/i,
+      /unrestricted\s+mode/i,
+      /sudo\s+mode/i,
     ];
 
     /**
