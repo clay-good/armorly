@@ -22,6 +22,49 @@
   window.__armorlyInjected = true;
 
   /**
+   * Detect if we're on an AI platform that needs protection
+   * @returns {boolean} True if on AI platform, false otherwise
+   */
+  function isAIPlatform() {
+    const hostname = window.location.hostname;
+
+    // AI platforms that need full protection
+    const aiPlatforms = [
+      'chatgpt.com',
+      'chat.openai.com',
+      'openai.com',
+      'perplexity.ai',
+      'claude.ai',
+      'anthropic.com',
+      'poe.com',
+      'huggingface.co',
+      'replicate.com',
+      'bard.google.com',
+      'gemini.google.com',
+      'character.ai',
+      'jasper.ai',
+      'writesonic.com',
+      'copy.ai',
+      'midjourney.com',
+      'stability.ai',
+      'leonardo.ai',
+      'browseros.com'
+    ];
+
+    return aiPlatforms.some(platform => hostname.includes(platform));
+  }
+
+  // Check if we should enable protection
+  const shouldProtect = isAIPlatform();
+
+  if (!shouldProtect) {
+    console.log('[Armorly] Not an AI platform - protection disabled');
+    return; // Exit early, don't initialize any components
+  }
+
+  console.log('[Armorly] AI platform detected - initializing protection');
+
+  /**
    * Initialize Content Sanitizer (BLOCKING ENGINE)
    */
   let sanitizer = null;
