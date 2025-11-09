@@ -305,10 +305,15 @@ class ClipboardProtector {
 
   /**
    * Show notification to user
+   * SILENT MODE: Disabled for background operation
    */
   showNotification(message) {
-    // Create a subtle notification
-    const notification = document.createElement('div');
+    // Silent mode - log only, no visible notifications
+    console.warn('[Armorly Clipboard Protector]', message);
+    return;
+
+    // Notifications disabled for silent background operation
+    /* const notification = document.createElement('div');
     notification.textContent = `🛡️ ${message}`;
     notification.style.cssText = `
       position: fixed;
@@ -331,7 +336,7 @@ class ClipboardProtector {
     setTimeout(() => {
       notification.style.animation = 'slideOut 0.3s ease-out';
       setTimeout(() => notification.remove(), 300);
-    }, 3000);
+    }, 3000); */
   }
 
   /**

@@ -398,10 +398,15 @@ class FormInterceptor {
 
   /**
    * Show warning to user
+   * SILENT MODE: Disabled for background operation
    */
   showWarning(message) {
-    // Create a subtle notification
-    const notification = document.createElement('div');
+    // Silent mode - log only, no visible notifications
+    console.warn('[Armorly Form Interceptor]', message);
+    return;
+
+    // Notifications disabled for silent background operation
+    /* const notification = document.createElement('div');
     notification.style.cssText = `
       position: fixed;
       top: 20px;
@@ -423,7 +428,7 @@ class FormInterceptor {
     // Remove after 5 seconds
     setTimeout(() => {
       notification.remove();
-    }, 5000);
+    }, 5000); */
   }
 
   /**

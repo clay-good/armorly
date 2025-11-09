@@ -346,9 +346,15 @@
 
   /**
    * Show notification to user
+   * SILENT MODE: Disabled for background operation
    */
   function showNotification(message) {
-    const notification = document.createElement('div');
+    // Silent mode - log only, no visible notifications
+    console.warn('[Armorly Settings Scanner]', message);
+    return;
+
+    // Notifications disabled for silent background operation
+    /* const notification = document.createElement('div');
     notification.style.cssText = `
       position: fixed;
       top: 20px;
@@ -371,7 +377,7 @@
       notification.style.transition = 'opacity 0.3s';
       notification.style.opacity = '0';
       setTimeout(() => notification.remove(), 300);
-    }, 5000);
+    }, 5000); */
   }
 
   // Run scan when page loads
