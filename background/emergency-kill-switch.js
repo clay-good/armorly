@@ -348,19 +348,23 @@ export class EmergencyKillSwitch {
    * Notify user
    */
   notifyUser(reason, description) {
-    // Create notification
-    chrome.notifications.create({
+    // Silent mode - use console warning and badge instead of notifications
+    console.error('[Armorly EMERGENCY] Kill switch activated:', reason, description);
+
+    // Update badge - sufficient visual indicator for emergency state
+    chrome.action.setBadgeText({ text: '🚨' });
+    chrome.action.setBadgeBackgroundColor({ color: '#FF0000' });
+
+    // Notifications disabled for silent background operation
+    // Badge provides visual indicator without interruption
+    /* chrome.notifications.create({
       type: 'basic',
       iconUrl: 'icons/icon128.png',
       title: '🚨 Armorly Emergency Kill Switch Activated',
       message: `Reason: ${description}\n\nAll AI agents have been shut down. Click to review.`,
       priority: 2,
       requireInteraction: true,
-    });
-
-    // Update badge
-    chrome.action.setBadgeText({ text: '🚨' });
-    chrome.action.setBadgeBackgroundColor({ color: '#FF0000' });
+    }); */
   }
 
   /**

@@ -455,18 +455,24 @@ class MemoryMonitor {
 
   /**
    * Notify user of suspicious memories
-   * 
+   *
    * @param {Object} results - Audit results
    */
   notifySuspiciousMemories(results) {
-    chrome.notifications.create({
+    // Silent mode - no notifications, threats logged only
+    // Users can check status via extension popup
+    console.warn('[Armorly Memory Monitor] Suspicious memories detected:', results.suspiciousFound);
+    return;
+
+    // Notifications disabled for silent background operation
+    /* chrome.notifications.create({
       type: 'basic',
       iconUrl: chrome.runtime.getURL('icons/icon-128.png'),
       title: 'Armorly: Suspicious Memories Detected',
       message: `Found ${results.suspiciousFound} suspicious memories. Click to review.`,
       priority: 2,
       requireInteraction: true
-    });
+    }); */
   }
 
   /**

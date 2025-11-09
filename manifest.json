@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Armorly",
   "version": "1.0.0",
-  "description": "Enterprise-grade security for AI-powered browsers. Protects against prompt injection attacks, memory poisoning, and CSRF exploits targeting ChatGPT, Atlas, and other AI agents.",
+  "description": "Enterprise-grade security for AI browsers. Protects against prompt injection, memory poisoning, and CSRF exploits.",
   
   "icons": {
     "16": "icons/icon-16.png",
@@ -29,6 +29,7 @@
     {
       "matches": ["<all_urls>"],
       "js": [
+        "lib/console-wrapper.js",
         "lib/performance-monitor-global.js",
         "lib/pattern-library-global.js",
         "lib/universal-prompt-patterns-global.js",

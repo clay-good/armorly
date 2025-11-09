@@ -1,17 +1,20 @@
 /**
  * Background Service Worker for Armorly
- * 
+ *
  * Main coordinator for all protection components:
  * - Manages extension lifecycle
  * - Coordinates CSRF detection and DOM scanning
  * - Handles message passing between components
  * - Manages threat logs and statistics
  * - Controls badge and notifications
- * 
+ *
  * @module service-worker
  * @author Armorly Security Team
  * @license MIT
  */
+
+// IMPORTANT: Load console wrapper FIRST for silent production mode
+import '../lib/console-wrapper-sw.js';
 
 import { CSRFDetector } from '../lib/csrf-detector.js';
 import { PatternLibrary } from '../lib/pattern-library.js';
