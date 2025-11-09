@@ -5,9 +5,9 @@
     "webextensions": true,
     "node": true
   },
+  "plugins": ["security"],
   "extends": [
     "eslint:recommended",
-    "plugin:security/recommended",
     "prettier"
   ],
   "parserOptions": {

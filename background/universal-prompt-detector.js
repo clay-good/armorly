@@ -273,47 +273,6 @@ export class UniversalPromptDetector {
   }
 
   /**
-   * Analyze DOM node for prompt injection
-   * @param {Element} node - DOM node to analyze
-   * @param {Object} context - Context information
-   * @returns {Array<Object>} Detected threats
-   */
-  analyzeNode(node, context = {}) {
-    const threats = [];
-
-    if (!node) return threats;
-
-    // Get all text content
-    const textContent = node.textContent || '';
-    const innerText = node.innerText || '';
-
-    // Analyze text content
-    threats.push(...this.analyzeText(textContent, {
-      ...context,
-      source: 'dom_node',
-      nodeType: node.nodeName,
-    }));
-
-    // Check for hidden content
-    if (this.isNodeHidden(node) && textContent.length > 50) {
-      this.statistics.hiddenContentDetected++;
-      threats.push({
-        type: 'HIDDEN_PROMPT_INJECTION',
-        severity: 'critical',
-        reason: 'Hidden content with potential prompt injection',
-        textLength: textContent.length,
-        textPreview: textContent.substring(0, 100),
-        nodeType: node.nodeName,
-        source: context.source || 'dom_node',
-        url: context.url || '',
-        timestamp: Date.now(),
-      });
-    }
-
-    return threats;
-  }
-
-  /**
    * Check if node is hidden
    * @param {Element} node - DOM node
    * @returns {boolean} True if hidden

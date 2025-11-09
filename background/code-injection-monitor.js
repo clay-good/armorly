@@ -56,7 +56,7 @@ export class CodeInjectionMonitor {
       /<%.*%>/g,
       
       // Expression language injection
-      /\#\{.*\}/g,
+      /#\{.*\}/g,
       /@\{.*\}/g,
     ];
     

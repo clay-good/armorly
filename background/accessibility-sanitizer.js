@@ -204,7 +204,7 @@ export class AccessibilitySanitizer {
       }
       
       // hidden attribute
-      if (node.htmlAttributes.hasOwnProperty('hidden')) {
+      if (Object.prototype.hasOwnProperty.call(node.htmlAttributes, 'hidden')) {
         return true;
       }
       

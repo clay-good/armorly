@@ -27,7 +27,9 @@
   let sanitizer = null;
 
   try {
+    // eslint-disable-next-line no-undef
     if (typeof ContentSanitizer !== 'undefined') {
+      // eslint-disable-next-line no-undef
       sanitizer = new ContentSanitizer();
       window.armorlySanitizer = sanitizer; // Make available globally
       console.log('[Armorly] Content Sanitizer initialized - BLOCKING MODE ACTIVE');
@@ -42,7 +44,9 @@
   let mutationBlocker = null;
 
   try {
+    // eslint-disable-next-line no-undef
     if (typeof MutationBlocker !== 'undefined') {
+      // eslint-disable-next-line no-undef
       mutationBlocker = new MutationBlocker();
       mutationBlocker.start();
       console.log('[Armorly] Mutation Blocker started - REAL-TIME PROTECTION ACTIVE');
@@ -57,7 +61,9 @@
   let clipboardProtector = null;
 
   try {
+    // eslint-disable-next-line no-undef
     if (typeof ClipboardProtector !== 'undefined') {
+      // eslint-disable-next-line no-undef
       clipboardProtector = new ClipboardProtector();
       clipboardProtector.start();
       console.log('[Armorly] Clipboard Protector started - CLIPBOARD PROTECTION ACTIVE');
@@ -72,7 +78,9 @@
   let privacyShield = null;
 
   try {
+    // eslint-disable-next-line no-undef
     if (typeof PrivacyShield !== 'undefined') {
+      // eslint-disable-next-line no-undef
       privacyShield = new PrivacyShield();
       privacyShield.start();
       console.log('[Armorly] Privacy Shield started - ANTI-FINGERPRINTING ACTIVE');
@@ -87,7 +95,9 @@
   let memoryProtector = null;
 
   try {
+    // eslint-disable-next-line no-undef
     if (typeof MemoryProtector !== 'undefined') {
+      // eslint-disable-next-line no-undef
       memoryProtector = new MemoryProtector();
       memoryProtector.start();
       console.log('[Armorly] Memory Protector started - MEMORY PROTECTION ACTIVE');
@@ -102,7 +112,9 @@
   let formInterceptor = null;
 
   try {
+    // eslint-disable-next-line no-undef
     if (typeof FormInterceptor !== 'undefined') {
+      // eslint-disable-next-line no-undef
       formInterceptor = new FormInterceptor();
       formInterceptor.start();
       console.log('[Armorly] Form Interceptor started - INPUT PROTECTION ACTIVE');
@@ -117,7 +129,9 @@
   let outputValidator = null;
 
   try {
+    // eslint-disable-next-line no-undef
     if (typeof OutputValidator !== 'undefined') {
+      // eslint-disable-next-line no-undef
       outputValidator = new OutputValidator();
       outputValidator.start();
       console.log('[Armorly] Output Validator started - OUTPUT VALIDATION ACTIVE');
@@ -132,7 +146,9 @@
   let actionAuthorizer = null;
 
   try {
+    // eslint-disable-next-line no-undef
     if (typeof ActionAuthorizer !== 'undefined') {
+      // eslint-disable-next-line no-undef
       actionAuthorizer = new ActionAuthorizer();
       actionAuthorizer.start();
       console.log('[Armorly] Action Authorizer started - ACTION AUTHORIZATION ACTIVE');
@@ -147,7 +163,9 @@
   let contextAnalyzer = null;
 
   try {
+    // eslint-disable-next-line no-undef
     if (typeof ContextAnalyzer !== 'undefined') {
+      // eslint-disable-next-line no-undef
       contextAnalyzer = new ContextAnalyzer();
       contextAnalyzer.start();
       console.log('[Armorly] Context Analyzer started - CONTEXT-AWARE DETECTION ACTIVE');
@@ -162,7 +180,9 @@
   let confidenceScorer = null;
 
   try {
+    // eslint-disable-next-line no-undef
     if (typeof ConfidenceScorer !== 'undefined') {
+      // eslint-disable-next-line no-undef
       confidenceScorer = new ConfidenceScorer();
       confidenceScorer.start();
       console.log('[Armorly] Confidence Scorer started - CONFIDENCE SCORING ACTIVE');
@@ -177,6 +197,7 @@
   let scanner = null;
 
   try {
+    // eslint-disable-next-line no-undef
     scanner = new DOMScanner();
   } catch (error) {
     // Silent failure - don't log to avoid noise
@@ -188,7 +209,9 @@
   let apiMonitor = null;
 
   try {
+    // eslint-disable-next-line no-undef
     if (typeof BrowserAPIMonitor !== 'undefined') {
+      // eslint-disable-next-line no-undef
       apiMonitor = new BrowserAPIMonitor();
       apiMonitor.startMonitoring();
     }
@@ -202,7 +225,9 @@
   let networkMonitor = null;
 
   try {
+    // eslint-disable-next-line no-undef
     if (typeof NetworkMonitor !== 'undefined') {
+      // eslint-disable-next-line no-undef
       networkMonitor = new NetworkMonitor();
       networkMonitor.startMonitoring();
     }
@@ -389,11 +414,12 @@
           sendResponse({ success: true });
           break;
 
-        case 'GET_AI_INDICATORS':
+        case 'GET_AI_INDICATORS': {
           // Return DOM indicators for AI agent detection
           const indicators = detectAIIndicators();
           sendResponse({ success: true, indicators });
           break;
+        }
 
         case 'GET_USER_AGENT':
           // Return user agent string

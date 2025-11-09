@@ -148,7 +148,7 @@ class ContentSanitizer {
     const commentsToRemove = [];
     let node;
 
-    while (node = walker.nextNode()) {
+    while ((node = walker.nextNode())) {
       const comment = node.textContent.trim();
       
       // Check if comment contains prompt injection patterns
@@ -300,7 +300,7 @@ class ContentSanitizer {
     let node;
     const nodesToSanitize = [];
 
-    while (node = walker.nextNode()) {
+    while ((node = walker.nextNode())) {
       const text = node.textContent?.trim() || '';
       
       if (text.length < 10) continue;

@@ -220,13 +220,14 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       });
       break;
 
-    case 'GET_AI_AGENT_STATUS':
+    case 'GET_AI_AGENT_STATUS': {
       const agent = aiAgentDetector.getActiveAgent(message.tabId);
       sendResponse({
         success: true,
         agent: agent
       });
       break;
+    }
 
     case 'SCAN_MEMORIES':
       // Scan memories from page content
@@ -238,10 +239,11 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       }
       break;
 
-    case 'GET_MEMORY_STATS':
+    case 'GET_MEMORY_STATS': {
       const memoryStats = memoryMonitor.getStatistics();
       sendResponse({ success: true, stats: memoryStats });
       break;
+    }
 
     case 'ENABLE_PROTECTION':
       protectionEnabled = true;
@@ -303,20 +305,23 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       });
       return true; // Async response
 
-    case 'GET_DOMAIN_LISTS':
+    case 'GET_DOMAIN_LISTS': {
       const lists = domainManager.getAllLists();
       sendResponse({ success: true, lists });
       break;
+    }
 
-    case 'GET_PROTECTION_LEVEL':
+    case 'GET_PROTECTION_LEVEL': {
       const level = domainManager.getProtectionLevel(message.url);
       sendResponse({ success: true, level });
       break;
+    }
 
-    case 'EXPORT_DOMAIN_LISTS':
+    case 'EXPORT_DOMAIN_LISTS': {
       const exported = domainManager.exportLists();
       sendResponse({ success: true, data: exported });
       break;
+    }
 
     case 'IMPORT_DOMAIN_LISTS':
       domainManager.importLists(message.data).then(result => {
@@ -330,20 +335,23 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       });
       return true; // Async response
 
-    case 'GET_THREAT_INTEL_STATS':
+    case 'GET_THREAT_INTEL_STATS': {
       const intelStats = threatIntelligence.getStatistics();
       sendResponse({ success: true, stats: intelStats });
       break;
+    }
 
-    case 'GET_PERFORMANCE_STATS':
+    case 'GET_PERFORMANCE_STATS': {
       const perfStats = performanceMonitor.getStats();
       sendResponse({ success: true, stats: perfStats });
       break;
+    }
 
-    case 'GET_PERFORMANCE_REPORT':
+    case 'GET_PERFORMANCE_REPORT': {
       const perfReport = performanceMonitor.getReport();
       sendResponse({ success: true, report: perfReport });
       break;
+    }
 
     case 'RESET_PERFORMANCE_STATS':
       performanceMonitor.reset();
@@ -632,6 +640,33 @@ async function showNotification(threat) {
   // Silent operation - no notifications
   // Threats are logged to console in development mode only
   return;
+}
+
+/**
+ * Log a threat to the threat log
+ */
+async function logThreat(threat) {
+  const threatEntry = {
+    ...threat,
+    timestamp: threat.timestamp || Date.now()
+  };
+
+  threatLog.unshift(threatEntry);
+
+  // Keep only last 1000 threats
+  if (threatLog.length > 1000) {
+    threatLog = threatLog.slice(0, 1000);
+  }
+
+  await saveThreatLog();
+
+  // Update statistics
+  statistics.totalThreatsBlocked++;
+  statistics.lastThreatDetected = threatEntry.timestamp;
+  if (threat.type) {
+    statistics.threatsByType[threat.type] = (statistics.threatsByType[threat.type] || 0) + 1;
+  }
+  await saveStatistics();
 }
 
 /**

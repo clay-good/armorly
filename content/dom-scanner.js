@@ -45,7 +45,9 @@ class DOMScanner {
     /**
      * Performance monitor
      */
+    // eslint-disable-next-line no-undef
     this.perfMonitor = typeof PerformanceMonitor !== 'undefined'
+      // eslint-disable-next-line no-undef
       ? new PerformanceMonitor()
       : null;
 
@@ -190,7 +192,7 @@ class DOMScanner {
     );
 
     let node;
-    while (node = walker.nextNode()) {
+    while ((node = walker.nextNode())) {
       // Skip if already scanned
       if (this.scannedElements.has(node)) continue;
       
@@ -329,7 +331,7 @@ class DOMScanner {
     );
 
     let node;
-    while (node = walker.nextNode()) {
+    while ((node = walker.nextNode())) {
       const comment = node.textContent.trim();
       
       if (comment.length < this.config.minTextLength) continue;

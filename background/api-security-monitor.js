@@ -47,7 +47,7 @@ export class APISecurityMonitor {
     this.apiKeyPatterns = [
       /sk-[A-Za-z0-9]{48}/g, // OpenAI
       /sk-ant-[A-Za-z0-9-]{95}/g, // Anthropic
-      /Bearer\s+[A-Za-z0-9\-._~+\/]+=*/gi, // Bearer tokens
+      /Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi, // Bearer tokens
       /api[_-]?key["\s:=]+[A-Za-z0-9]{20,}/gi, // Generic API keys
     ];
     

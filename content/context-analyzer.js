@@ -411,7 +411,7 @@ class ContextAnalyzer {
    */
   checkStructureAnomaly(text) {
     // Check for unusual structure (e.g., multiple special characters, brackets)
-    const specialCharCount = (text.match(/[\[\]<>{}|]/g) || []).length;
+    const specialCharCount = (text.match(/[[\]<>{}|]/g) || []).length;
     const lineBreaks = (text.match(/\n/g) || []).length;
 
     if (specialCharCount > 10 || lineBreaks > 5) {

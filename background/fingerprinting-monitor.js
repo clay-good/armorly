@@ -90,7 +90,7 @@ export class FingerprintingMonitor {
     const domain = this.extractDomain(url);
     
     // Track technique
-    if (this.techniques.hasOwnProperty(type)) {
+    if (Object.prototype.hasOwnProperty.call(this.techniques, type)) {
       this.techniques[type]++;
     }
     

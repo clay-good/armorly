@@ -183,7 +183,7 @@ class NetworkMonitor {
       Object.defineProperty(img, 'src', {
         set: function(value) {
           self.logRequest('image', value, {});
-          return originalSrcSetter.call(this, value);
+          originalSrcSetter.call(this, value);
         },
         get: function() {
           return this.getAttribute('src');

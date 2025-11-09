@@ -145,7 +145,7 @@ class OutputValidator {
     );
 
     let node;
-    while (node = walker.nextNode()) {
+    while ((node = walker.nextNode())) {
       this.validateTextNode(node);
     }
   }
@@ -387,14 +387,16 @@ class OutputValidator {
         return '****-****-****-' + value.slice(-4);
       case 'ssn':
         return '***-**-' + value.slice(-4);
-      case 'email':
+      case 'email': {
         const [local, domain] = value.split('@');
         return local[0] + '***@' + domain;
+      }
       case 'phone':
         return '***-***-' + value.slice(-4);
-      case 'ipAddress':
+      case 'ipAddress': {
         const parts = value.split('.');
         return parts[0] + '.***.***.***';
+      }
       default:
         return '[REDACTED]';
     }
