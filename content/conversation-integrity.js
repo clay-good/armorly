@@ -31,13 +31,15 @@ class ConversationIntegrityMonitor {
 
     /**
      * Configuration
+     * OPTIMIZED: Increased check interval for better performance
      */
     this.config = {
       enabled: true,
       hashAlgorithm: 'SHA-256',
-      checkInterval: 1000, // Check every 1 second
+      checkInterval: 2000, // Check every 2 seconds (reduced overhead)
       maxConversationAge: 86400000, // 24 hours in ms
-      logActions: true,
+      logActions: false, // Silent operation
+      maxMessagesPerConversation: 1000, // Prevent memory bloat
     };
 
     /**
@@ -66,6 +68,23 @@ class ConversationIntegrityMonitor {
      * Current conversation ID (platform-specific)
      */
     this.currentConversationId = null;
+
+    /**
+     * Performance optimizations
+     */
+    this.processedMessages = new WeakSet(); // Track processed message elements
+    this.messageObserver = null; // Dedicated observer for messages
+
+    /**
+     * Injection patterns (pre-compiled for performance)
+     */
+    this.injectionPatterns = [
+      /\[previous conversation\]/i,
+      /\[context from earlier\]/i,
+      /\[recalled memory\]/i,
+      /continue from:/i,
+      /resuming conversation from/i,
+    ];
   }
 
   /**
@@ -191,11 +210,20 @@ class ConversationIntegrityMonitor {
 
   /**
    * Process new message for integrity tracking
+   * OPTIMIZED: Uses WeakSet to avoid re-processing
    */
   processNewMessage(element) {
+    // Skip if already processed
+    if (this.processedMessages.has(element)) {
+      return;
+    }
+
     // Check if element is a message
     const isMessage = this.isMessageElement(element);
     if (!isMessage) return;
+
+    // Mark as processed
+    this.processedMessages.add(element);
 
     // Extract message data
     const messageData = this.extractMessageData(element);
@@ -317,6 +345,7 @@ class ConversationIntegrityMonitor {
 
   /**
    * Add message to conversation
+   * OPTIMIZED: Implements message limit to prevent memory bloat
    */
   addMessageToConversation(messageData) {
     if (!this.currentConversationId) return;
@@ -324,11 +353,24 @@ class ConversationIntegrityMonitor {
     const conversation = this.conversations.get(this.currentConversationId);
     if (!conversation) return;
 
+    // Enforce message limit (prevent memory bloat on long conversations)
+    if (conversation.messages.length >= this.config.maxMessagesPerConversation) {
+      // Remove oldest message
+      const removed = conversation.messages.shift();
+      this.messageHashes.delete(removed.id);
+
+      // Remove from sequence
+      const seqIndex = this.messageSequence.indexOf(removed.id);
+      if (seqIndex !== -1) {
+        this.messageSequence.splice(seqIndex, 1);
+      }
+    }
+
     conversation.messages.push(messageData);
     conversation.messageCount++;
     this.messageSequence.push(messageData.id);
 
-    // Update conversation hash
+    // Update conversation hash (throttled)
     this.updateConversationHash();
   }
 
@@ -428,22 +470,14 @@ class ConversationIntegrityMonitor {
 
   /**
    * Detect injected messages
+   * OPTIMIZED: Uses pre-compiled patterns
    */
   detectInjectedMessages(conversation) {
-    // Check for suspicious patterns in messages
+    // Check for suspicious patterns in messages using pre-compiled patterns
     for (const message of conversation.messages) {
-      // Check for fake "previous conversation" markers
-      const injectionPatterns = [
-        /\[previous conversation\]/i,
-        /\[context from earlier\]/i,
-        /\[recalled memory\]/i,
-        /continue from:/i,
-        /resuming conversation from/i,
-      ];
-
-      for (const pattern of injectionPatterns) {
+      for (const pattern of this.injectionPatterns) {
         if (pattern.test(message.text)) {
-          return false;
+          return false; // Early exit on first match
         }
       }
     }
@@ -469,6 +503,7 @@ class ConversationIntegrityMonitor {
 
   /**
    * Show tampering warning
+   * OPTIMIZED: Removed emoji for cleaner UI
    */
   showTamperingWarning(type) {
     const warning = document.createElement('div');
@@ -489,7 +524,7 @@ class ConversationIntegrityMonitor {
 
     const header = document.createElement('div');
     header.style.cssText = 'font-weight: bold; margin-bottom: 8px;';
-    header.textContent = '⚠️ Conversation Tampering Detected';
+    header.textContent = 'Conversation Tampering Detected';
     warning.appendChild(header);
 
     const desc = document.createElement('div');
@@ -499,6 +534,7 @@ class ConversationIntegrityMonitor {
 
     document.body.appendChild(warning);
 
+    // Auto-dismiss after 10 seconds
     setTimeout(() => {
       warning.style.transition = 'opacity 0.3s';
       warning.style.opacity = '0';
@@ -539,6 +575,7 @@ class ConversationIntegrityMonitor {
 
   /**
    * Clean up old conversations
+   * OPTIMIZED: Also cleans up message hashes to prevent memory leaks
    */
   cleanupOldConversations() {
     const now = Date.now();
@@ -546,8 +583,17 @@ class ConversationIntegrityMonitor {
     for (const [id, conversation] of this.conversations.entries()) {
       const age = now - conversation.startTime;
       if (age > this.config.maxConversationAge) {
+        // Clean up message hashes
+        for (const message of conversation.messages) {
+          this.messageHashes.delete(message.id);
+        }
+
+        // Remove conversation
         this.conversations.delete(id);
-        console.log(`[Armorly Conversation Integrity] Cleaned up old conversation: ${id}`);
+
+        if (this.config.logActions) {
+          console.log(`[Armorly Conversation Integrity] Cleaned up old conversation: ${id}`);
+        }
       }
     }
   }
