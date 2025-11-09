@@ -59,7 +59,8 @@ class DOMScanner {
       maxScanTime: 100,         // Maximum time per scan in ms
       minTextLength: 10,        // Minimum text length to consider
       opacityThreshold: 0.05,   // Below this is considered invisible
-      fontSizeThreshold: 2      // Below this is considered invisible (px)
+      fontSizeThreshold: 2,     // Below this is considered invisible (px)
+      blockThreats: true        // Enable automatic threat removal
     };
 
     /**
@@ -161,6 +162,12 @@ class DOMScanner {
       // Report threats if any found
       if (this.threats.length > 0) {
         this.reportThreats();
+
+        // Remove threats from DOM if blocking is enabled
+        const removed = this.removeThreats();
+        if (removed > 0) {
+          console.warn(`[Armorly] Removed ${removed} threats from DOM`);
+        }
       }
     } catch (error) {
       console.error('[Armorly] Error during initial DOM scan:', error);
@@ -543,6 +550,76 @@ class DOMScanner {
   containsBase64(text) {
     const base64Pattern = /[A-Za-z0-9+/]{20,}={0,2}/;
     return base64Pattern.test(text);
+  }
+
+  /**
+   * Remove detected threats from DOM
+   */
+  removeThreats() {
+    if (!this.config.blockThreats) {
+      return 0; // Blocking disabled, only detect
+    }
+
+    let removed = 0;
+
+    for (const threat of this.threats) {
+      if (!threat.element || !threat.element.parentNode) continue;
+
+      try {
+        switch (threat.type) {
+          case 'INVISIBLE_TEXT':
+            // Remove invisible elements with suspicious content
+            threat.element.remove();
+            removed++;
+            console.warn('[Armorly DOM Scanner] Removed invisible threat:', threat.text.substring(0, 50));
+            break;
+
+          case 'SUSPICIOUS_COMMENT':
+            // Remove HTML comments
+            if (threat.element && threat.element.nodeType === Node.COMMENT_NODE) {
+              threat.element.remove();
+              removed++;
+            }
+            break;
+
+          case 'SUSPICIOUS_IFRAME':
+          case 'SUSPICIOUS_SCRIPT':
+            // Remove dangerous elements
+            threat.element.remove();
+            removed++;
+            console.warn('[Armorly DOM Scanner] Removed dangerous element:', threat.type);
+            break;
+
+          case 'CANVAS_DATA_URL': {
+            // Clear canvas
+            const canvas = threat.element;
+            if (canvas && canvas.getContext) {
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                removed++;
+              }
+            }
+            break;
+          }
+
+          default:
+            // For other types, sanitize text content
+            if (threat.element.textContent) {
+              threat.element.textContent = '[BLOCKED BY ARMORLY]';
+              removed++;
+            }
+        }
+      } catch (error) {
+        console.error('[Armorly DOM Scanner] Error removing threat:', error);
+      }
+    }
+
+    if (removed > 0) {
+      console.warn(`[Armorly DOM Scanner] Removed ${removed} threats from DOM`);
+    }
+
+    return removed;
   }
 
   /**

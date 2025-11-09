@@ -48,6 +48,17 @@
       ],
       "run_at": "document_start",
       "all_frames": true
+    },
+    {
+      "matches": [
+        "*://chatgpt.com/settings/*",
+        "*://chat.openai.com/settings/*",
+        "*://perplexity.ai/settings*",
+        "*://claude.ai/settings*",
+        "*://anthropic.com/settings*"
+      ],
+      "js": ["content/ai-settings-scanner.js"],
+      "run_at": "document_idle"
     }
   ],
 

@@ -197,8 +197,8 @@ class RequestBlocker {
 
   /**
    * Handle request before it's sent
-   * NOTE: This is non-blocking in Manifest V3, so we log threats
-   * PERMISSIVE MODE: Only log, do NOT add dynamic blocking rules
+   * NOTE: Manifest V3 requires declarativeNetRequest for blocking
+   * ACTIVE BLOCKING MODE: Dynamically blocks malicious requests
    */
   handleBeforeRequest(details) {
     if (!this.config.enabled) return;
@@ -206,36 +206,36 @@ class RequestBlocker {
     const url = details.url;
     const method = details.method;
 
-    // Check for malicious URL patterns - LOG ONLY, no blocking
+    // Check for malicious URL patterns - BLOCK if detected
     if (this.isSuspiciousURL(url)) {
       this.logThreat(details, 'suspicious-url-pattern');
-      // REMOVED: this.addDynamicBlockRule(url);
+      this.addDynamicBlockRule(url);
     }
 
-    // Check for data exfiltration - DISABLED (too aggressive)
+    // Check for data exfiltration - BLOCK if enabled and detected
     if (this.config.blockDataExfiltration && this.isDataExfiltration(details)) {
       this.logThreat(details, 'data-exfiltration');
-      // REMOVED: this.addDynamicBlockRule(url);
+      this.addDynamicBlockRule(url);
     }
 
-    // Check request body for prompt injections - LOG ONLY
+    // Check request body for prompt injections - BLOCK if detected
     if (details.requestBody && this.hasInjectionInPayload(details.requestBody)) {
       this.logThreat(details, 'payload-injection');
-      // REMOVED: this.addDynamicBlockRule(url);
+      this.addDynamicBlockRule(url);
     }
   }
 
   /**
    * Handle request headers before sending
-   * PERMISSIVE MODE: Only log, do NOT block
+   * ACTIVE BLOCKING MODE: Blocks CSRF and suspicious headers
    */
   handleBeforeSendHeaders(details) {
     if (!this.config.enabled) return;
 
-    // Check for CSRF attacks - LOG ONLY (disabled by default)
+    // Check for CSRF attacks - BLOCK if enabled and detected
     if (this.config.blockCSRF && this.isCSRFAttempt(details)) {
       this.logThreat(details, 'csrf-attack');
-      // REMOVED: this.addDynamicBlockRule(details.url);
+      this.addDynamicBlockRule(details.url);
     }
 
     // Check headers for suspicious content - LOG ONLY
