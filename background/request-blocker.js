@@ -153,6 +153,85 @@ class RequestBlocker {
      * Dynamic rules counter
      */
     this.nextRuleId = 1000;
+
+    /**
+     * AI platforms that need protection
+     * Only apply network-level blocking when requests originate from these platforms
+     */
+    this.aiPlatforms = [
+      'chatgpt.com',
+      'chat.openai.com',
+      'openai.com',
+      'perplexity.ai',
+      'claude.ai',
+      'anthropic.com',
+      'poe.com',
+      'huggingface.co',
+      'replicate.com',
+      'bard.google.com',
+      'gemini.google.com',
+      'character.ai',
+      'jasper.ai',
+      'writesonic.com',
+      'copy.ai',
+      'midjourney.com',
+      'stability.ai',
+      'leonardo.ai',
+      'browseros.com'
+    ];
+  }
+
+  /**
+   * Check if request originates from an AI platform
+   */
+  isFromAIPlatform(details) {
+    // Check the initiator (where the request came from)
+    if (details.initiator) {
+      try {
+        const initiatorUrl = new URL(details.initiator);
+        const hostname = initiatorUrl.hostname;
+
+        for (const platform of this.aiPlatforms) {
+          if (hostname.includes(platform)) {
+            return true;
+          }
+        }
+      } catch (error) {
+        // Invalid URL, skip
+      }
+    }
+
+    // Check the document URL (the page that made the request)
+    if (details.documentUrl) {
+      try {
+        const docUrl = new URL(details.documentUrl);
+        const hostname = docUrl.hostname;
+
+        for (const platform of this.aiPlatforms) {
+          if (hostname.includes(platform)) {
+            return true;
+          }
+        }
+      } catch (error) {
+        // Invalid URL, skip
+      }
+    }
+
+    // Check if the request itself is to an AI platform (allow these always)
+    try {
+      const requestUrl = new URL(details.url);
+      const hostname = requestUrl.hostname;
+
+      for (const platform of this.aiPlatforms) {
+        if (hostname.includes(platform)) {
+          return true; // Allow requests TO AI platforms
+        }
+      }
+    } catch (error) {
+      // Invalid URL, skip
+    }
+
+    return false;
   }
 
   /**
@@ -176,35 +255,23 @@ class RequestBlocker {
 
   /**
    * Setup declarativeNetRequest blocking rules
+   *
+   * 🎯 IMPORTANT: We use DYNAMIC blocking only (via handleBeforeRequest)
+   * This allows us to check if requests originate from AI platforms first.
+   *
+   * Static rules would block globally (affecting all sites), which breaks non-AI sites.
+   * Instead, we detect threats dynamically and add blocking rules only when needed.
    */
   async setupBlockingRules() {
-    const rules = [];
+    // DISABLED: Static blocking rules are too aggressive
+    // They would block malicious domains globally, even on non-AI sites
+    // This breaks legitimate use cases (e.g., viewing pastebin on Reddit)
+    //
+    // Instead, we use dynamic blocking via handleBeforeRequest()
+    // which checks if the request originates from an AI platform first
 
-    // Block known malicious domains
-    this.maliciousDomains.forEach((domain, index) => {
-      rules.push({
-        id: index + 1,
-        priority: 1,
-        action: { type: 'block' },
-        condition: {
-          urlFilter: `*://*${domain}/*`,
-          resourceTypes: ['main_frame', 'sub_frame', 'script', 'xmlhttprequest', 'image']
-        }
-      });
-    });
-
-    // Add rules dynamically
-    try {
-      await chrome.declarativeNetRequest.updateDynamicRules({
-        removeRuleIds: rules.map(r => r.id),
-        addRules: rules
-      });
-
-      if (this.config.logActions) {
-        console.log(`[Armorly RequestBlocker] Added ${rules.length} blocking rules`);
-      }
-    } catch (error) {
-      console.error('[Armorly RequestBlocker] Error setting up rules:', error);
+    if (this.config.logActions) {
+      console.log('[Armorly RequestBlocker] Using dynamic blocking only (AI platform-aware)');
     }
   }
 
@@ -240,9 +307,17 @@ class RequestBlocker {
    * Handle request before it's sent
    * NOTE: Manifest V3 requires declarativeNetRequest for blocking
    * ACTIVE BLOCKING MODE: Dynamically blocks malicious requests
+   *
+   * 🎯 AI PLATFORM FILTERING: Only process requests from AI platforms
    */
   handleBeforeRequest(details) {
     if (!this.config.enabled) return;
+
+    // CRITICAL: Only process requests from AI platforms
+    // This prevents blocking legitimate requests on normal websites like Reddit
+    if (!this.isFromAIPlatform(details)) {
+      return; // Skip processing for non-AI platforms
+    }
 
     const url = details.url;
     const method = details.method;
@@ -269,9 +344,16 @@ class RequestBlocker {
   /**
    * Handle request headers before sending
    * ACTIVE BLOCKING MODE: Blocks CSRF and suspicious headers
+   *
+   * 🎯 AI PLATFORM FILTERING: Only process requests from AI platforms
    */
   handleBeforeSendHeaders(details) {
     if (!this.config.enabled) return;
+
+    // CRITICAL: Only process requests from AI platforms
+    if (!this.isFromAIPlatform(details)) {
+      return; // Skip processing for non-AI platforms
+    }
 
     // Check for CSRF attacks - BLOCK if enabled and detected
     if (this.config.blockCSRF && this.isCSRFAttempt(details)) {

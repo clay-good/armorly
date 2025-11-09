@@ -22,44 +22,16 @@
   window.__armorlyInjected = true;
 
   /**
-   * Detect if we're on an AI platform that needs protection
-   * @returns {boolean} True if on AI platform, false otherwise
+   * Check if protection components are available
+   * On non-AI platforms, only console-wrapper and content-script are loaded
+   * On AI platforms, all 14 protection components are loaded
    */
-  function isAIPlatform() {
-    const hostname = window.location.hostname;
+  const hasProtectionComponents = typeof ContentSanitizer !== 'undefined';
 
-    // AI platforms that need full protection
-    const aiPlatforms = [
-      'chatgpt.com',
-      'chat.openai.com',
-      'openai.com',
-      'perplexity.ai',
-      'claude.ai',
-      'anthropic.com',
-      'poe.com',
-      'huggingface.co',
-      'replicate.com',
-      'bard.google.com',
-      'gemini.google.com',
-      'character.ai',
-      'jasper.ai',
-      'writesonic.com',
-      'copy.ai',
-      'midjourney.com',
-      'stability.ai',
-      'leonardo.ai',
-      'browseros.com'
-    ];
-
-    return aiPlatforms.some(platform => hostname.includes(platform));
-  }
-
-  // Check if we should enable protection
-  const shouldProtect = isAIPlatform();
-
-  if (!shouldProtect) {
+  if (!hasProtectionComponents) {
+    // Not an AI platform - only console wrapper was loaded
     console.log('[Armorly] Not an AI platform - protection disabled');
-    return; // Exit early, don't initialize any components
+    return; // Exit early
   }
 
   console.log('[Armorly] AI platform detected - initializing protection');
@@ -247,6 +219,40 @@
   }
 
   /**
+   * Initialize AI Response Scanner (CRITICAL: RESPONSE MONITORING)
+   */
+  let responseScanner = null;
+
+  try {
+    // eslint-disable-next-line no-undef
+    if (typeof AIResponseScanner !== 'undefined') {
+      // eslint-disable-next-line no-undef
+      responseScanner = new AIResponseScanner();
+      responseScanner.start();
+      console.log('[Armorly] AI Response Scanner started - MONITORING AI RESPONSES FOR THREATS');
+    }
+  } catch (error) {
+    console.error('[Armorly] Failed to initialize AI Response Scanner:', error);
+  }
+
+  /**
+   * Initialize Conversation Integrity Monitor (CRITICAL: TAMPERING DETECTION)
+   */
+  let conversationIntegrity = null;
+
+  try {
+    // eslint-disable-next-line no-undef
+    if (typeof ConversationIntegrityMonitor !== 'undefined') {
+      // eslint-disable-next-line no-undef
+      conversationIntegrity = new ConversationIntegrityMonitor();
+      conversationIntegrity.start();
+      console.log('[Armorly] Conversation Integrity Monitor started - DETECTING CONVERSATION TAMPERING');
+    }
+  } catch (error) {
+    console.error('[Armorly] Failed to initialize Conversation Integrity Monitor:', error);
+  }
+
+  /**
    * Initialize Browser API Monitor
    */
   let apiMonitor = null;
@@ -403,6 +409,12 @@
     }
     if (confidenceScorer) {
       confidenceScorer.setEnabled(false);
+    }
+    if (responseScanner) {
+      responseScanner.stop();
+    }
+    if (conversationIntegrity) {
+      conversationIntegrity.stop();
     }
   }
 

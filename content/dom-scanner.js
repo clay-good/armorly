@@ -117,6 +117,28 @@ class DOMScanner {
       // Code playgrounds
       'codesandbox.io', 'codepen.io', 'jsfiddle.net', 'repl.it'
     ];
+
+    /**
+     * PERFORMANCE OPTIMIZATION: Pre-compile regex patterns
+     * Compiling once at initialization instead of on every check
+     */
+    this.compiledKeywordPatterns = this.suspiciousKeywords.map(keyword => ({
+      pattern: new RegExp(this.escapeRegex(keyword), 'i'),
+      keyword: keyword
+    }));
+
+    /**
+     * MEMORY OPTIMIZATION: Visibility cache to avoid repeated style calculations
+     * WeakMap allows garbage collection when elements are removed
+     */
+    this.visibilityCache = new WeakMap();
+  }
+
+  /**
+   * Escape special regex characters
+   */
+  escapeRegex(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   /**
@@ -220,29 +242,50 @@ class DOMScanner {
 
   /**
    * Detect invisible text elements on the page
+   * OPTIMIZED: Added NodeFilter callback for better performance
    */
   detectInvisibleText() {
+    // Performance optimization: Use filter callback to skip unnecessary nodes
+    const acceptNode = (node) => {
+      // Skip already scanned nodes
+      if (this.scannedElements.has(node)) {
+        return NodeFilter.FILTER_REJECT;
+      }
+
+      // Skip empty or short text
+      const text = node.textContent.trim();
+      if (text.length < this.config.minTextLength) {
+        return NodeFilter.FILTER_REJECT;
+      }
+
+      // Skip if parent element doesn't exist
+      if (!node.parentElement) {
+        return NodeFilter.FILTER_REJECT;
+      }
+
+      return NodeFilter.FILTER_ACCEPT;
+    };
+
     const walker = document.createTreeWalker(
       document.body,
       NodeFilter.SHOW_TEXT,
-      null,
+      { acceptNode },
       false
     );
 
     let node;
-    while ((node = walker.nextNode())) {
-      // Skip if already scanned
-      if (this.scannedElements.has(node)) continue;
-      
+    let scanned = 0;
+    const maxNodes = 1000; // Performance limit: max 1000 text nodes per scan
+
+    while ((node = walker.nextNode()) && scanned < maxNodes) {
+      scanned++;
+
       const text = node.textContent.trim();
-      if (text.length < this.config.minTextLength) continue;
-
       const element = node.parentElement;
-      if (!element) continue;
 
-      // Calculate visibility
+      // Calculate visibility (cached for performance)
       const visibility = this.calculateVisibility(element);
-      
+
       if (!visibility.isVisible) {
         // Check if text contains suspicious keywords
         const hasSuspiciousContent = this.containsSuspiciousKeywords(text);
@@ -265,11 +308,17 @@ class DOMScanner {
 
   /**
    * Calculate if an element is actually visible to users
-   * 
+   * OPTIMIZED: Uses WeakMap cache to avoid repeated style calculations
+   *
    * @param {HTMLElement} element - Element to check
    * @returns {Object} Visibility analysis
    */
   calculateVisibility(element) {
+    // Check cache first (huge performance boost)
+    if (this.visibilityCache.has(element)) {
+      return this.visibilityCache.get(element);
+    }
+
     const result = {
       isVisible: true,
       reason: []
@@ -336,6 +385,9 @@ class DOMScanner {
     } catch (error) {
       console.error('[Armorly] Error calculating visibility:', error);
     }
+
+    // Cache the result for future lookups (WeakMap allows garbage collection)
+    this.visibilityCache.set(element, result);
 
     return result;
   }
@@ -536,25 +588,35 @@ class DOMScanner {
 
   /**
    * Check if text contains suspicious keywords
+   * OPTIMIZED: Uses pre-compiled regex patterns for better performance
    *
    * @param {string} text - Text to check
    * @returns {boolean} True if suspicious keywords found
    */
   containsSuspiciousKeywords(text) {
-    const lowerText = text.toLowerCase();
-
     // Check if we're in a legitimate context (test page, documentation, etc.)
     if (this.isLegitimateContext()) {
       // Reduce sensitivity for legitimate contexts
       // Only flag if multiple suspicious keywords present
-      const matchCount = this.suspiciousKeywords.filter(keyword =>
-        lowerText.includes(keyword)
-      ).length;
-      return matchCount >= 3; // Require 3+ matches in legitimate contexts
+      let matchCount = 0;
+      for (const {pattern} of this.compiledKeywordPatterns) {
+        if (pattern.test(text)) {
+          matchCount++;
+          if (matchCount >= 3) {
+            return true; // Early exit optimization
+          }
+        }
+      }
+      return false;
     }
 
-    // Normal sensitivity for regular pages
-    return this.suspiciousKeywords.some(keyword => lowerText.includes(keyword));
+    // Normal sensitivity for regular pages - use pre-compiled patterns
+    for (const {pattern} of this.compiledKeywordPatterns) {
+      if (pattern.test(text)) {
+        return true; // Early exit optimization
+      }
+    }
+    return false;
   }
 
   /**

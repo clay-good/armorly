@@ -30,6 +30,34 @@
       "matches": ["<all_urls>"],
       "js": [
         "lib/console-wrapper.js",
+        "content/content-script.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "*://chatgpt.com/*",
+        "*://chat.openai.com/*",
+        "*://openai.com/*",
+        "*://perplexity.ai/*",
+        "*://claude.ai/*",
+        "*://anthropic.com/*",
+        "*://poe.com/*",
+        "*://huggingface.co/*",
+        "*://replicate.com/*",
+        "*://bard.google.com/*",
+        "*://gemini.google.com/*",
+        "*://character.ai/*",
+        "*://jasper.ai/*",
+        "*://writesonic.com/*",
+        "*://copy.ai/*",
+        "*://midjourney.com/*",
+        "*://stability.ai/*",
+        "*://leonardo.ai/*",
+        "*://browseros.com/*"
+      ],
+      "js": [
         "lib/performance-monitor-global.js",
         "lib/pattern-library-global.js",
         "lib/universal-prompt-patterns-global.js",
@@ -44,10 +72,11 @@
         "content/context-analyzer.js",
         "content/confidence-scorer.js",
         "content/dom-scanner.js",
-        "content/content-script.js"
+        "content/ai-response-scanner.js",
+        "content/conversation-integrity.js"
       ],
       "run_at": "document_start",
-      "all_frames": true
+      "all_frames": false
     },
     {
       "matches": [
