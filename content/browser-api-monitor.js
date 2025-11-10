@@ -66,6 +66,11 @@ class BrowserAPIMonitor {
      * Monitoring enabled
      */
     this.enabled = true;
+
+    /**
+     * Interval ID for cleanup
+     */
+    this.rateLimitResetInterval = null;
   }
 
   /**
@@ -82,9 +87,22 @@ class BrowserAPIMonitor {
     this.monitorMediaDevices();
 
     // Reset rate limits every minute
-    setInterval(() => {
+    this.rateLimitResetInterval = setInterval(() => {
       this.rateLimits.clear();
     }, 60000);
+  }
+
+  /**
+   * Stop monitoring
+   */
+  stopMonitoring() {
+    this.enabled = false;
+
+    // Clear interval
+    if (this.rateLimitResetInterval) {
+      clearInterval(this.rateLimitResetInterval);
+      this.rateLimitResetInterval = null;
+    }
   }
 
   /**

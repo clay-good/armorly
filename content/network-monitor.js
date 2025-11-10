@@ -71,6 +71,11 @@ class NetworkMonitor {
      * Monitoring enabled
      */
     this.enabled = true;
+
+    /**
+     * Interval ID for cleanup
+     */
+    this.rateLimitResetInterval = null;
   }
 
   /**
@@ -86,9 +91,22 @@ class NetworkMonitor {
     this.monitorImageRequests();
 
     // Reset rate limits every minute
-    setInterval(() => {
+    this.rateLimitResetInterval = setInterval(() => {
       this.rateLimits.clear();
     }, 60000);
+  }
+
+  /**
+   * Stop monitoring
+   */
+  stopMonitoring() {
+    this.enabled = false;
+
+    // Clear interval
+    if (this.rateLimitResetInterval) {
+      clearInterval(this.rateLimitResetInterval);
+      this.rateLimitResetInterval = null;
+    }
   }
 
   /**

@@ -446,6 +446,12 @@
     if (apiValidator) {
       apiValidator.stop();
     }
+    if (apiMonitor) {
+      apiMonitor.stopMonitoring();
+    }
+    if (networkMonitor) {
+      networkMonitor.stopMonitoring();
+    }
   }
 
   /**
