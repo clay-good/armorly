@@ -29,8 +29,7 @@
   const hasProtectionComponents = typeof ContentSanitizer !== 'undefined';
 
   if (!hasProtectionComponents) {
-    // Not an AI platform - only console wrapper was loaded
-    console.log('[Armorly] Not an AI platform - protection disabled');
+    // Not an AI platform - only console wrapper was loaded (silent operation)
     return; // Exit early
   }
 
@@ -64,7 +63,6 @@
       // eslint-disable-next-line no-undef
       mutationBlocker = new MutationBlocker();
       mutationBlocker.start();
-      console.log('[Armorly] Mutation Blocker started - REAL-TIME PROTECTION ACTIVE');
     }
   } catch (error) {
     console.error('[Armorly] Failed to initialize Mutation Blocker:', error);
@@ -81,7 +79,6 @@
       // eslint-disable-next-line no-undef
       clipboardProtector = new ClipboardProtector();
       clipboardProtector.start();
-      console.log('[Armorly] Clipboard Protector started - CLIPBOARD PROTECTION ACTIVE');
     }
   } catch (error) {
     console.error('[Armorly] Failed to initialize Clipboard Protector:', error);
@@ -98,7 +95,6 @@
       // eslint-disable-next-line no-undef
       privacyShield = new PrivacyShield();
       privacyShield.start();
-      console.log('[Armorly] Privacy Shield started - ANTI-FINGERPRINTING ACTIVE');
     }
   } catch (error) {
     console.error('[Armorly] Failed to initialize Privacy Shield:', error);
@@ -115,7 +111,6 @@
       // eslint-disable-next-line no-undef
       memoryProtector = new MemoryProtector();
       memoryProtector.start();
-      console.log('[Armorly] Memory Protector started - MEMORY PROTECTION ACTIVE');
     }
   } catch (error) {
     console.error('[Armorly] Failed to initialize Memory Protector:', error);
@@ -132,7 +127,6 @@
       // eslint-disable-next-line no-undef
       formInterceptor = new FormInterceptor();
       formInterceptor.start();
-      console.log('[Armorly] Form Interceptor started - INPUT PROTECTION ACTIVE');
     }
   } catch (error) {
     console.error('[Armorly] Failed to initialize Form Interceptor:', error);
@@ -149,7 +143,6 @@
       // eslint-disable-next-line no-undef
       outputValidator = new OutputValidator();
       outputValidator.start();
-      console.log('[Armorly] Output Validator started - OUTPUT VALIDATION ACTIVE');
     }
   } catch (error) {
     console.error('[Armorly] Failed to initialize Output Validator:', error);
@@ -166,7 +159,6 @@
       // eslint-disable-next-line no-undef
       actionAuthorizer = new ActionAuthorizer();
       actionAuthorizer.start();
-      console.log('[Armorly] Action Authorizer started - ACTION AUTHORIZATION ACTIVE');
     }
   } catch (error) {
     console.error('[Armorly] Failed to initialize Action Authorizer:', error);
@@ -183,7 +175,6 @@
       // eslint-disable-next-line no-undef
       contextAnalyzer = new ContextAnalyzer();
       contextAnalyzer.start();
-      console.log('[Armorly] Context Analyzer started - CONTEXT-AWARE DETECTION ACTIVE');
     }
   } catch (error) {
     console.error('[Armorly] Failed to initialize Context Analyzer:', error);
@@ -200,7 +191,6 @@
       // eslint-disable-next-line no-undef
       confidenceScorer = new ConfidenceScorer();
       confidenceScorer.start();
-      console.log('[Armorly] Confidence Scorer started - CONFIDENCE SCORING ACTIVE');
     }
   } catch (error) {
     console.error('[Armorly] Failed to initialize Confidence Scorer:', error);
@@ -246,7 +236,6 @@
       // eslint-disable-next-line no-undef
       conversationIntegrity = new ConversationIntegrityMonitor();
       conversationIntegrity.start();
-      console.log('[Armorly] Conversation Integrity Monitor started - DETECTING CONVERSATION TAMPERING');
     }
   } catch (error) {
     console.error('[Armorly] Failed to initialize Conversation Integrity Monitor:', error);
@@ -266,8 +255,6 @@
 
       // Make available globally for AI Response Scanner integration
       window.armorlyMultiTurnDetector = multiTurnDetector;
-
-      console.log('[Armorly] Multi-turn Attack Detector started - DETECTING ATTACK CHAINS');
     }
   } catch (error) {
     console.error('[Armorly] Failed to initialize Multi-turn Attack Detector:', error);
@@ -284,7 +271,6 @@
       // eslint-disable-next-line no-undef
       apiValidator = new APIResponseValidator();
       apiValidator.start();
-      console.log('[Armorly] API Response Validator started - VALIDATING API RESPONSES');
     }
   } catch (error) {
     console.error('[Armorly] Failed to initialize API Response Validator:', error);

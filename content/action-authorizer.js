@@ -114,6 +114,12 @@ class ActionAuthorizer {
      * Pending confirmations
      */
     this.pendingConfirmations = new Map();
+
+    /**
+     * Event handler references for cleanup
+     */
+    this.formSubmitHandler = null;
+    this.buttonClickHandler = null;
   }
 
   /**
@@ -140,6 +146,22 @@ class ActionAuthorizer {
     } catch (error) {
       console.error('[Armorly ActionAuthorizer] Error starting:', error);
     }
+  }
+
+  /**
+   * Stop action authorization
+   */
+  stop() {
+    // Remove event listeners
+    if (this.formSubmitHandler) {
+      document.removeEventListener('submit', this.formSubmitHandler, true);
+      this.formSubmitHandler = null;
+    }
+    if (this.buttonClickHandler) {
+      document.removeEventListener('click', this.buttonClickHandler, true);
+      this.buttonClickHandler = null;
+    }
+    console.log('[Armorly ActionAuthorizer] Stopped');
   }
 
   /**
@@ -221,7 +243,7 @@ class ActionAuthorizer {
    * Monitor form submissions
    */
   monitorForms() {
-    document.addEventListener('submit', async (event) => {
+    this.formSubmitHandler = async (event) => {
       const form = event.target;
 
       // Analyze the form action
@@ -244,7 +266,9 @@ class ActionAuthorizer {
 
       // Log the action
       this.logAction(action);
-    }, true);
+    };
+
+    document.addEventListener('submit', this.formSubmitHandler, true);
   }
 
   /**

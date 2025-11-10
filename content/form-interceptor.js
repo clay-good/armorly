@@ -51,6 +51,13 @@ class FormInterceptor {
      * Blocked submissions
      */
     this.blockedSubmissions = [];
+
+    /**
+     * Event handler references for cleanup
+     */
+    this.submitHandler = null;
+    this.inputHandler = null;
+    this.formObserver = null;
   }
 
   /**
@@ -106,7 +113,7 @@ class FormInterceptor {
    * Observe new forms being added
    */
   observeNewForms() {
-    const observer = new MutationObserver((mutations) => {
+    this.formObserver = new MutationObserver((mutations) => {
       mutations.forEach(mutation => {
         mutation.addedNodes.forEach(node => {
           if (node.nodeType === Node.ELEMENT_NODE) {
@@ -148,7 +155,7 @@ class FormInterceptor {
       });
     });
 
-    observer.observe(document.documentElement, {
+    this.formObserver.observe(document.documentElement, {
       childList: true,
       subtree: true,
     });
@@ -193,26 +200,30 @@ class FormInterceptor {
    * Intercept all form submissions globally
    */
   interceptSubmissions() {
-    // Capture phase to intercept before other handlers
-    document.addEventListener('submit', (event) => {
+    this.submitHandler = (event) => {
       const form = event.target;
       if (form.tagName === 'FORM') {
         this.handleFormSubmit(event, form);
       }
-    }, true);
+    };
+
+    // Capture phase to intercept before other handlers
+    document.addEventListener('submit', this.submitHandler, true);
   }
 
   /**
    * Monitor input changes globally
    */
   monitorInputChanges() {
-    // Monitor all input events
-    document.addEventListener('input', (event) => {
+    this.inputHandler = (event) => {
       const element = event.target;
       if (element.tagName === 'TEXTAREA' || element.tagName === 'INPUT') {
         this.handleInputChange(event, element);
       }
-    }, true);
+    };
+
+    // Monitor all input events
+    document.addEventListener('input', this.inputHandler, true);
   }
 
   /**
@@ -462,6 +473,24 @@ class FormInterceptor {
    */
   stop() {
     this.config.enabled = false;
+
+    // Remove global event listeners
+    if (this.submitHandler) {
+      document.removeEventListener('submit', this.submitHandler, true);
+      this.submitHandler = null;
+    }
+    if (this.inputHandler) {
+      document.removeEventListener('input', this.inputHandler, true);
+      this.inputHandler = null;
+    }
+
+    // Disconnect MutationObserver
+    if (this.formObserver) {
+      this.formObserver.disconnect();
+      this.formObserver = null;
+    }
+
+    console.log('[Armorly FormInterceptor] Stopped');
   }
 
   /**

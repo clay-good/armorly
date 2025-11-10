@@ -55,6 +55,13 @@ class ClipboardProtector {
      * Blocked clipboard operations
      */
     this.blockedOperations = [];
+
+    /**
+     * Event handler references for cleanup
+     */
+    this.copyHandler = (e) => this.handleCopy(e);
+    this.pasteHandler = (e) => this.handlePaste(e);
+    this.cutHandler = (e) => this.handleCut(e);
   }
 
   /**
@@ -65,13 +72,13 @@ class ClipboardProtector {
 
     try {
       // Monitor copy events
-      document.addEventListener('copy', (e) => this.handleCopy(e), true);
+      document.addEventListener('copy', this.copyHandler, true);
 
       // Monitor paste events
-      document.addEventListener('paste', (e) => this.handlePaste(e), true);
+      document.addEventListener('paste', this.pasteHandler, true);
 
       // Monitor cut events
-      document.addEventListener('cut', (e) => this.handleCut(e), true);
+      document.addEventListener('cut', this.cutHandler, true);
 
       // Intercept Clipboard API
       this.interceptClipboardAPI();
@@ -86,6 +93,11 @@ class ClipboardProtector {
    * Stop clipboard protection
    */
   stop() {
+    // Remove event listeners
+    document.removeEventListener('copy', this.copyHandler, true);
+    document.removeEventListener('paste', this.pasteHandler, true);
+    document.removeEventListener('cut', this.cutHandler, true);
+
     // Restore original clipboard API
     this.restoreClipboardAPI();
     console.log('[Armorly ClipboardProtector] Stopped');
