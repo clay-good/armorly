@@ -479,7 +479,7 @@ class ActionAuthorizer {
       // Header
       const header = document.createElement('h2');
       header.style.cssText = 'margin: 0 0 15px 0; color: #ff4444;';
-      header.textContent = '🛡️ Armorly Authorization Required';
+      header.textContent = 'Armorly Authorization Required';
 
       // Intro text
       const intro = document.createElement('p');

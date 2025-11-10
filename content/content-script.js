@@ -253,6 +253,44 @@
   }
 
   /**
+   * Initialize Multi-turn Attack Detector (CRITICAL: ATTACK CHAIN DETECTION)
+   */
+  let multiTurnDetector = null;
+
+  try {
+    // eslint-disable-next-line no-undef
+    if (typeof MultiTurnAttackDetector !== 'undefined') {
+      // eslint-disable-next-line no-undef
+      multiTurnDetector = new MultiTurnAttackDetector();
+      multiTurnDetector.start();
+
+      // Make available globally for AI Response Scanner integration
+      window.armorlyMultiTurnDetector = multiTurnDetector;
+
+      console.log('[Armorly] Multi-turn Attack Detector started - DETECTING ATTACK CHAINS');
+    }
+  } catch (error) {
+    console.error('[Armorly] Failed to initialize Multi-turn Attack Detector:', error);
+  }
+
+  /**
+   * Initialize API Response Validator (CRITICAL: MITM DETECTION)
+   */
+  let apiValidator = null;
+
+  try {
+    // eslint-disable-next-line no-undef
+    if (typeof APIResponseValidator !== 'undefined') {
+      // eslint-disable-next-line no-undef
+      apiValidator = new APIResponseValidator();
+      apiValidator.start();
+      console.log('[Armorly] API Response Validator started - VALIDATING API RESPONSES');
+    }
+  } catch (error) {
+    console.error('[Armorly] Failed to initialize API Response Validator:', error);
+  }
+
+  /**
    * Initialize Browser API Monitor
    */
   let apiMonitor = null;
@@ -415,6 +453,12 @@
     }
     if (conversationIntegrity) {
       conversationIntegrity.stop();
+    }
+    if (multiTurnDetector) {
+      multiTurnDetector.stop();
+    }
+    if (apiValidator) {
+      apiValidator.stop();
     }
   }
 

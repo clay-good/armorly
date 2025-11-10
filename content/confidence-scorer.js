@@ -431,7 +431,7 @@ class ConfidenceScorer {
 
     // SECURITY: Use safe DOM methods instead of innerHTML to prevent XSS
     const strong = document.createElement('strong');
-    strong.textContent = '⚠️ Armorly Confidence Warning';
+    strong.textContent = 'Armorly Confidence Warning';
     warning.appendChild(strong);
 
     warning.appendChild(document.createElement('br'));

@@ -73,7 +73,9 @@
         "content/confidence-scorer.js",
         "content/dom-scanner.js",
         "content/ai-response-scanner.js",
-        "content/conversation-integrity.js"
+        "content/conversation-integrity.js",
+        "content/multi-turn-attack-detector.js",
+        "content/api-response-validator.js"
       ],
       "run_at": "document_start",
       "all_frames": false

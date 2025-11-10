@@ -378,14 +378,66 @@ export class BrowserOSAPIInterceptor {
       // Wrap callback to sanitize response
       const wrappedCallback = function(tree) {
         if (tree && tree.nodes) {
-          // TODO: Sanitize tree to remove hidden prompt injections
-          // This requires analyzing node visibility and filtering suspicious content
+          // Sanitize tree to remove hidden prompt injections
+          tree.nodes = self.sanitizeAccessibilityTree(tree.nodes);
         }
         if (callback) callback(tree);
       };
 
       return original.call(this, wrappedCallback);
     };
+  }
+
+  /**
+   * Sanitize accessibility tree nodes
+   * Removes nodes with suspicious hidden content or prompt injection patterns
+   */
+  sanitizeAccessibilityTree(nodes) {
+    if (!Array.isArray(nodes)) return nodes;
+
+    const suspiciousPatterns = [
+      /ignore\s+(?:all\s+)?previous\s+instructions/i,
+      /disregard\s+(?:all\s+)?(?:previous|prior)/i,
+      /system\s*:\s*you\s+are/i,
+      /you\s+are\s+now\s+(?:a|an|in)/i,
+    ];
+
+    return nodes.filter(node => {
+      // Check node text content
+      const text = node.name || node.value || '';
+
+      // Filter out nodes with suspicious patterns
+      for (const pattern of suspiciousPatterns) {
+        if (pattern.test(text)) {
+          console.warn('[Armorly BrowserOS] Blocked suspicious accessibility node:', text.substring(0, 100));
+          return false; // Remove this node
+        }
+      }
+
+      // Check for hidden content (opacity, visibility)
+      if (node.properties) {
+        const isHidden = node.properties.invisible ||
+                        node.properties.opacity === 0 ||
+                        node.properties.visibility === 'hidden';
+
+        if (isHidden && text.length > 20) {
+          // Hidden node with substantial text - check for suspicious content
+          for (const pattern of suspiciousPatterns) {
+            if (pattern.test(text)) {
+              console.warn('[Armorly BrowserOS] Blocked hidden suspicious node:', text.substring(0, 100));
+              return false;
+            }
+          }
+        }
+      }
+
+      // Recursively sanitize children
+      if (node.children && Array.isArray(node.children)) {
+        node.children = this.sanitizeAccessibilityTree(node.children);
+      }
+
+      return true; // Keep this node
+    });
   }
 
   /**

@@ -337,6 +337,11 @@ class AIResponseScanner {
       }
     }
 
+    // Track message for multi-turn attack detection (if available)
+    if (typeof window !== 'undefined' && window.armorlyMultiTurnDetector) {
+      window.armorlyMultiTurnDetector.trackMessage(text, 'assistant');
+    }
+
     // If threats found, block the response
     if (threats.length > 0) {
       this.blockResponse(element, threats);
@@ -473,7 +478,10 @@ class AIResponseScanner {
     if (element.parentNode) {
       element.parentNode.replaceChild(warning, element);
     } else {
-      element.innerHTML = '';
+      // Clear element safely without innerHTML
+      while (element.firstChild) {
+        element.removeChild(element.firstChild);
+      }
       element.appendChild(warning);
     }
 

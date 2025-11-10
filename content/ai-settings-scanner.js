@@ -238,7 +238,7 @@
 
           // Create header
           const strong = document.createElement('strong');
-          strong.textContent = '🛡️ Armorly: Malicious Memory Blocked';
+          strong.textContent = 'Armorly: Malicious Memory Blocked';
           warning.appendChild(strong);
 
           warning.appendChild(document.createElement('br'));
@@ -369,7 +369,7 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       max-width: 300px;
     `;
-    notification.textContent = `🛡️ ${message}`;
+    notification.textContent = `Armorly: ${message}`;
 
     document.body.appendChild(notification);
 

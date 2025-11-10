@@ -10,6 +10,7 @@ Armorly is a browser security extension designed to protect users of AI-powered 
 - **Pattern Detection**: 25+ malicious patterns including instruction override, code injection, and data exfiltration
 - **Function Call Interception**: Monitors 30+ suspicious functions (deleteFile, exec, eval, fetch external URLs)
 - **Network-Level Scanning**: Intercepts and validates fetch() responses for malicious content
+- **Integrated Tracking**: Automatically feeds AI responses to multi-turn attack detection
 
 ### Conversation Integrity
 - **SHA-256 Hashing**: Cryptographic verification of message content using Web Crypto API
@@ -17,6 +18,24 @@ Armorly is a browser security extension designed to protect users of AI-powered 
 - **Sequence Verification**: Tracks message order to detect conversation manipulation
 - **Context Poisoning Prevention**: Detects fake "previous conversation" markers and injected context
 - **Visual Warnings**: Alerts users when conversation tampering is detected
+
+### Multi-Turn Attack Detection
+- **Attack Chain Recognition**: Detects sophisticated attacks spread across multiple messages
+- **5 Attack Categories**: Privilege escalation, reconnaissance, trust exploitation, fragmented commands, role shifting
+- **Behavioral Analysis**: Tracks suspicion scores across 5-message sliding window
+- **Pattern Matching**: 60% threshold triggers alerts for attack chains
+- **Integrated Tracking**: Monitors both user inputs (via form interceptor) and AI responses
+- **Visual Warnings**: Shows confidence scores and detected attack categories
+
+### API Response Validation
+- **HTTPS Enforcement**: Blocks non-HTTPS AI API connections (MITM prevention)
+- **Content-Type Validation**: Verifies expected response formats for each AI platform
+- **Response Size Limits**: 10MB maximum to prevent attack payloads
+- **Header Validation**: Detects suspicious headers indicating MITM attacks
+- **Pattern Matching**: 10+ suspicious content indicators
+- **SHA-256 Integrity**: Tracks response hashes for tampering detection
+- **Network Interception**: Full fetch() and XMLHttpRequest coverage
+- **Active Blocking**: Returns 403 for tampered responses
 
 ### Content Protection
 - **DOM Scanning**: Real-time analysis of page content for prompt injection patterns

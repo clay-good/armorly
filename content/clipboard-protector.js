@@ -314,7 +314,7 @@ class ClipboardProtector {
 
     // Notifications disabled for silent background operation
     /* const notification = document.createElement('div');
-    notification.textContent = `🛡️ ${message}`;
+    notification.textContent = `Armorly: ${message}`;
     notification.style.cssText = `
       position: fixed;
       top: 20px;

@@ -225,6 +225,8 @@ class FormInterceptor {
     let hasThreats = false;
     const threats = [];
 
+    let formText = '';
+
     textInputs.forEach(input => {
       const value = input.value;
       const inputThreats = this.analyzeText(value);
@@ -236,6 +238,11 @@ class FormInterceptor {
           threats: inputThreats,
           value: value,
         });
+      }
+
+      // Collect form text for multi-turn tracking
+      if (value && value.length > 5) {
+        formText += value + ' ';
       }
     });
 
@@ -272,6 +279,11 @@ class FormInterceptor {
           console.log('[Armorly FormInterceptor] Sanitized form inputs before submission');
         }
       }
+    }
+
+    // Track user input for multi-turn detection (if available and no threats)
+    if (!hasThreats && formText.trim().length > 5 && typeof window !== 'undefined' && window.armorlyMultiTurnDetector) {
+      window.armorlyMultiTurnDetector.trackMessage(formText.trim(), 'user');
     }
   }
 
