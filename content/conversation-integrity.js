@@ -119,6 +119,11 @@ class ConversationIntegrityMonitor {
       this.integrityCheckInterval = null;
     }
 
+    if (this.messageObserver) {
+      this.messageObserver.disconnect();
+      this.messageObserver = null;
+    }
+
     console.log('[Armorly Conversation Integrity] Stopped');
   }
 
@@ -192,7 +197,7 @@ class ConversationIntegrityMonitor {
    * Setup MutationObserver to detect new messages
    */
   setupMessageObserver() {
-    const observer = new MutationObserver((mutations) => {
+    this.messageObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
           if (node.nodeType === Node.ELEMENT_NODE) {
@@ -202,7 +207,7 @@ class ConversationIntegrityMonitor {
       }
     });
 
-    observer.observe(document.body, {
+    this.messageObserver.observe(document.body, {
       childList: true,
       subtree: true,
     });

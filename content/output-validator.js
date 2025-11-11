@@ -77,6 +77,11 @@ class OutputValidator {
      * Validated elements
      */
     this.validatedElements = new WeakSet();
+
+    /**
+     * MutationObserver for cleanup
+     */
+    this.observer = null;
   }
 
   /**
@@ -102,7 +107,7 @@ class OutputValidator {
    * Observe new outputs being added
    */
   observeOutputs() {
-    const observer = new MutationObserver((mutations) => {
+    this.observer = new MutationObserver((mutations) => {
       mutations.forEach(mutation => {
         mutation.addedNodes.forEach(node => {
           if (node.nodeType === Node.ELEMENT_NODE) {
@@ -119,7 +124,7 @@ class OutputValidator {
       });
     });
 
-    observer.observe(document.documentElement, {
+    this.observer.observe(document.documentElement, {
       childList: true,
       subtree: true,
       characterData: true,
@@ -414,6 +419,13 @@ class OutputValidator {
    */
   setEnabled(enabled) {
     this.config.enabled = enabled;
+
+    if (!enabled && this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
+    } else if (enabled && !this.observer) {
+      this.start();
+    }
   }
 
   /**

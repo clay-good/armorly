@@ -133,6 +133,11 @@ class ConfidenceScorer {
       codeBlocks: /```[\s\S]*?```/g,
       structuredData: /\{[\s\S]*?\}|\[[\s\S]*?\]/g,
     };
+
+    /**
+     * MutationObserver for cleanup
+     */
+    this.observer = null;
   }
 
   /**
@@ -165,7 +170,7 @@ class ConfidenceScorer {
     }
 
     // Use MutationObserver to detect new content
-    const observer = new MutationObserver((mutations) => {
+    this.observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         if (mutation.addedNodes.length > 0) {
           mutation.addedNodes.forEach(node => {
@@ -177,7 +182,7 @@ class ConfidenceScorer {
       }
     });
 
-    observer.observe(document.body, {
+    this.observer.observe(document.body, {
       childList: true,
       subtree: true,
     });
@@ -467,6 +472,13 @@ class ConfidenceScorer {
    */
   setEnabled(enabled) {
     this.config.enabled = enabled;
+
+    if (!enabled && this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
+    } else if (enabled && !this.observer) {
+      this.start();
+    }
   }
 
   /**
