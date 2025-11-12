@@ -29,21 +29,15 @@ class ConfidenceScorer {
     };
 
     /**
-     * AI Platform Detection
-     * Auto-enable confidence scoring only on AI platforms
-     */
-    const isAIPlatform = this.isAIPlatform();
-
-    /**
      * Configuration
      *
-     * UPDATED: Auto-enable on AI platforms only.
-     * Designed for ChatGPT, Claude, Perplexity, etc.
+     * NOTE: This component is only loaded on AI platforms (via manifest.json).
+     * No runtime platform detection needed - always enabled.
      */
     this.config = {
-      enabled: isAIPlatform, // Auto-detect AI platforms
-      showVisualIndicators: isAIPlatform,
-      warnOnLowConfidence: isAIPlatform,
+      enabled: true,
+      showVisualIndicators: true,
+      warnOnLowConfidence: true,
       confidenceThreshold: 0.6,
       logActions: false,
     };
@@ -481,33 +475,6 @@ class ConfidenceScorer {
     }
   }
 
-  /**
-   * Detect if we're on an AI platform
-   * Returns true for ChatGPT, Claude, Perplexity, Gemini, etc.
-   */
-  isAIPlatform() {
-    const hostname = window.location.hostname.toLowerCase();
-
-    const aiPlatforms = [
-      'chatgpt.com',
-      'chat.openai.com',
-      'openai.com',
-      'claude.ai',
-      'anthropic.com',
-      'perplexity.ai',
-      'gemini.google.com',
-      'bard.google.com',
-      'bing.com/chat',
-      'you.com',
-      'poe.com',
-      'character.ai',
-      'huggingface.co/chat',
-      'phind.com',
-      'codeium.com',
-    ];
-
-    return aiPlatforms.some(platform => hostname.includes(platform));
-  }
 }
 
 // Export for use in content script
