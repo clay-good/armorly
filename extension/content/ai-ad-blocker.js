@@ -10,10 +10,57 @@
  * 3. Affiliate link cleaning (strip tracking parameters)
  *
  * Silent operation - no UI, no logging, just blocking.
+ *
+ * NOTE: We do NOT intercept appendChild/insertBefore/document.write
+ * because this breaks many legitimate sites. Instead we rely on:
+ * - SDK global name interception (prevents SDK from initializing)
+ * - DOM removal (removes ad elements after they appear)
  */
 
 (function() {
   'use strict';
+
+  // =========================================================================
+  // DOMAIN ALLOWLIST - Skip sites that are NOT AI chatbots
+  // =========================================================================
+
+  const SKIP_DOMAINS = [
+    'mail.google.com',
+    'calendar.google.com',
+    'docs.google.com',
+    'sheets.google.com',
+    'slides.google.com',
+    'drive.google.com',
+    'meet.google.com',
+    'chat.google.com',
+    'contacts.google.com',
+    'keep.google.com',
+    'tasks.google.com',
+    'photos.google.com',
+    'youtube.com',
+    'www.youtube.com',
+    'music.youtube.com',
+    'github.com',
+    'gitlab.com',
+    'bitbucket.org',
+    'stackoverflow.com',
+    'reddit.com',
+    'twitter.com',
+    'facebook.com',
+    'instagram.com',
+    'linkedin.com',
+    'amazon.com',
+    'ebay.com',
+    'netflix.com',
+    'spotify.com'
+  ];
+
+  // Check if we should skip this domain
+  const hostname = window.location.hostname.toLowerCase();
+  if (SKIP_DOMAINS.some(domain => hostname === domain || hostname.endsWith('.' + domain))) {
+    console.log('[Armorly] Skipping non-AI site:', hostname);
+    return;
+  }
 
   // Wait for patterns library to load
   if (typeof window.ArmorlyAdPatterns === 'undefined') {
@@ -45,6 +92,7 @@
 
   /**
    * Block all AI ad SDKs by intercepting their initialization
+   * This prevents SDK global objects from being usable even if script loads
    */
   function blockAllAdSDKs() {
     const sdkProxy = createSDKProxy();
@@ -67,49 +115,6 @@
         // Property may already be defined, skip
       }
     });
-  }
-
-  /**
-   * Block ad SDK scripts from loading
-   */
-  function blockAdScripts() {
-    const scriptPatterns = patterns.getAllScriptPatterns();
-
-    // Intercept appendChild
-    const originalAppendChild = Node.prototype.appendChild;
-    Node.prototype.appendChild = function(child) {
-      if (child.tagName === 'SCRIPT' && child.src) {
-        const src = child.src.toLowerCase();
-        if (scriptPatterns.some(p => p.test(src))) {
-          return child; // Block silently
-        }
-      }
-      return originalAppendChild.call(this, child);
-    };
-
-    // Intercept insertBefore
-    const originalInsertBefore = Node.prototype.insertBefore;
-    Node.prototype.insertBefore = function(newNode, referenceNode) {
-      if (newNode.tagName === 'SCRIPT' && newNode.src) {
-        const src = newNode.src.toLowerCase();
-        if (scriptPatterns.some(p => p.test(src))) {
-          return newNode; // Block silently
-        }
-      }
-      return originalInsertBefore.call(this, newNode, referenceNode);
-    };
-
-    // Intercept document.write (some SDKs use this)
-    const originalWrite = document.write;
-    document.write = function(content) {
-      if (typeof content === 'string') {
-        const lowerContent = content.toLowerCase();
-        if (scriptPatterns.some(p => p.test(lowerContent))) {
-          return; // Block silently
-        }
-      }
-      return originalWrite.call(this, content);
-    };
   }
 
   // =========================================================================
@@ -136,6 +141,7 @@
 
   /**
    * Find and remove elements containing ad labels
+   * CONSERVATIVE: Only removes elements with CLEAR ad-specific attributes
    */
   function removeAdLabeledElements() {
     const walker = document.createTreeWalker(
@@ -160,20 +166,16 @@
         let container = node.parentElement;
         for (let i = 0; i < 5 && container; i++) {
           const classes = container.className || '';
-          const role = container.getAttribute('role') || '';
 
+          // ONLY remove if element has CLEAR ad-specific indicators
+          // Be very conservative to avoid false positives
           if (
-            classes.match(/sponsored|ad-|promoted|product-card|recommendation|koah|monetzly/i) ||
-            role === 'complementary' ||
-            container.tagName === 'ASIDE' ||
-            container.hasAttribute('data-ad-provider')
+            classes.match(/\bsponsored\b|\bkoah\b|\bmonetzly\b|\bpplx-sponsored\b/i) ||
+            container.hasAttribute('data-ad-provider') ||
+            container.hasAttribute('data-koah-ad') ||
+            container.hasAttribute('data-monetzly-ad') ||
+            container.hasAttribute('data-sponsored')
           ) {
-            elementsToRemove.add(container);
-            break;
-          }
-
-          // If this is just a small label, remove just the label
-          if (container.offsetHeight < 50 && container.offsetWidth < 200) {
             elementsToRemove.add(container);
             break;
           }
@@ -261,9 +263,12 @@
   // =========================================================================
 
   function init() {
-    // Block all SDKs before they can load
+    // Log activation for debugging/screenshots
+    console.log('[Armorly] AI ad blocker active');
+    console.log('[Armorly] Blocking SDKs:', patterns.getAllSDKFunctions().slice(0, 10).join(', '), '...');
+
+    // Block SDK globals (makes SDK objects unusable even if script loads)
     blockAllAdSDKs();
-    blockAdScripts();
 
     // Initial scan when DOM is ready
     if (document.readyState === 'loading') {

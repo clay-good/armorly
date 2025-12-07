@@ -1,130 +1,144 @@
 /**
  * Armorly - Hidden Content Blocker
  *
- * Blocks prompt injection attacks hidden in invisible elements:
- * - White text on white background
- * - Zero opacity elements
- * - Off-screen positioned content
- * - Font-size: 0 content
- * - Hidden overflow content
+ * Blocks prompt injection attacks hidden in invisible elements.
+ * ONLY removes content that BOTH:
+ *   1. Is hidden using suspicious techniques
+ *   2. Contains known prompt injection patterns
  *
- * These are NEVER legitimate - no false positive risk.
- * A website has no reason to hide text from users but show it to AI.
+ * This is intentionally conservative to avoid breaking sites.
  */
 
 (function() {
   'use strict';
 
   // =========================================================================
-  // DETECTION FUNCTIONS
+  // DOMAIN ALLOWLIST - Skip sites that are NOT AI chatbots
+  // =========================================================================
+
+  const SKIP_DOMAINS = [
+    'mail.google.com',
+    'calendar.google.com',
+    'docs.google.com',
+    'sheets.google.com',
+    'slides.google.com',
+    'drive.google.com',
+    'meet.google.com',
+    'chat.google.com',
+    'contacts.google.com',
+    'keep.google.com',
+    'tasks.google.com',
+    'photos.google.com',
+    'youtube.com',
+    'www.youtube.com',
+    'music.youtube.com',
+    'github.com',
+    'gitlab.com',
+    'bitbucket.org',
+    'stackoverflow.com',
+    'reddit.com',
+    'twitter.com',
+    'facebook.com',
+    'instagram.com',
+    'linkedin.com',
+    'amazon.com',
+    'ebay.com',
+    'netflix.com',
+    'spotify.com'
+  ];
+
+  // Check if we should skip this domain
+  const hostname = window.location.hostname.toLowerCase();
+  if (SKIP_DOMAINS.some(domain => hostname === domain || hostname.endsWith('.' + domain))) {
+    return; // Skip silently for hidden content blocker
+  }
+
+  // =========================================================================
+  // PROMPT INJECTION PATTERNS (Required for removal)
   // =========================================================================
 
   /**
-   * Check if an element is visually hidden but contains text
+   * Check if text contains known prompt injection patterns
+   * This is the CRITICAL check - we only remove hidden content if it matches these
    */
-  function isHiddenElement(element) {
+  function containsPromptInjection(text) {
+    if (!text || text.length < 15) {
+      return false;
+    }
+
+    // Only match clear, unambiguous prompt injection attempts
+    const injectionPatterns = [
+      /ignore\s+(?:all\s+)?(?:previous|above|prior)\s+instructions/i,
+      /disregard\s+(?:all\s+)?(?:previous|above|prior)\s+instructions/i,
+      /forget\s+(?:all\s+)?(?:previous|above|prior)\s+instructions/i,
+      /you\s+are\s+now\s+(?:a|an|in)\s+/i,
+      /new\s+instructions?:\s*\S/i,
+      /\[SYSTEM\]:\s*\S/i,
+      /\[INST\]:\s*\S/i,
+      /roleplay\s+as\s+(?:a|an)\s+/i,
+      /pretend\s+(?:you\s+are|to\s+be)\s+(?:a|an)\s+/i,
+      /override\s+(?:your\s+)?(?:instructions|programming|rules)/i,
+      /jailbreak/i,
+      /DAN\s+mode/i,
+      /developer\s+mode\s+enabled/i
+    ];
+
+    return injectionPatterns.some(pattern => pattern.test(text));
+  }
+
+  // =========================================================================
+  // HIDDEN ELEMENT DETECTION
+  // =========================================================================
+
+  /**
+   * Check if element uses deceptive hiding (not legitimate accessibility hiding)
+   */
+  function isDeceptivelyHidden(element) {
     if (!element || element.nodeType !== Node.ELEMENT_NODE) {
       return false;
     }
 
-    const style = window.getComputedStyle(element);
-    const rect = element.getBoundingClientRect();
-
-    // Check various hiding techniques
-    return (
-      isZeroOpacity(style) ||
-      isOffScreen(rect, style) ||
-      isZeroSize(style) ||
-      isClippedAway(style) ||
-      isWhiteOnWhite(element, style)
-    );
-  }
-
-  /**
-   * Zero opacity
-   */
-  function isZeroOpacity(style) {
-    return parseFloat(style.opacity) === 0;
-  }
-
-  /**
-   * Positioned off-screen
-   */
-  function isOffScreen(rect, style) {
-    // Check for negative positioning
-    const left = parseFloat(style.left);
-    const top = parseFloat(style.top);
-    const marginLeft = parseFloat(style.marginLeft);
-    const marginTop = parseFloat(style.marginTop);
-
-    if (left < -1000 || top < -1000 || marginLeft < -1000 || marginTop < -1000) {
-      return true;
+    // Skip common legitimate hidden element patterns
+    const tagName = element.tagName;
+    if (['SCRIPT', 'STYLE', 'META', 'LINK', 'NOSCRIPT', 'TEMPLATE'].includes(tagName)) {
+      return false;
     }
 
-    // Check if element is outside viewport
-    if (rect.right < 0 || rect.bottom < 0) {
-      return true;
+    // Skip elements with accessibility roles (screen reader content is legitimate)
+    const role = element.getAttribute('role');
+    if (role === 'status' || role === 'alert' || role === 'log') {
+      return false;
     }
 
-    // Check for transform translations that move element off-screen
-    const transform = style.transform;
-    if (transform && transform !== 'none') {
-      const match = transform.match(/translate[XY]?\(([^)]+)\)/);
-      if (match) {
-        const value = parseFloat(match[1]);
-        if (Math.abs(value) > 1000) {
-          return true;
-        }
+    // Skip elements with aria-live (accessibility announcements)
+    if (element.hasAttribute('aria-live')) {
+      return false;
+    }
+
+    // Skip visually-hidden classes (legitimate accessibility pattern)
+    const className = element.className || '';
+    if (typeof className === 'string') {
+      if (/sr-only|visually-hidden|screen-reader|a11y/i.test(className)) {
+        return false;
       }
     }
 
-    return false;
-  }
+    const style = window.getComputedStyle(element);
 
-  /**
-   * Zero or near-zero size
-   */
-  function isZeroSize(style) {
-    const fontSize = parseFloat(style.fontSize);
-    const width = parseFloat(style.width);
-    const height = parseFloat(style.height);
-    const maxWidth = parseFloat(style.maxWidth);
-    const maxHeight = parseFloat(style.maxHeight);
-
+    // Check for deceptive hiding techniques
     return (
-      fontSize === 0 ||
-      (width === 0 && height === 0) ||
-      maxWidth === 0 ||
-      maxHeight === 0 ||
-      (style.width === '1px' && style.height === '1px' && style.overflow === 'hidden')
+      isWhiteOnWhite(style) ||
+      isZeroSizeWithContent(element, style)
     );
   }
 
   /**
-   * Clipped away with clip or clip-path
+   * White/same-color text on same-color background (classic prompt injection technique)
    */
-  function isClippedAway(style) {
-    // Check clip property (deprecated but still used)
-    if (style.clip === 'rect(0px, 0px, 0px, 0px)' || style.clip === 'rect(0, 0, 0, 0)') {
-      return true;
-    }
-
-    // Check clip-path
-    if (style.clipPath === 'inset(100%)' || style.clipPath === 'polygon(0 0, 0 0, 0 0)') {
-      return true;
-    }
-
-    return false;
-  }
-
-  /**
-   * White text on white background (or same color as background)
-   */
-  function isWhiteOnWhite(element, style) {
+  function isWhiteOnWhite(style) {
     const color = style.color;
     const bgColor = style.backgroundColor;
 
-    // Parse colors to compare
     const textColor = parseColor(color);
     const backgroundColor = parseColor(bgColor);
 
@@ -132,13 +146,32 @@
       return false;
     }
 
-    // Check if colors are nearly identical
-    const threshold = 30; // Allow small differences
-    return (
+    // Colors must be nearly identical AND both light (white-on-white style attack)
+    const threshold = 15;
+    const colorsMatch = (
       Math.abs(textColor.r - backgroundColor.r) < threshold &&
       Math.abs(textColor.g - backgroundColor.g) < threshold &&
       Math.abs(textColor.b - backgroundColor.b) < threshold
     );
+
+    // Only flag if colors match AND it's light colored (white-ish)
+    const isLight = (textColor.r + textColor.g + textColor.b) > 600;
+
+    return colorsMatch && isLight;
+  }
+
+  /**
+   * Zero-size element that still contains substantial text
+   */
+  function isZeroSizeWithContent(element, style) {
+    const fontSize = parseFloat(style.fontSize);
+
+    // font-size: 0 is a known prompt injection technique
+    if (fontSize === 0) {
+      return true;
+    }
+
+    return false;
   }
 
   /**
@@ -149,7 +182,6 @@
       return null;
     }
 
-    // Handle rgb/rgba format
     const rgbMatch = colorStr.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
     if (rgbMatch) {
       return {
@@ -162,78 +194,35 @@
     return null;
   }
 
-  /**
-   * Check if element contains text that looks like prompt injection
-   */
-  function containsPromptInjection(text) {
-    if (!text || text.length < 10) {
-      return false;
-    }
-
-    // Patterns commonly used in prompt injection
-    const injectionPatterns = [
-      /ignore\s+(?:all\s+)?(?:previous|above|prior)/i,
-      /disregard\s+(?:all\s+)?(?:previous|above|prior)/i,
-      /forget\s+(?:all\s+)?(?:previous|above|prior)/i,
-      /you\s+are\s+now/i,
-      /new\s+instructions?:/i,
-      /system\s*:\s*/i,
-      /\[system\]/i,
-      /\[assistant\]/i,
-      /\[user\]/i,
-      /roleplay\s+as/i,
-      /pretend\s+(?:you\s+are|to\s+be)/i,
-      /act\s+as\s+(?:if|though)/i,
-      /override\s+(?:your\s+)?(?:instructions|programming)/i,
-      /execute\s+(?:the\s+following|this)/i,
-      /run\s+(?:the\s+following|this)\s+(?:code|command)/i,
-      /\beval\s*\(/i,
-      /\bexec\s*\(/i,
-      /\bimport\s+os\b/i,
-      /\bsubprocess\b/i,
-      /\bfetch\s*\(['"]/i,
-      /\bxmlhttprequest\b/i
-    ];
-
-    return injectionPatterns.some(pattern => pattern.test(text));
-  }
-
   // =========================================================================
   // REMOVAL FUNCTIONS
   // =========================================================================
 
   /**
-   * Scan and remove hidden malicious content
+   * Scan and remove ONLY hidden content containing prompt injection
    */
-  function removeHiddenContent() {
-    // Get all elements
+  function removeHiddenPromptInjections() {
     const allElements = document.querySelectorAll('*');
 
     allElements.forEach(element => {
-      // Skip scripts, styles, and other non-content elements
-      if (['SCRIPT', 'STYLE', 'META', 'LINK', 'NOSCRIPT'].includes(element.tagName)) {
+      // Must be deceptively hidden
+      if (!isDeceptivelyHidden(element)) {
         return;
       }
 
-      // Check if element is hidden
-      if (isHiddenElement(element)) {
-        // Get text content
-        const text = element.textContent || '';
+      const text = element.textContent || '';
 
-        // Only remove if it contains suspicious content or is non-trivial
-        if (text.length > 20 || containsPromptInjection(text)) {
-          // Remove the content (clear it rather than remove element to not break layout)
-          element.textContent = '';
-          element.innerHTML = '';
-        }
+      // MUST contain prompt injection pattern to be removed
+      if (containsPromptInjection(text)) {
+        element.textContent = '';
       }
     });
   }
 
   /**
-   * Scan HTML comments for hidden instructions
+   * Scan HTML comments for prompt injection
    */
-  function removeHiddenComments() {
+  function removeInjectionComments() {
     const walker = document.createTreeWalker(
       document.documentElement,
       NodeFilter.SHOW_COMMENT,
@@ -247,13 +236,12 @@
     while ((comment = walker.nextNode())) {
       const text = comment.textContent || '';
 
-      // Check if comment contains prompt injection
+      // Only remove if it contains prompt injection
       if (containsPromptInjection(text)) {
         commentsToRemove.push(comment);
       }
     }
 
-    // Remove identified comments
     commentsToRemove.forEach(comment => {
       comment.remove();
     });
@@ -263,9 +251,6 @@
   // MUTATION OBSERVER
   // =========================================================================
 
-  /**
-   * Watch for dynamically added hidden content
-   */
   function setupObserver() {
     const observer = new MutationObserver((mutations) => {
       let shouldScan = false;
@@ -278,12 +263,11 @@
       }
 
       if (shouldScan) {
-        // Debounce
         clearTimeout(window._armorlyHiddenScanTimeout);
         window._armorlyHiddenScanTimeout = setTimeout(() => {
-          removeHiddenContent();
-          removeHiddenComments();
-        }, 200);
+          removeHiddenPromptInjections();
+          removeInjectionComments();
+        }, 500);
       }
     });
 
@@ -294,10 +278,12 @@
       });
     } else {
       document.addEventListener('DOMContentLoaded', () => {
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true
-        });
+        if (document.body) {
+          observer.observe(document.body, {
+            childList: true,
+            subtree: true
+          });
+        }
       });
     }
   }
@@ -307,29 +293,19 @@
   // =========================================================================
 
   function init() {
-    // Run initial scan when DOM is ready
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
-        removeHiddenContent();
-        removeHiddenComments();
+        removeHiddenPromptInjections();
+        removeInjectionComments();
         setupObserver();
       });
     } else {
-      removeHiddenContent();
-      removeHiddenComments();
+      removeHiddenPromptInjections();
+      removeInjectionComments();
       setupObserver();
     }
-
-    // Also run after full page load
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        removeHiddenContent();
-        removeHiddenComments();
-      }, 1000);
-    });
   }
 
-  // Run immediately
   init();
 
 })();

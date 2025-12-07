@@ -1,6 +1,6 @@
 # Armorly
 
-Block ads in AI chatbots. Stops sponsored content from ChatGPT, Grok, Perplexity, and all AI ad networks.
+Block intrusive ads in AI chatbots. Stops sponsored content from ChatGPT, Grok, Perplexity, and all AI ad networks.
 
 ## Usage
 
@@ -39,27 +39,23 @@ Armorly blocks AI-native advertising - ads embedded directly into AI chatbot res
 
 ### How It Blocks
 
-- **SDK Interception**: Blocks ad SDK init/monetize calls before they execute
-- **DOM Removal**: Removes sponsored labels, product cards, and ad containers
+- **SDK Interception**: Blocks ad SDK global objects (Koah, Monetzly, etc.) making them unusable
+- **DOM Removal**: Removes sponsored labels and ad containers using specific selectors
 - **Affiliate Link Cleaning**: Strips tracking parameters (utm_*, ref, affiliate, etc.)
-- **Script Blocking**: Prevents ad SDK scripts from loading via appendChild/insertBefore interception
 
 Note: Armorly focuses on client-side ad blocking that traditional blockers can't handle. For network-level blocking, use uBlock Origin or Brave alongside Armorly.
 
 ### Security: Hidden Prompt Injection Protection
 
-Beyond ads, Armorly blocks a real AI security threat: hidden prompt injection.
+Armorly blocks hidden prompt injection - a real AI security threat.
 
-Malicious websites can hide instructions in invisible text (white-on-white, zero opacity, off-screen, font-size: 0). When you paste content from these pages into an AI, or when an AI browses these pages, the hidden instructions get included. These can tell the AI to ignore your actual request, leak information, or behave maliciously.
+Malicious websites can hide instructions in invisible text. When you paste content from these pages into an AI, the hidden instructions get included and can manipulate the AI's behavior.
 
-Armorly detects and removes hidden elements using 5 techniques:
-- Zero opacity elements
-- Off-screen positioned content (negative margins, transforms)
-- Zero-size elements (1x1px, font-size: 0)
+Armorly detects hidden elements using:
 - White text on white background
-- Clipped/clip-path hidden content
+- Font-size: 0 content
 
-This catches 21 known prompt injection patterns including "ignore previous instructions", "you are now", "system:", role-playing attacks, and code execution attempts.
+Content is only removed if it contains known prompt injection patterns like "ignore previous instructions", "jailbreak", "DAN mode", etc. This conservative approach prevents false positives while catching actual attacks.
 
 ## Limitations
 
@@ -102,11 +98,10 @@ AI ads bypass this entirely:
 - By the time it reaches the DOM, it's indistinguishable from organic responses
 
 Armorly uses multi-signal detection:
-1. SDK interception (block Koah, Monetzly, Sponsored.so, etc. before they run)
+1. SDK interception (block Koah, Monetzly, Sponsored.so, etc. globals)
 2. FTC-required disclosure patterns ("Sponsored", "Ad", etc.)
-3. Affiliate link analysis
-4. Platform-specific DOM patterns
-5. Commercial intent scoring
+3. Affiliate link cleaning
+4. Platform-specific DOM selectors
 
 ## Supported Platforms
 
@@ -121,7 +116,7 @@ Works on all websites. Platform-specific detection for:
 
 ### From Chrome Web Store
 
-Install from Chrome Web Store (link TBD). Click "Add to Chrome". Done.
+Coming soon. In the meantime, use the development build below.
 
 ### Development Build
 
@@ -158,9 +153,9 @@ armorly-dev/
 
 | File | Purpose |
 |------|---------|
-| `ai-ad-blocker.js` | SDK interception, DOM removal, link cleaning, script blocking (~8KB) |
-| `hidden-content-blocker.js` | Hidden prompt injection detection (21 patterns, 5 hiding techniques) (~9KB) |
-| `ad-patterns.js` | 6 SDK definitions, 19 affiliate domains, 7 platform selector groups (~13KB) |
+| `ai-ad-blocker.js` | SDK interception, DOM removal, affiliate link cleaning |
+| `hidden-content-blocker.js` | Hidden prompt injection detection - conservative, pattern-based |
+| `ad-patterns.js` | 6 SDK definitions, 15 affiliate params, 19 redirect domains, 7 platform selectors |
 
 ## Technical Details
 
@@ -174,10 +169,11 @@ That's it. One permission. No `storage`, no `tabs`, no `webRequest`, no `cookies
 
 ### Performance
 
-- 2 content scripts + 1 pattern library totaling ~30KB
-- MutationObserver with 100ms debouncing
+- 3 files: 2 content scripts + 1 pattern library
+- MutationObserver with debouncing (100-500ms)
 - No persistent storage
 - No network interception (leaves that to uBlock/Brave)
+- No DOM method overrides (appendChild/insertBefore untouched)
 - Minimal CPU impact
 
 ## Privacy

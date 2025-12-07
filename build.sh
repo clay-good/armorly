@@ -1,10 +1,10 @@
 #!/bin/bash
-# Build script for Armorly Chrome Extension v2.0.1
+# Build script for Armorly Chrome Extension v2.0.2
 # Minimal AI ad blocker - no UI, no network blocking, just client-side protection
 
 set -e  # Exit on error
 
-echo "🛡️  Building Armorly v2.0.1 (AI Ad Blocker)..."
+echo "🛡️  Building Armorly v2.0.2 (AI Ad Blocker)..."
 
 # Clean previous build
 echo "📦 Cleaning previous build..."

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Armorly",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Block ads in AI chatbots. Stops ChatGPT, Grok, Perplexity ads & all AI ad networks.",
 
   "icons": {
