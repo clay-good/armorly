@@ -1,343 +1,190 @@
 # Armorly
 
-Armorly is a browser security extension designed to protect users of AI-powered browsers and platforms from prompt injection attacks, conversation tampering, memory poisoning, and other AI-specific security threats. It provides real-time detection and blocking of malicious content targeting AI agents.
+Block ads in AI chatbots. Stops sponsored content from ChatGPT, Grok, Perplexity, and all AI ad networks.
 
-## Core Features
+## Usage
 
-### AI Response Protection
-- **AI Response Scanner**: Real-time monitoring of AI-generated responses across all major platforms
-- **Cross-Platform Support**: ChatGPT, Claude, Gemini, Perplexity, Poe, HuggingFace, Character.AI, Jasper, and more
-- **Pattern Detection**: 25+ malicious patterns including instruction override, code injection, and data exfiltration
-- **Function Call Interception**: Monitors 30+ suspicious functions (deleteFile, exec, eval, fetch external URLs)
-- **Network-Level Scanning**: Intercepts and validates fetch() responses for malicious content
-- **Integrated Tracking**: Automatically feeds AI responses to multi-turn attack detection
+Install. Done.
 
-### Conversation Integrity
-- **SHA-256 Hashing**: Cryptographic verification of message content using Web Crypto API
-- **Tampering Detection**: Identifies modified, reordered, or injected messages
-- **Sequence Verification**: Tracks message order to detect conversation manipulation
-- **Context Poisoning Prevention**: Detects fake "previous conversation" markers and injected context
-- **Visual Warnings**: Alerts users when conversation tampering is detected
+To disable: Click the puzzle icon in Chrome toolbar, find Armorly, toggle off. That's it.
 
-### Multi-Turn Attack Detection
-- **Attack Chain Recognition**: Detects sophisticated attacks spread across multiple messages
-- **5 Attack Categories**: Privilege escalation, reconnaissance, trust exploitation, fragmented commands, role shifting
-- **Behavioral Analysis**: Tracks suspicion scores across 5-message sliding window
-- **Pattern Matching**: 60% threshold triggers alerts for attack chains
-- **Integrated Tracking**: Monitors both user inputs (via form interceptor) and AI responses
-- **Visual Warnings**: Shows confidence scores and detected attack categories
+There is no popup. There are no settings. There is nothing to configure. Chrome's built-in extension toggle is your on/off switch.
 
-### API Response Validation
-- **HTTPS Enforcement**: Blocks non-HTTPS AI API connections (MITM prevention)
-- **Content-Type Validation**: Verifies expected response formats for each AI platform
-- **Response Size Limits**: 10MB maximum to prevent attack payloads
-- **Header Validation**: Detects suspicious headers indicating MITM attacks
-- **Pattern Matching**: 10+ suspicious content indicators
-- **SHA-256 Integrity**: Tracks response hashes for tampering detection
-- **Network Interception**: Full fetch() and XMLHttpRequest coverage
-- **Active Blocking**: Returns 403 for tampered responses
+## Why Ads Will Destroy AI
 
-### Content Protection
-- **DOM Scanning**: Real-time analysis of page content for prompt injection patterns
-- **Pattern Matching**: 50+ regex patterns detecting instruction hijacking, goal manipulation, and context confusion
-- **Hidden Content Detection**: Identifies white-on-white text, zero-opacity elements, and off-screen positioning
-- **HTML Comment Scanning**: Detects malicious instructions in HTML comments
-- **Mutation Monitoring**: Watches for dynamically injected malicious content
-- **Form Interception**: Monitors and sanitizes form inputs before submission
+Advertising is incompatible with AI's value proposition. Here's why:
 
-### Network Protection
-- **CSRF Protection**: Blocks unauthorized cross-origin requests to AI platform APIs
-- **declarativeNetRequest Rules**: 15 blocking rules for ChatGPT, Claude, and Perplexity endpoints
-- **Request Monitoring**: Detection-only monitoring for credential leaks and suspicious payloads
-- **Note**: Chrome Manifest V3 limits blocking to declarativeNetRequest rules only
+AI's entire purpose is to give you the best answer. Ads require giving you a paid answer. These goals are mutually exclusive. When an AI recommends a specific product because the company paid for placement rather than because it's actually the best option for your trip, the AI has stopped being useful. It's now a salesperson pretending to be an advisor.
 
-### Memory Protection
-- **AI Settings Scanner**: Scans stored memories and chat history for malicious content
-- **Memory Poisoning Prevention**: Detects and removes injected instructions in AI memory
-- **Storage Monitoring**: Tracks localStorage and IndexedDB for suspicious modifications
-- **Clipboard Protection**: Prevents malicious clipboard hijacking targeting AI input
+Traditional search survived ads because users understood the transaction: free results in exchange for attention. AI is different. Users ask AI questions expecting genuine expertise. They trust the response. Injecting paid content into that trust relationship isn't advertising - it's deception. The moment users realize AI recommendations are for sale, the entire value of AI-as-advisor collapses.
 
-### Privacy & Anti-Fingerprinting
-- **Privacy Shield**: Blocks fingerprinting attempts and tracking scripts
-- **WebRTC Leak Protection**: Prevents IP address leakage
-- **Cross-Tab Protection**: Isolates AI conversations across browser tabs
+The ad-supported model also creates perverse incentives. An AI optimized for engagement (to show more ads) will give you answers that keep you asking questions, not answers that solve your problem. It will recommend products with high affiliate commissions, not products that fit your needs. It will become a worse AI to become a better ad platform.
 
-### Performance Optimization
-- **Pre-Compiled Patterns**: Regex compilation at initialization for 70% faster matching
-- **Visibility Caching**: WeakMap-based caching for 90% faster DOM scans
-- **NodeFilter Callbacks**: Optimized tree walking with 80% fewer nodes processed
-- **Selective Loading**: Only 2 scripts on non-AI sites, full protection on AI platforms
-- **Typical Overhead**: Less than 50ms per page load
+OpenAI, Google, and others are walking into this trap anyway because ads are easy money. Armorly exists because some of us still want AI that works for us, not for advertisers.
+
+## What It Does
+
+Armorly blocks AI-native advertising - ads embedded directly into AI chatbot responses. Unlike traditional web ads served from separate domains, AI ads are injected into the LLM response itself, making them invisible to traditional ad blockers like uBlock Origin or Brave Shields.
+
+### Ad Networks Blocked
+
+- Koah - Serving ads in Luzia, Liner, DeepAI
+- Monetzly - "Google Ads for AI conversations"
+- Sponsored.so - Native AI ad platform
+- Grok/X - Promoted suggestions in Grok
+- Imprezia - AI ad SDK
+- Google AdSense - AdSense expanding to chatbots
+- ChatGPT Ads - Prepared for upcoming rollout
+- Perplexity Ads - Sponsored follow-up questions
+
+### How It Blocks
+
+- **SDK Interception**: Blocks ad SDK init/monetize calls before they execute
+- **DOM Removal**: Removes sponsored labels, product cards, and ad containers
+- **Affiliate Link Cleaning**: Strips tracking parameters (utm_*, ref, affiliate, etc.)
+- **Script Blocking**: Prevents ad SDK scripts from loading via appendChild/insertBefore interception
+
+Note: Armorly focuses on client-side ad blocking that traditional blockers can't handle. For network-level blocking, use uBlock Origin or Brave alongside Armorly.
+
+### Security: Hidden Prompt Injection Protection
+
+Beyond ads, Armorly blocks a real AI security threat: hidden prompt injection.
+
+Malicious websites can hide instructions in invisible text (white-on-white, zero opacity, off-screen, font-size: 0). When you paste content from these pages into an AI, or when an AI browses these pages, the hidden instructions get included. These can tell the AI to ignore your actual request, leak information, or behave maliciously.
+
+Armorly detects and removes hidden elements using 5 techniques:
+- Zero opacity elements
+- Off-screen positioned content (negative margins, transforms)
+- Zero-size elements (1x1px, font-size: 0)
+- White text on white background
+- Clipped/clip-path hidden content
+
+This catches 21 known prompt injection patterns including "ignore previous instructions", "you are now", "system:", role-playing attacks, and code execution attempts.
+
+## Limitations
+
+**This extension cannot do everything. Here's what it cannot do:**
+
+1. **Mobile apps are completely unprotected.** Chrome extensions don't run on iOS or Android. ChatGPT's mobile app, Perplexity's app, any mobile browser - Armorly cannot help you there. You're on your own.
+
+2. **Server-side ad injection cannot be blocked.** If the AI company injects ads into the response before it reaches your browser, there is no network request to block. The ad arrives as part of the "real" response. We can only detect these via content patterns (looking for "Sponsored" labels). If they remove the label, we cannot distinguish the ad from genuine content.
+
+3. **First-party ads on ChatGPT/Claude/Gemini are the hardest to block.** When OpenAI serves ads from api.openai.com (the same domain as real responses), there's no separate ad domain to block. We rely entirely on DOM patterns and disclosure labels. If they obfuscate the disclosure, detection degrades.
+
+4. **New ad formats will initially get through.** Ad networks evolve. When Koah or Monetzly changes their SDK function names or DOM structure, there's a window before we update patterns. This is a cat-and-mouse game.
+
+5. **This extension does not block ads in AI responses that are genuinely useful recommendations.** If an AI recommends a product because it's actually good and doesn't take payment for the recommendation, Armorly won't remove it. We only block disclosed sponsored content and known ad SDK injections.
+
+6. **We cannot verify if an AI recommendation is paid but undisclosed.** If an AI company accepts payment to recommend products but doesn't label them as sponsored (illegal under FTC rules, but enforcement is slow), we have no way to detect this. We're not mind readers.
+
+7. **Safari, Firefox, and Edge are not supported yet.** Chrome/Chromium only for now.
+
+8. **Ad-patterns.js requires manual updates.** There's no auto-update mechanism. When ad networks change patterns, you need a new version of the extension.
+
+9. **Iframes may bypass content script injection.** If an AI chatbot loads in a cross-origin iframe with restrictive headers, our content scripts may not inject. This is rare but possible.
+
+10. **We cannot block ads you explicitly request.** If you ask an AI "recommend me a hotel in Tokyo" and it gives you a paid recommendation, that's indistinguishable from a genuine recommendation you asked for. We block unsolicited sponsored content, not answers to your questions.
+
+11. **Rate of false positives is non-zero.** Legitimate content containing words like "Sponsored" or "Ad" in certain contexts may be incorrectly flagged. We err on the side of blocking, which means occasional false positives on edge cases.
+
+12. **No network-level blocking.** Armorly deliberately does not block network requests. This is by design - use uBlock Origin or Brave for network-level ad blocking. Armorly handles client-side AI ads that those tools cannot detect.
+
+## Why Traditional Ad Blockers Fail
+
+Traditional ad blockers use domain-based blocking:
+- Block requests to `doubleclick.net` or `ads.example.com`
+- Hide elements with CSS selectors like `##.ad-container`
+
+AI ads bypass this entirely:
+- Ad content comes from the same API as real content (e.g., api.openai.com)
+- No separate ad domain to block
+- LLM generates ad text dynamically, no consistent HTML structure
+- By the time it reaches the DOM, it's indistinguishable from organic responses
+
+Armorly uses multi-signal detection:
+1. SDK interception (block Koah, Monetzly, Sponsored.so, etc. before they run)
+2. FTC-required disclosure patterns ("Sponsored", "Ad", etc.)
+3. Affiliate link analysis
+4. Platform-specific DOM patterns
+5. Commercial intent scoring
 
 ## Supported Platforms
 
-### Full Protection (16+ scripts loaded)
-- ChatGPT / OpenAI (chatgpt.com, chat.openai.com)
-- Claude / Anthropic (claude.ai, anthropic.com)
-- Google Gemini / Bard (gemini.google.com, bard.google.com)
-- Perplexity AI (perplexity.ai)
-- Poe (poe.com)
-- HuggingFace Chat (huggingface.co)
-- Character.AI (character.ai)
-- Jasper (jasper.ai)
-- Copy.ai (copy.ai)
-- Writesonic (writesonic.com)
-- Replicate (replicate.com)
-- Midjourney (midjourney.com)
-- Stability AI (stability.ai)
-- Leonardo AI (leonardo.ai)
-- BrowserOS (browseros.com)
-
-### Basic Protection (2 scripts loaded)
-- All other websites (console wrapper + content script only)
+Works on all websites. Platform-specific detection for:
+- ChatGPT/OpenAI (prepared for upcoming ads)
+- Grok/X (active promoted suggestions)
+- Perplexity AI (active sponsored questions)
+- Claude, Gemini, Poe
+- Any chatbot using Koah, Monetzly, Sponsored.so, or other ad SDKs
 
 ## Installation
 
-### For Development/Testing
+### From Chrome Web Store
 
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/yourusername/armorly.git
-   cd armorly
-   ```
+Install from Chrome Web Store (link TBD). Click "Add to Chrome". Done.
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Build the extension:
-   ```bash
-   npm run build
-   ```
-
-4. Load in Chrome:
-   - Open `chrome://extensions/`
-   - Enable "Developer mode"
-   - Click "Load unpacked"
-   - Select the `build` folder
-
-5. The extension will start protecting immediately
-
-### For Production Use
-
-1. Download the latest release from GitHub Releases
-2. Extract the ZIP file
-3. Load the extension following step 4 above
-
-## How It Works
-
-### Protection Architecture
-
-```
-Page Load
-    |
-    v
-[Content Script Detection]
-    |
-    +-- Non-AI Platform --> Load 2 scripts (minimal overhead)
-    |
-    +-- AI Platform --> Load 16 scripts (full protection)
-            |
-            v
-    [Initialization Phase]
-            |
-            +-- Content Sanitizer (blocking engine)
-            +-- Mutation Blocker (real-time protection)
-            +-- Clipboard Protector
-            +-- Privacy Shield
-            +-- Memory Protector
-            +-- Form Interceptor
-            +-- Output Validator
-            +-- Action Authorizer
-            +-- Context Analyzer
-            +-- Confidence Scorer
-            +-- DOM Scanner (detection)
-            +-- AI Response Scanner (CRITICAL)
-            +-- Conversation Integrity Monitor (CRITICAL)
-            |
-            v
-    [Continuous Monitoring]
-            |
-            +-- MutationObserver (DOM changes)
-            +-- fetch() Interception (network)
-            +-- SHA-256 Hashing (message integrity)
-            +-- Pattern Matching (threats)
-            |
-            v
-    [Threat Response]
-            |
-            +-- Silent Blocking (remove malicious content)
-            +-- Visual Warnings (tampering detected)
-            +-- Background Reporting (statistics)
-```
-
-### Detection Pipeline
-
-1. **Content Scripts** inject at `document_start` for maximum protection
-2. **Platform Detection** determines which protection modules to load
-3. **DOM Scanner** analyzes all text nodes, attributes, and comments
-4. **AI Response Scanner** monitors AI-generated content in real-time
-5. **Conversation Integrity Monitor** verifies message authenticity
-6. **Pattern Library** matches against 75+ known attack patterns
-7. **Threat Detector** scores and aggregates threats
-8. **Content Sanitizer** removes or neutralizes malicious content
-9. **Service Worker** coordinates protection and logs statistics
-
-### Protection Layers
-
-| Layer | Component | Function | Status |
-|-------|-----------|----------|--------|
-| Response | AI Response Scanner | Monitors AI output | Active (Blocking) |
-| Conversation | Integrity Monitor | Detects tampering | Active (Warning) |
-| DOM | Content Sanitizer | Removes malicious elements | Active (Blocking) |
-| DOM | Mutation Blocker | Monitors dynamic changes | Active (Blocking) |
-| Network | CSRF Rules | Blocks unauthorized requests | Active (15 rules) |
-| Network | Request Monitor | Detects suspicious traffic | Detection Only |
-| Input | Form Interceptor | Sanitizes user input | Active (Blocking) |
-| Memory | Memory Protector | Monitors AI memory | Active (Blocking) |
-| Storage | Storage Monitor | Watches localStorage | Active (Detection) |
-| Privacy | Privacy Shield | Anti-fingerprinting | Active (Blocking) |
-
-## Testing
+### Development Build
 
 ```bash
-# Install dependencies
-npm install
-
-# Run automated tests (18 test cases)
-npm test
-
-# Run security audit
-npm run audit:security
-
-# Run ESLint
-npm run lint
-
-# Fix linting issues
-npm run lint:fix
-
-# Validate manifest.json
-npm run validate:manifest
-
-# Build extension
-npm run build
-
-# Build and verify integrity
-npm run build:verify
+git clone https://github.com/yourusername/armorly.git
+cd armorly
+./build.sh
 ```
 
-See `tests/TESTING-GUIDE.md` for detailed testing instructions.
+Then in Chrome:
+1. Open `chrome://extensions/`
+2. Enable "Developer mode"
+3. Click "Load unpacked"
+4. Select the `build` folder
 
-## Development
-
-### Project Structure
+## Project Structure
 
 ```
-armorly/
-├── background/          # Service worker and background scripts
-│   ├── service-worker.js
-│   ├── threat-detector.js
-│   └── ...
-├── content/            # Content scripts (injected into pages)
-│   ├── content-script.js          # Main orchestrator
-│   ├── ai-response-scanner.js     # AI output monitoring
-│   ├── conversation-integrity.js  # Tampering detection
-│   ├── content-sanitizer.js       # Blocking engine
-│   └── ...
-├── lib/                # Shared libraries
-│   ├── pattern-library-global.js
-│   ├── performance-monitor-global.js
-│   └── ...
-├── popup/              # Extension popup UI
-├── options/            # Settings page
-├── rules/              # declarativeNetRequest rules
-├── tests/              # Test suites
-└── manifest.json       # Extension manifest (MV3)
+armorly-dev/
+├── extension/
+│   ├── manifest.json
+│   ├── icons/
+│   ├── content/
+│   │   ├── ai-ad-blocker.js
+│   │   └── hidden-content-blocker.js
+│   └── lib/
+│       └── ad-patterns.js
+├── build.sh
+├── roadmap.txt
+└── deploy.txt
 ```
 
-### Key Components
+### Key Files
 
-#### AI Response Scanner (`content/ai-response-scanner.js`)
-- Monitors AI-generated responses across 10+ platforms
-- 35+ platform-specific CSS selectors
-- Pattern matching for 25+ attack types
-- Function call interception (deleteFile, exec, eval, etc.)
-- Network-level response validation
+| File | Purpose |
+|------|---------|
+| `ai-ad-blocker.js` | SDK interception, DOM removal, link cleaning, script blocking (~8KB) |
+| `hidden-content-blocker.js` | Hidden prompt injection detection (21 patterns, 5 hiding techniques) (~9KB) |
+| `ad-patterns.js` | 6 SDK definitions, 19 affiliate domains, 7 platform selector groups (~13KB) |
 
-#### Conversation Integrity Monitor (`content/conversation-integrity.js`)
-- SHA-256 hashing of all messages
-- Message sequence tracking
-- Tampering detection (order, content, injection)
-- Visual warning system
-- Platform-agnostic conversation tracking
+## Technical Details
 
-#### Content Sanitizer (`content/content-sanitizer.js`)
-- Primary blocking engine
-- Removes malicious DOM elements
-- Sanitizes attributes and event handlers
-- Neutralizes script tags and iframes
+### Permissions
 
-#### Pattern Library (`lib/pattern-library-global.js`)
-- 50+ pre-compiled regex patterns
-- Instruction override detection
-- Goal manipulation patterns
-- Context confusion markers
-- Special token identification
+| Permission | Why |
+|------------|-----|
+| `<all_urls>` (host) | Inject content scripts on all sites to detect ads |
 
-### Adding New Platforms
+That's it. One permission. No `storage`, no `tabs`, no `webRequest`, no `cookies`, no `history`.
 
-To add support for a new AI platform:
+### Performance
 
-1. Add the domain to `manifest.json` matches array (line 39-58)
-2. Add platform-specific selectors to `ai-response-scanner.js` (line 189-245)
-3. Add conversation ID extraction to `conversation-integrity.js` (line 109-139)
-4. Test on the live platform
-
-## Performance Impact
-
-- **Non-AI Sites**: ~2KB loaded, <5ms overhead
-- **AI Platforms**: ~308KB loaded, <50ms overhead
-- **Memory Usage**: ~15-20MB (typical Chrome extension)
-- **CPU Impact**: Negligible (<1% on modern systems)
+- 2 content scripts + 1 pattern library totaling ~30KB
+- MutationObserver with 100ms debouncing
+- No persistent storage
+- No network interception (leaves that to uBlock/Brave)
+- Minimal CPU impact
 
 ## Privacy
 
-Armorly operates entirely locally:
 - No data sent to external servers
-- No telemetry or analytics
+- No telemetry
+- No analytics
 - No user tracking
 - All processing happens in-browser
 - Open source and auditable
-
-## Security Auditing
-
-The extension includes automated security checks:
-
-```bash
-npm run audit:security
-```
-
-Scans for:
-- XSS vulnerabilities (innerHTML usage)
-- Code injection risks (eval, Function constructor)
-- ReDoS vulnerabilities (unsafe regex)
-- Hardcoded credentials
-- Insecure DOM manipulation
-
-## Known Limitations
-
-### Chrome Manifest V3 Restrictions
-- **webRequest API**: Cannot block network requests (detection only)
-- **Blocking**: Limited to declarativeNetRequest rules (max 15 active)
-- **Service Worker**: Cannot maintain persistent connections
-
-### Platform-Specific Limitations
-- **Dynamic UIs**: Some platforms change selectors frequently (requires updates)
-- **SPA Navigation**: May miss rapid page transitions
-- **Obfuscated Content**: Advanced obfuscation may evade detection
-
-### Performance Considerations
-- **Large DOMs**: Scanning 10,000+ nodes may cause slight delays
-- **Frequent Updates**: High-velocity AI responses may impact performance
-- **Memory**: Long conversations increase integrity monitoring overhead
