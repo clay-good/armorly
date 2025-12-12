@@ -1,14 +1,19 @@
 # Armorly
 
-Block intrusive ads in AI chatbots. Stops sponsored content from ChatGPT, Grok, Perplexity, and all AI ad networks.
+Protect against AI chatbot ads. Blocks ad SDKs, removes sponsored labels, and cleans affiliate tracking.
+
+![Armorly popup showing protection status on Perplexity](armorly-perplexity.jpg)
+![Armorly popup showing protection status on ChatGPT](armorly-chatgpt.jpg)
+![Armorly Console Logs](armorly-console.jpg)
 
 ## Usage
 
-Install. Done.
+Install → Click the Armorly icon to see protection status. That's it.
 
-To disable: Click the puzzle icon in Chrome toolbar, find Armorly, toggle off. That's it.
-
-There is no popup. There are no settings. There is nothing to configure. Chrome's built-in extension toggle is your on/off switch.
+The popup shows:
+- Current site being monitored
+- SDKs blocked and links cleaned
+- Active protections (SDK interception, sponsored content removal, affiliate cleaning, prompt injection shield)
 
 ## Why Ads Will Destroy AI
 
@@ -116,7 +121,7 @@ Works on all websites. Platform-specific detection for:
 
 ### From Chrome Web Store
 
-Coming soon. In the meantime, use the development build below.
+[Install from Chrome Web Store](https://chromewebstore.google.com/detail/armorly/ojjmbhddhccnnepgojahamfilcpfddbp) (pending approval)
 
 ### Development Build
 
@@ -135,24 +140,26 @@ Then in Chrome:
 ## Project Structure
 
 ```
-armorly-dev/
+armorly/
 ├── extension/
 │   ├── manifest.json
 │   ├── icons/
+│   ├── popup/
+│   │   ├── popup.html
+│   │   └── popup.js
 │   ├── content/
 │   │   ├── ai-ad-blocker.js
 │   │   └── hidden-content-blocker.js
 │   └── lib/
 │       └── ad-patterns.js
-├── build.sh
-├── roadmap.txt
-└── deploy.txt
+└── build.sh
 ```
 
 ### Key Files
 
 | File | Purpose |
 |------|---------|
+| `popup.html/js` | Status UI showing protection state and stats |
 | `ai-ad-blocker.js` | SDK interception, DOM removal, affiliate link cleaning |
 | `hidden-content-blocker.js` | Hidden prompt injection detection - conservative, pattern-based |
 | `ad-patterns.js` | 6 SDK definitions, 15 affiliate params, 19 redirect domains, 7 platform selectors |
@@ -169,7 +176,7 @@ That's it. One permission. No `storage`, no `tabs`, no `webRequest`, no `cookies
 
 ### Performance
 
-- 3 files: 2 content scripts + 1 pattern library
+- 5 files: 2 content scripts + 1 pattern library + popup UI
 - MutationObserver with debouncing (100-500ms)
 - No persistent storage
 - No network interception (leaves that to uBlock/Brave)
