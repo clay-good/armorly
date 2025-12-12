@@ -21,6 +21,27 @@
   'use strict';
 
   // =========================================================================
+  // STATS TRACKING (for popup display)
+  // =========================================================================
+
+  const stats = {
+    sdksBlocked: 0,
+    linksCleaned: 0,
+    elementsRemoved: 0,
+    active: true
+  };
+
+  // Listen for stats requests from popup
+  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      if (message.type === 'GET_STATS') {
+        sendResponse(stats);
+      }
+      return true;
+    });
+  }
+
+  // =========================================================================
   // DOMAIN ALLOWLIST - Skip sites that are NOT AI chatbots
   // =========================================================================
 
@@ -76,11 +97,12 @@
   /**
    * Create a no-op proxy that absorbs all SDK method calls
    */
-  function createSDKProxy() {
+  function createSDKProxy(sdkName) {
     return new Proxy({}, {
       get: function(target, prop) {
         // Return no-op functions for all SDK methods
         return function() {
+          stats.sdksBlocked++;
           return Promise.resolve();
         };
       },
@@ -95,13 +117,12 @@
    * This prevents SDK global objects from being usable even if script loads
    */
   function blockAllAdSDKs() {
-    const sdkProxy = createSDKProxy();
-
     // Get all SDK function names from patterns
     const sdkFunctions = patterns.getAllSDKFunctions();
 
     sdkFunctions.forEach(funcName => {
       try {
+        const sdkProxy = createSDKProxy(funcName);
         Object.defineProperty(window, funcName, {
           get: function() {
             return sdkProxy;
@@ -132,6 +153,7 @@
         const elements = document.querySelectorAll(selector);
         elements.forEach(el => {
           el.remove();
+          stats.elementsRemoved++;
         });
       } catch {
         // Invalid selector, skip
@@ -187,6 +209,7 @@
 
     elementsToRemove.forEach(el => {
       el.remove();
+      stats.elementsRemoved++;
     });
   }
 
@@ -203,9 +226,16 @@
     links.forEach(link => {
       const href = link.href;
 
+      // Skip already processed links
+      if (link.hasAttribute('data-armorly-cleaned')) {
+        return;
+      }
+
       // Check if URL has affiliate parameters
       if (patterns.hasAffiliateParams(href)) {
         link.href = patterns.cleanUrl(href);
+        link.setAttribute('data-armorly-cleaned', 'true');
+        stats.linksCleaned++;
       }
 
       // Check if it's a known affiliate redirect domain

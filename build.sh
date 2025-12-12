@@ -1,10 +1,10 @@
 #!/bin/bash
-# Build script for Armorly Chrome Extension v2.0.2
-# Minimal AI ad blocker - no UI, no network blocking, just client-side protection
+# Build script for Armorly Chrome Extension v2.1.0
+# AI ad blocker with popup UI - no network blocking, just client-side protection
 
 set -e  # Exit on error
 
-echo "🛡️  Building Armorly v2.0.2 (AI Ad Blocker)..."
+echo "🛡️  Building Armorly v2.1.0 (AI Ad Blocker)..."
 
 # Clean previous build
 echo "📦 Cleaning previous build..."
@@ -21,10 +21,11 @@ echo "📋 Copying extension files..."
 # Core files
 cp extension/manifest.json build/
 
-# Directories (minimal set - no background, no rules)
+# Directories
 cp -r extension/icons build/
 cp -r extension/content build/
 cp -r extension/lib build/
+cp -r extension/popup build/
 
 # Verify critical files exist
 echo "✅ Verifying build..."

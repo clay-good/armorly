@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 320px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f0f;
+      color: #e5e5e5;
+      padding: 16px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #2a2a2a;
+    }
+
+    .header img {
+      width: 32px;
+      height: 32px;
+    }
+
+    .header-text h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .header-text span {
+      font-size: 11px;
+      color: #888;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 16px;
+    }
+
+    .status-badge.active {
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+    }
+
+    .status-badge.inactive {
+      background: rgba(107, 114, 128, 0.15);
+      color: #9ca3af;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .status-badge.active .status-dot {
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .current-site {
+      background: #1a1a1a;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+
+    .current-site-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .current-site-url {
+      font-size: 13px;
+      color: #fff;
+      word-break: break-all;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      background: #1a1a1a;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 24px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    .protections {
+      background: #1a1a1a;
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .protections-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    .protection-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      font-size: 12px;
+    }
+
+    .protection-item:not(:last-child) {
+      border-bottom: 1px solid #2a2a2a;
+    }
+
+    .check-icon {
+      color: #22c55e;
+      font-size: 14px;
+    }
+
+    .protection-name {
+      flex: 1;
+      color: #e5e5e5;
+    }
+
+    .protection-count {
+      color: #888;
+      font-size: 11px;
+    }
+
+    .footer {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #2a2a2a;
+      font-size: 10px;
+      color: #666;
+      text-align: center;
+    }
+
+    .no-ads-note {
+      background: rgba(59, 130, 246, 0.1);
+      border-radius: 6px;
+      padding: 10px;
+      margin-top: 12px;
+      font-size: 11px;
+      color: #60a5fa;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="../icons/icon-48.png" alt="Armorly">
+    <div class="header-text">
+      <h1>Armorly</h1>
+      <span>AI Ad Protection</span>
+    </div>
+  </div>
+
+  <div id="status-badge" class="status-badge active">
+    <span class="status-dot"></span>
+    <span id="status-text">Monitoring</span>
+  </div>
+
+  <div class="current-site">
+    <div class="current-site-label">Current Site</div>
+    <div id="current-site-url" class="current-site-url">Loading...</div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div id="sdks-blocked" class="stat-number">0</div>
+      <div class="stat-label">SDKs Blocked</div>
+    </div>
+    <div class="stat-card">
+      <div id="links-cleaned" class="stat-number">0</div>
+      <div class="stat-label">Links Cleaned</div>
+    </div>
+  </div>
+
+  <div class="protections">
+    <div class="protections-title">Active Protections</div>
+    <div class="protection-item">
+      <span class="check-icon">&#10003;</span>
+      <span class="protection-name">SDK Interception</span>
+      <span id="sdk-count" class="protection-count">6 networks</span>
+    </div>
+    <div class="protection-item">
+      <span class="check-icon">&#10003;</span>
+      <span class="protection-name">Sponsored Content Removal</span>
+      <span class="protection-count">Active</span>
+    </div>
+    <div class="protection-item">
+      <span class="check-icon">&#10003;</span>
+      <span class="protection-name">Affiliate Link Cleaning</span>
+      <span class="protection-count">Active</span>
+    </div>
+    <div class="protection-item">
+      <span class="check-icon">&#10003;</span>
+      <span class="protection-name">Prompt Injection Shield</span>
+      <span class="protection-count">Active</span>
+    </div>
+  </div>
+
+  <div id="no-ads-note" class="no-ads-note" style="display: none;">
+    No ads detected on this page. This site may not currently serve AI ads.
+  </div>
+
+  <div class="footer">
+    v2.0.2 &middot; No data collected &middot; Open source
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
