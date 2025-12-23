@@ -121,7 +121,7 @@ Works on all websites. Platform-specific detection for:
 
 ### From Chrome Web Store
 
-[Install from Chrome Web Store](https://chromewebstore.google.com/detail/armorly/ojjmbhddhccnnepgojahamfilcpfddbp) (pending approval)
+[Install from Chrome Web Store](https://chromewebstore.google.com/detail/armorly/ojjmbhddhccnnepgojahamfilcpfddbp)
 
 ### Development Build
 
