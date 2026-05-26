@@ -246,10 +246,10 @@ Most-requested feature for any blocker; needed to recover from false positives.
 
 ### 4.3 declarativeNetRequest network blocking (v2.3.0)
 
-- [ ] Add `declarativeNetRequest` permission.
-- [ ] Add a static rules file `rules/ad-sdks.json` that blocks the script URLs in `getAllSDKDomains()` — koah.io, monetzly.com, sponsored.so, imprezia.ai, etc.
-- [ ] This is a defense-in-depth layer on top of the existing global-object interception. Same patterns, network-level enforcement.
-- [ ] Keep the existing DOM/global blocking too; the SDK might inline.
+- [x] Add `declarativeNetRequest` permission.
+- [x] Add a static rules file `rules/ad-sdks.json` that blocks the script URLs in `getAllSDKDomains()` — koah.io, monetzly.com, sponsored.so, imprezia.ai, etc. *(Excluded grok.x.com / ads.x.com — the former IS the chatbot. Excluded AdSense/DoubleClick — out of scope per README positioning.)*
+- [x] This is a defense-in-depth layer on top of the existing global-object interception. Same patterns, network-level enforcement.
+- [x] Keep the existing DOM/global blocking too; the SDK might inline.
 
 ### 4.4 Pattern auto-update from GitHub (v2.4.0)
 

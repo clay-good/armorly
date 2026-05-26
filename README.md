@@ -57,8 +57,9 @@ Armorly blocks AI-native advertising - ads embedded directly into AI chatbot res
 - **SDK Interception**: Blocks ad SDK global objects (Koah, Monetzly, etc.) making them unusable
 - **DOM Removal**: Removes sponsored labels and ad containers using specific selectors
 - **Affiliate Link Cleaning**: Strips tracking parameters (utm_*, ref, affiliate, etc.)
+- **Network-level SDK block** (v2.3.0+): Static `declarativeNetRequest` rules drop requests to the AI-specific ad-SDK domains (Koah, Monetzly, Sponsored.so, Imprezia) before they even reach the page — defense-in-depth on top of the global-object interception.
 
-Note: Armorly focuses on client-side ad blocking that traditional blockers can't handle. For network-level blocking, use uBlock Origin or Brave alongside Armorly.
+Note: Armorly only adds network rules for the AI-specific ad SDKs above. For generic web ads (AdSense, DoubleClick, etc.), use uBlock Origin or Brave alongside Armorly.
 
 ### Security: Hidden Prompt Injection Protection
 
@@ -191,8 +192,9 @@ armorly/
 |------------|-----|
 | `<all_urls>` (host) | Inject content scripts on all sites to detect ads |
 | `storage` | Remember the per-site disable list and lifetime block counts. Local-only — never synced or sent anywhere. |
+| `declarativeNetRequest` | Block requests to a small list of AI-specific ad-SDK domains (Koah, Monetzly, Sponsored.so, Imprezia) as defense in depth. Rules are static and shipped with the extension — no remote loading. |
 
-No `tabs`, no `webRequest`, no `cookies`, no `history`.
+No `tabs`, no `webRequest`, no `cookies`, no `history`. We deliberately do **not** block generic ad networks (AdSense, DoubleClick, etc.) — use uBlock Origin or Brave for that.
 
 ### Performance
 

@@ -4,6 +4,15 @@ All notable user-facing changes to Armorly are documented here. Format loosely f
 
 ## [Unreleased]
 
+## [2.3.0]
+
+### Added
+- **Network-level SDK blocking.** New static `declarativeNetRequest` ruleset ([extension/rules/ad-sdks.json](extension/rules/ad-sdks.json)) drops requests to Koah, Monetzly, Sponsored.so, and Imprezia domains before they reach the page. Defense-in-depth on top of the existing global-object interception — if the SDK inlines, the global hook still catches it.
+- New `declarativeNetRequest` permission. Rules are static and shipped with the extension; nothing is loaded remotely. We deliberately do **not** include generic ad networks (AdSense, DoubleClick) — that remains uBlock/Brave territory.
+
+### Changed
+- `build.sh` copies and verifies the new `rules/` directory.
+
 ## [2.2.0]
 
 ### Added

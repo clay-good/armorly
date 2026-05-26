@@ -29,6 +29,7 @@ cp -r extension/icons build/
 cp -r extension/content build/
 cp -r extension/lib build/
 cp -r extension/popup build/
+cp -r extension/rules build/
 
 # Verify critical files exist
 echo "✅ Verifying build..."
@@ -50,6 +51,11 @@ fi
 
 if [ ! -f build/content/hidden-content-blocker.js ]; then
   echo "❌ Error: hidden-content-blocker.js missing!"
+  exit 1
+fi
+
+if [ ! -f build/rules/ad-sdks.json ]; then
+  echo "❌ Error: rules/ad-sdks.json missing!"
   exit 1
 fi
 
