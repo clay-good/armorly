@@ -4,6 +4,19 @@ All notable user-facing changes to Armorly are documented here. Format loosely f
 
 ## [Unreleased]
 
+## [2.7.0]
+
+### Added
+- **Six browser targets, all built in CI.** `./build.sh` now accepts `chrome`, `firefox`, `edge`, `brave`, `opera`, and `safari`. The non-Firefox targets are byte-identical to `chrome` with renamed output; Firefox keeps its `jq` manifest transform. Safari produces an extension source bundle ready for `xcrun safari-web-extension-converter` on macOS.
+- **CI matrix.** `.github/workflows/build.yml` now uses a strategy matrix over all six targets so every push and PR proves every browser build.
+- **GitHub Release on every tag.** `.github/workflows/release.yml` builds all six zips, creates a GitHub Release with auto-generated notes, and attaches every zip to it. This is the canonical distribution channel for Safari, Opera, and Brave — and a useful fallback for the auto-published stores.
+- **Edge auto-deploy job.** Tag-triggered Chrome / Firefox / Edge store publishing remains gated on `vars.DEPLOY_*` + secrets; the workflow stays green until each store is wired up.
+
+### Notes
+- Safari / Opera have no public publishing API; submit the matching `armorly-<browser>.zip` from the GitHub Release manually.
+- Brave reuses the Chrome Web Store listing; `armorly-brave.zip` exists for sideload/testing.
+- Tagging now validates that the tag's version matches the manifest version before any deploy runs.
+
 ## [2.6.0]
 
 ### Added

@@ -136,19 +136,30 @@ Works on all websites. Platform-specific detection for:
 
 [Install from Chrome Web Store](https://chromewebstore.google.com/detail/armorly/ojjmbhddhccnnepgojahamfilcpfddbp)
 
-Works on Brave directly. Edge: submission pending; in the meantime, sideload `armorly-chrome.zip` from the [latest CI run](https://github.com/clay-good/armorly/actions). Firefox AMO submission pending too — use `armorly-firefox.zip` until then.
+### From GitHub Releases (all six browsers)
+
+Every release attaches a zip per browser to the [GitHub Release](https://github.com/clay-good/armorly/releases/latest):
+
+- `armorly-chrome.zip` — Chrome Web Store (auto-published when CI is configured)
+- `armorly-firefox.zip` — Firefox AMO (auto-published when CI is configured)
+- `armorly-edge.zip` — Edge Add-ons (auto-published when CI is configured)
+- `armorly-brave.zip` — Brave (also installs from the Chrome Web Store listing)
+- `armorly-opera.zip` — Opera Add-ons (manual submission)
+- `armorly-safari.zip` — Safari source bundle; wrap with `xcrun safari-web-extension-converter` on macOS
 
 ### Development Build
 
 ```bash
 git clone https://github.com/clay-good/armorly.git
 cd armorly
-./build.sh                  # Chrome / Edge / Brave (produces armorly-chrome.zip)
-./build.sh firefox          # Firefox (produces armorly-firefox.zip)
+./build.sh                  # Chrome (default)
+./build.sh firefox          # Firefox (manifest mutated for AMO)
+./build.sh edge|brave|opera # Chromium-family aliases
+./build.sh safari           # Safari source bundle
 ```
 
-Then in Chrome / Edge / Brave:
-1. Open `chrome://extensions/`
+Then in Chrome / Edge / Brave / Opera:
+1. Open `chrome://extensions/` (or the equivalent for your browser)
 2. Enable "Developer mode"
 3. Click "Load unpacked"
 4. Select the `build` folder

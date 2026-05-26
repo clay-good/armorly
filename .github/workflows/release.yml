@@ -1,31 +1,41 @@
 name: release
 
-# Publishes the extension to each store when a `v*` tag is pushed.
+# Cuts a release when a `v*` tag is pushed.
 #
-# This workflow is intentionally scaffolded but inert until the relevant
-# secrets exist on the repo. Each store job is gated on a `vars` flag PLUS
-# the presence of the secrets it needs, so the workflow stays green even
-# when stores aren't wired up yet.
+# What it does:
+#   1. Builds all six targets (chrome, firefox, edge, brave, opera, safari).
+#   2. Creates a GitHub Release with every zip attached — this is the
+#      distribution channel for Safari / Opera / Brave (and a useful
+#      fallback for Chrome / Firefox / Edge users who can't / don't want
+#      to use the store).
+#   3. Auto-publishes Chrome, Firefox, and Edge to their stores via the
+#      community publishing actions, when the corresponding secrets and
+#      `vars.DEPLOY_*` flags are in place.
 #
-# How to enable a store (one-time per store):
+# Store auto-publish setup (one-time per store):
 #
 #   Chrome Web Store
 #     Settings → Variables → DEPLOY_CHROME = "true"
 #     Settings → Secrets → CHROME_EXTENSION_ID, CHROME_CLIENT_ID,
 #                          CHROME_CLIENT_SECRET, CHROME_REFRESH_TOKEN
-#     (Generate via https://developer.chrome.com/docs/webstore/using-api )
+#     Docs: https://developer.chrome.com/docs/webstore/using-api
 #
 #   Firefox AMO
 #     Settings → Variables → DEPLOY_FIREFOX = "true"
 #     Settings → Secrets → FIREFOX_JWT_ISSUER, FIREFOX_JWT_SECRET
-#     (Generate at https://addons.mozilla.org/en-US/developers/addon/api/key/ )
+#     Docs: https://addons.mozilla.org/en-US/developers/addon/api/key/
 #
 #   Edge Add-ons
 #     Settings → Variables → DEPLOY_EDGE = "true"
 #     Settings → Secrets → EDGE_PRODUCT_ID, EDGE_CLIENT_ID, EDGE_CLIENT_SECRET
-#     (Generate via Partner Center → API access)
+#     Docs: Partner Center → API access
 #
-# To release: `git tag v2.6.0 && git push origin v2.6.0`
+# Safari / Opera have no public publishing API — submit the matching
+# armorly-<browser>.zip from the GitHub Release manually. Brave reuses
+# the Chrome Web Store listing; armorly-brave.zip is provided for users
+# who sideload during testing.
+#
+# To release: `git tag v2.7.0 && git push origin v2.7.0`
 
 on:
   push:
@@ -33,7 +43,7 @@ on:
       - "v*"
 
 permissions:
-  contents: read
+  contents: write   # needed to create the GitHub Release
 
 jobs:
   build:
@@ -46,18 +56,47 @@ jobs:
         with:
           node-version: "20"
       - run: sudo apt-get update && sudo apt-get install -y jq
+
       - id: ver
         run: echo "version=$(jq -r .version extension/manifest.json)" >> "$GITHUB_OUTPUT"
-      - run: ./build.sh chrome
-      - run: ./build.sh firefox
+
+      - name: Assert tag matches manifest version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          MANIFEST=$(jq -r .version extension/manifest.json)
+          if [ "$TAG" != "$MANIFEST" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match manifest version $MANIFEST"
+            exit 1
+          fi
+
+      - name: Build all targets
+        run: |
+          for t in chrome firefox edge brave opera safari; do
+            ./build.sh "$t"
+          done
+
       - uses: actions/upload-artifact@v4
         with:
-          name: armorly-chrome
-          path: armorly-chrome.zip
-      - uses: actions/upload-artifact@v4
+          name: armorly-zips
+          path: armorly-*.zip
+          if-no-files-found: error
+
+  github-release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
         with:
-          name: armorly-firefox
-          path: armorly-firefox.zip
+          name: armorly-zips
+
+      - name: Create / update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: armorly-*.zip
+          fail_on_unmatched_files: true
 
   deploy-chrome:
     needs: build
@@ -66,7 +105,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: armorly-chrome
+          name: armorly-zips
       - name: Upload to Chrome Web Store
         uses: wdzeng/chrome-extension@v1
         with:
@@ -81,10 +120,9 @@ jobs:
     runs-on: ubuntu-latest
     if: vars.DEPLOY_FIREFOX == 'true'
     steps:
-      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: armorly-firefox
+          name: armorly-zips
       - name: Upload to addons.mozilla.org
         uses: wdzeng/firefox-addon@v1
         with:
@@ -100,11 +138,11 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: armorly-chrome
+          name: armorly-zips
       - name: Upload to Edge Add-ons
         uses: wdzeng/edge-addon@v2
         with:
           product-id: ${{ secrets.EDGE_PRODUCT_ID }}
-          zip-path: armorly-chrome.zip
+          zip-path: armorly-edge.zip
           client-id: ${{ secrets.EDGE_CLIENT_ID }}
           client-secret: ${{ secrets.EDGE_CLIENT_SECRET }}

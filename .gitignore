@@ -182,3 +182,7 @@ test-results/
 # `./build.sh chrome` or `./build.sh firefox`.
 armorly-chrome.zip
 armorly-firefox.zip
+armorly-edge.zip
+armorly-brave.zip
+armorly-opera.zip
+armorly-safari.zip

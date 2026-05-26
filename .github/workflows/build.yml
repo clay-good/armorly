@@ -13,11 +13,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [chrome, firefox, edge, brave, opera, safari]
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node (for syntax checks)
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
 
@@ -49,29 +53,20 @@ jobs:
             exit 1
           fi
 
-      - name: Build Chrome target
-        run: ./build.sh chrome
+      - name: Build ${{ matrix.target }}
+        run: ./build.sh ${{ matrix.target }}
 
-      - name: Build Firefox target
-        run: ./build.sh firefox
-
-      - name: Validate built artifacts
+      - name: Validate built artifact
         run: |
           set -euo pipefail
-          unzip -p armorly-chrome.zip manifest.json | jq -e '.manifest_version == 3'
-          unzip -p armorly-firefox.zip manifest.json | jq -e '.browser_specific_settings.gecko.id'
-          unzip -p armorly-firefox.zip manifest.json | jq -e '.background.scripts | length > 0'
+          unzip -p "armorly-${{ matrix.target }}.zip" manifest.json | jq -e '.manifest_version == 3'
+          if [ "${{ matrix.target }}" = "firefox" ]; then
+            unzip -p armorly-firefox.zip manifest.json | jq -e '.browser_specific_settings.gecko.id'
+            unzip -p armorly-firefox.zip manifest.json | jq -e '.background.scripts | length > 0'
+          fi
 
-      - name: Upload Chrome build
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: armorly-chrome
-          path: armorly-chrome.zip
-          if-no-files-found: error
-
-      - name: Upload Firefox build
-        uses: actions/upload-artifact@v4
-        with:
-          name: armorly-firefox
-          path: armorly-firefox.zip
+          name: armorly-${{ matrix.target }}
+          path: armorly-${{ matrix.target }}.zip
           if-no-files-found: error

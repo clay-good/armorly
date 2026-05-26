@@ -2,20 +2,25 @@
 # Build script for Armorly browser extension.
 #
 # Usage:
-#   ./build.sh               # builds for Chrome/Edge/Brave (default)
+#   ./build.sh               # Chrome Web Store target (default)
 #   ./build.sh chrome        # explicit
-#   ./build.sh firefox       # produces a Firefox MV3-compatible zip
+#   ./build.sh firefox       # Firefox MV3-compatible zip
+#   ./build.sh edge          # Edge Add-ons (Chromium; same content as chrome)
+#   ./build.sh brave         # Brave (uses Chrome Web Store listing, same content)
+#   ./build.sh opera         # Opera Add-ons (Chromium; same content as chrome)
+#   ./build.sh safari        # Safari source bundle (needs xcrun
+#                            # safari-web-extension-converter on macOS)
 #
-# Edge accepts the Chrome zip without modification, so there is no
-# separate Edge build target.
+# Only Firefox needs manifest mutations. The other targets are byte-identical
+# to the Chrome zip with renamed output for clarity.
 
 set -e
 
 TARGET="${1:-chrome}"
 case "$TARGET" in
-  chrome|firefox) ;;
+  chrome|firefox|edge|brave|opera|safari) ;;
   *)
-    echo "❌ Unknown target: $TARGET (expected chrome|firefox)"
+    echo "❌ Unknown target: $TARGET (expected chrome|firefox|edge|brave|opera|safari)"
     exit 1
     ;;
 esac
@@ -28,11 +33,10 @@ echo "🛡️  Building Armorly v${VERSION} for ${TARGET}..."
 echo "📦 Cleaning previous build..."
 rm -rf build
 # Remove the artifact for the target we're about to produce. We don't touch
-# zips for the OTHER target so a cross-target build doesn't wipe them.
-case "$TARGET" in
-  chrome)  rm -f armorly-chrome.zip armorly-extension.zip ;;
-  firefox) rm -f armorly-firefox.zip ;;
-esac
+# zips for OTHER targets so cross-target builds don't wipe them.
+rm -f "armorly-${TARGET}.zip"
+# Legacy alias only ever follows the Chrome build.
+if [ "$TARGET" = "chrome" ]; then rm -f armorly-extension.zip; fi
 
 mkdir -p build
 
@@ -109,13 +113,13 @@ echo "📊 Size: $SIZE"
 echo "📁 Files: $FILE_COUNT"
 echo ""
 case "$TARGET" in
-  chrome)
+  chrome|edge|brave|opera)
     echo "🚀 Next steps:"
-    echo "   1. Go to chrome://extensions/"
+    echo "   1. Go to chrome://extensions/ (or edge://extensions, opera://extensions, brave://extensions)"
     echo "   2. Enable 'Developer mode'"
     echo "   3. Click 'Load unpacked' and select the 'build' folder"
     echo "   OR"
-    echo "   4. Upload ${ZIP_NAME} to the Chrome Web Store (also accepted by Edge Add-ons and Brave)"
+    echo "   4. Upload ${ZIP_NAME} to the corresponding extension store."
     ;;
   firefox)
     echo "🚀 Next steps:"
@@ -123,6 +127,13 @@ case "$TARGET" in
     echo "   2. Click 'Load Temporary Add-on...' and select build/manifest.json"
     echo "   OR"
     echo "   3. Upload ${ZIP_NAME} to addons.mozilla.org"
+    ;;
+  safari)
+    echo "🚀 Next steps (Safari requires macOS + Xcode):"
+    echo "   1. unzip ${ZIP_NAME} into a working directory"
+    echo "   2. xcrun safari-web-extension-converter ./<that dir>"
+    echo "   3. Open the generated Xcode project, sign with your Apple Dev ID, run."
+    echo "   App Store Connect submission has no public API — upload manually."
     ;;
 esac
 

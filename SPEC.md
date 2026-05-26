@@ -291,17 +291,22 @@ The injection shield currently runs invisibly. Users have no idea it's working.
 - [x] Listing copy can be identical.
 - [ ] Submit to edge.microsoft.com. *(Manual one-time; thereafter auto-publish via `release.yml` once `EDGE_*` secrets are in place.)*
 
-### 5.x CI/CD (added 2026-05-26)
+### 5.x CI/CD (added 2026-05-26; expanded to 6 targets in v2.7.0)
 
-- [x] `.github/workflows/build.yml` runs on every push and PR: JSON validation, JS syntax check, BUNDLED_VERSION ↔ ad-patterns.json consistency check, builds chrome + firefox, uploads artifacts. Makes the green check on `main` meaningful.
-- [x] `.github/workflows/release.yml` scaffolds tag-triggered publishing for Chrome / Firefox / Edge. Each job is gated on `vars.DEPLOY_*` AND the secrets it needs, so the workflow stays green until a store is wired up. See header comments in the workflow file for exact secret names.
-- Notes: Safari has no public publishing API (manual via App Store Connect / Transporter). Opera also manual. Brave reuses the Chrome listing.
+- [x] `.github/workflows/build.yml` runs on every push and PR: JSON validation, JS syntax check, BUNDLED_VERSION ↔ ad-patterns.json consistency check, then a strategy matrix builds **all six** targets (chrome / firefox / edge / brave / opera / safari) and uploads each as a separate artifact. Makes the green check on `main` mean "every browser build still works."
+- [x] `.github/workflows/release.yml` fires on `v*` tags. Validates that the tag matches the manifest version, builds all six targets, creates a GitHub Release with all zips attached + auto-generated notes, then runs gated store-publish jobs:
+  - Chrome Web Store — `vars.DEPLOY_CHROME` + `CHROME_*` secrets.
+  - Firefox AMO — `vars.DEPLOY_FIREFOX` + `FIREFOX_JWT_*` secrets.
+  - Edge Add-ons — `vars.DEPLOY_EDGE` + `EDGE_*` secrets.
+- Safari / Opera have no public publishing API → manual upload from the GitHub Release. Brave reuses the Chrome Web Store listing; `armorly-brave.zip` is provided for sideload/testing.
+- 5.3 (Safari) build is automated; **submission** still requires macOS + Xcode + Apple Developer account and remains a manual step.
 
 ### 5.3 Safari (stretch goal)
 
-- [ ] Requires Xcode + a Safari Web Extension wrapper.
-- [ ] Apple Developer Program ($99/yr).
-- [ ] Skip unless there's clear demand.
+- [x] CI builds `armorly-safari.zip` (a Safari Web Extension source bundle) on every push and attaches it to the GitHub Release on every tag.
+- [ ] Wrap with `xcrun safari-web-extension-converter` on macOS to generate an Xcode project. *(Manual; no public API.)*
+- [ ] Apple Developer Program ($99/yr) for signing + App Store Connect submission.
+- [ ] Skip the actual store submission unless there's clear demand.
 
 ---
 
