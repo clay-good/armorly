@@ -18,7 +18,10 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['github'], ['list']] : 'list',
   use: {
-    video: 'retain-on-failure',
+    // `npm run demo` forces video on for the @demo-tagged walkthrough so
+    // the resulting webm can drive the Chrome Web Store listing recording
+    // (SPEC.md Phase 3). Regular `npm test` keeps video on failure only.
+    video: process.env.ARMORLY_DEMO ? 'on' : 'retain-on-failure',
     trace: 'retain-on-failure'
   },
   // Boots a tiny static server for the fixture pages. We avoid pulling in

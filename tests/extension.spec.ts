@@ -27,7 +27,13 @@ test.beforeAll(async () => {
       `--load-extension=${extensionPath}`,
       '--no-sandbox',
       '--disable-dev-shm-usage'
-    ]
+    ],
+    // `npm run demo` records a walkthrough video for the Chrome Web Store
+    // listing (SPEC.md Phase 3). Playwright's `use.video` config doesn't
+    // apply to manually-launched persistent contexts, so we wire it here.
+    ...(process.env.ARMORLY_DEMO
+      ? { recordVideo: { dir: 'test-results/demo', size: { width: 1280, height: 720 } } }
+      : {})
   });
 });
 
@@ -85,6 +91,33 @@ test('affiliate-link cleaning strips tag= and utm_source= but keeps unrelated pa
   expect(href!).not.toContain('tag=');
   expect(href!).not.toContain('utm_source=');
   expect(href!).toContain('keep=yes');
+});
+
+// Phase 2.5: a single end-to-end test tagged `@demo` that walks through the
+// before/after of the fixture page. Playwright records video for any test in
+// `npm run demo` thanks to the `video: 'on'` override there. The output ends
+// up under test-results/<test-name>/video.webm.
+test('@demo end-to-end fixture walkthrough for the screen recording', async () => {
+  const page = await context.newPage();
+  await page.goto(`${FIXTURES}/fake-ads.html`);
+  await page.waitForFunction(() => (window as any).__armorlyProbeDone === true, undefined, { timeout: 5000 });
+  await page.waitForFunction(
+    () => !document.querySelector('#sponsored-flag') && !document.querySelector('#koah-ad'),
+    undefined,
+    { timeout: 5000 }
+  );
+  // Hold on the cleaned fake-ads page long enough that the recording shows it.
+  await page.waitForTimeout(500);
+  await page.goto(`${FIXTURES}/hidden-injection.html`);
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#hidden-injection');
+      return !!el && el.textContent!.trim() === '';
+    },
+    undefined,
+    { timeout: 5000 }
+  );
+  await page.waitForTimeout(500);
 });
 
 test('hidden-content shield empties white-on-white injection but leaves visible content', async () => {

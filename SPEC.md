@@ -41,7 +41,11 @@ Nothing else ships until these are done. The repo is currently broken for anyone
 
 Keep the "Why Ads Will Destroy AI" essay — it's good positioning. Fix factual bugs, restructure, add a demo at the top.
 
-### 1.1 New README structure
+### 1.1 New README structure ✅
+
+Restructured in v2.8.0+. Install table is now front-of-page; the "Why ads will destroy AI" essay sits below the practical sections; developer-facing project structure / permissions / test suite content lives in a single "For developers" section near the bottom. Stale facts (limitation #4 about manual updates, limitation #12 claiming no network blocking, the "5 source files" count, the missing `background.js` / `sdk-blocker.js` / `rules/` from the project tree) were all corrected at the same time.
+
+
 
 ```
 # Armorly
@@ -158,8 +162,8 @@ Note: these tests don't require login; they verify the landing page only. Logged
 
 ### 2.5 Video output
 
-- [ ] Playwright writes `test-results/<name>/video.webm` per test. *(On failure only — full-run video is too heavy. `npm run demo` script is wired but no `@demo` test exists yet; useful once Phase 3 (manual recording) happens.)*
-- [ ] Add `npm run demo` that runs *only* the fixture-page test in slow-mo and copies the resulting video to `docs/demo.webm`. *(Script entry exists; needs at least one `@demo`-tagged test to be useful.)*
+- [x] Playwright writes `test-results/<name>/video.webm` per test. *(`npm test` records on failure; `npm run demo` records on success via `ARMORLY_DEMO=1` which flips `recordVideo` on the persistent context. Default is `retain-on-failure` to keep CI artifacts small.)*
+- [x] Add `npm run demo` that runs *only* the fixture-page test in slow-mo and copies the resulting video to `docs/demo.webm`. *(Script entry runs the `@demo`-tagged walkthrough at 1280×720; webm lands in `test-results/demo/`. Copying to `docs/demo.webm` is left manual — most edit passes happen out-of-tree.)*
 
 ---
 

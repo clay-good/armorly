@@ -4,6 +4,14 @@ All notable user-facing changes to Armorly are documented here. Format loosely f
 
 ## [Unreleased]
 
+### Changed
+- **README restructured** along the lines of SPEC.md Phase 1.1: install table moved to the top, "Why ads will destroy AI" essay shifted below the practical sections, developer content consolidated under a single "For developers" heading. Stale facts corrected — limitation #4 now reflects the v2.5.0 pattern auto-update, limitation #12's "no network-level blocking" claim removed (we added that in v2.3.0), the project-structure tree now lists `background.js`, `sdk-blocker.js`, `rules/`, and `ad-patterns.json`. Added a build-status badge linking to the [build workflow](.github/workflows/build.yml).
+- **`npm run demo`** now actually produces a webm. It sets `ARMORLY_DEMO=1`, which flips `recordVideo` on the persistent context and runs only the `@demo`-tagged walkthrough — the existing fixture pages, end to end, at 1280×720. Output lands in `test-results/demo/`.
+
+### Added
+- **[docs/RELEASING.md](docs/RELEASING.md)** — runbook for the tag-driven release flow: version-bump checklist, the secrets needed per store, manual-only stores, and rollback procedure.
+- Phase 2.5 `@demo`-tagged Playwright test exercising the full fake-ads → hidden-injection walkthrough, used as the video source for Phase 3.
+
 ## [2.8.0]
 
 ### Fixed
