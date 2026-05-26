@@ -4,6 +4,16 @@ All notable user-facing changes to Armorly are documented here. Format loosely f
 
 ## [Unreleased]
 
+## [2.5.0]
+
+### Added
+- **Pattern auto-update.** A new background service worker ([extension/background.js](extension/background.js)) fetches `extension/lib/ad-patterns.json` from the `main` branch on install and once every 24 hours via `chrome.alarms`. Snapshots are validated against a strict schema (object/array/string types only — no functions, no eval, no remote code) and stored in `chrome.storage.local.cached_patterns`. Content scripts apply the cached snapshot before initializing, but only as a **union** with the bundled patterns: bundled values are the floor, so a compromised remote can at most ADD spurious selectors (causing self-DoS via over-removal), never REMOVE shipped protections.
+- New flat-data JSON mirror at [extension/lib/ad-patterns.json](extension/lib/ad-patterns.json) — function names, domain patterns, platform selectors, and affiliate params/domains. Regex-driven detection (script URL patterns, ad-label regexes, commercial-intent regexes) intentionally stays bundled-only.
+- New `alarms` permission.
+
+### Changed
+- `build.sh` now copies `background.js`, verifies the new files are present, and asserts that `BUNDLED_VERSION` in [ad-patterns.js](extension/lib/ad-patterns.js) matches the `version` field in [ad-patterns.json](extension/lib/ad-patterns.json) — bumping one without the other will fail the build instead of silently shipping a stale cache comparison.
+
 ## [2.4.0]
 
 ### Added

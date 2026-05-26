@@ -93,7 +93,7 @@ When the shield fires, a small toast appears in the bottom-right of the page so 
 
 7. **Safari, Firefox, and Edge are not supported yet.** Chrome/Chromium only for now.
 
-8. **Ad-patterns.js requires manual updates.** There's no auto-update mechanism. When ad networks change patterns, you need a new version of the extension.
+8. **Pattern auto-update is data-only.** As of v2.5.0, the flat data fields in [ad-patterns.json](extension/lib/ad-patterns.json) — SDK function names, domain patterns, platform selectors, affiliate params/domains — refresh once a day from this repo's `main` branch. Regex-driven detection (script URL patterns, ad-label regexes, commercial-intent scoring) still requires an extension update because regex doesn't round-trip through JSON cleanly.
 
 9. **Iframes may bypass content script injection.** If an AI chatbot loads in a cross-origin iframe with restrictive headers, our content scripts may not inject. This is rare but possible.
 
@@ -195,6 +195,7 @@ armorly/
 | `<all_urls>` (host) | Inject content scripts on all sites to detect ads |
 | `storage` | Remember the per-site disable list and lifetime block counts. Local-only — never synced or sent anywhere. |
 | `declarativeNetRequest` | Block requests to a small list of AI-specific ad-SDK domains (Koah, Monetzly, Sponsored.so, Imprezia) as defense in depth. Rules are static and shipped with the extension — no remote loading. |
+| `alarms` | Wake the background service worker once a day to refresh the pattern data from the project's own `main` branch on GitHub. Data only — no remote code is ever loaded or executed. |
 
 No `tabs`, no `webRequest`, no `cookies`, no `history`. We deliberately do **not** block generic ad networks (AdSense, DoubleClick, etc.) — use uBlock Origin or Brave for that.
 

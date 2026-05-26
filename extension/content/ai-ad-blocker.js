@@ -385,11 +385,17 @@
   }
 
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-    chrome.storage.local.get({ disabled_domains: [] }, (data) => {
+    chrome.storage.local.get({ disabled_domains: [], cached_patterns: null }, (data) => {
       if (isDisabledForHost(data.disabled_domains)) {
         stats.active = false;
         console.log('[Armorly] Disabled for this site by user setting:', hostname);
         return;
+      }
+      // Phase 4.4: apply any newer pattern snapshot fetched by the background
+      // service worker. Bundled patterns are the floor; this can only ADD.
+      if (data.cached_patterns && typeof patterns.mergeCachedPatterns === 'function') {
+        const applied = patterns.mergeCachedPatterns(data.cached_patterns);
+        if (applied) console.log('[Armorly] Using cached patterns', patterns.version);
       }
       init();
     });

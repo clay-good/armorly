@@ -30,6 +30,7 @@ cp -r extension/content build/
 cp -r extension/lib build/
 cp -r extension/popup build/
 cp -r extension/rules build/
+cp extension/background.js build/
 
 # Verify critical files exist
 echo "✅ Verifying build..."
@@ -56,6 +57,26 @@ fi
 
 if [ ! -f build/rules/ad-sdks.json ]; then
   echo "❌ Error: rules/ad-sdks.json missing!"
+  exit 1
+fi
+
+if [ ! -f build/background.js ]; then
+  echo "❌ Error: background.js missing!"
+  exit 1
+fi
+
+if [ ! -f build/lib/ad-patterns.json ]; then
+  echo "❌ Error: lib/ad-patterns.json missing!"
+  exit 1
+fi
+
+# Phase 4.4: the BUNDLED_VERSION constant in ad-patterns.js must match the
+# `version` field in ad-patterns.json — otherwise the cache-vs-bundled
+# comparison in mergeCachedPatterns will misbehave.
+JS_VER=$(grep -E "const BUNDLED_VERSION" extension/lib/ad-patterns.js | head -1 | sed -E "s/.*'([^']+)'.*/\1/")
+JSON_VER=$(grep -E '"version"' extension/lib/ad-patterns.json | head -1 | sed -E 's/.*"version": *"([^"]+)".*/\1/')
+if [ "$JS_VER" != "$JSON_VER" ]; then
+  echo "❌ Error: BUNDLED_VERSION ($JS_VER) in ad-patterns.js does not match version ($JSON_VER) in ad-patterns.json"
   exit 1
 fi
 

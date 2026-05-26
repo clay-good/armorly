@@ -251,19 +251,15 @@ Most-requested feature for any blocker; needed to recover from false positives.
 - [x] This is a defense-in-depth layer on top of the existing global-object interception. Same patterns, network-level enforcement.
 - [x] Keep the existing DOM/global blocking too; the SDK might inline.
 
-### 4.4 Pattern auto-update from GitHub (deferred past v2.4.0)
-
-> **Status:** Deferred. Shipped 4.5 + 4.6 as v2.4.0 instead. 4.4 needs a careful split of `ad-patterns.js` into pure-data JSON + a synchronous loader, because SDK interception must run at `document_start` (before `chrome.storage.local.get` resolves). The minimal viable design is: bundled patterns load synchronously and start blocking immediately; the background service worker fetches a newer JSON on install + every 24h; later DOM/affiliate passes use the union of bundled + cached. Worth a dedicated PR.
-
-
+### 4.4 Pattern auto-update from GitHub (v2.5.0)
 
 This solves limitation #8 in the README.
 
-- [ ] Add a background service worker.
-- [ ] On install + every 24h, fetch `https://raw.githubusercontent.com/<owner>/armorly/main/extension/lib/ad-patterns.json` (note: convert ad-patterns.js to a pure-JSON data file + a small loader to make remote updates safe — no remote code execution).
-- [ ] Cache in `chrome.storage.local`.
-- [ ] Content scripts prefer the cached version if newer than the bundled one.
-- [ ] **Critically**: only data, never code. Web Store policy forbids remote code execution and reviewers will reject otherwise.
+- [x] Add a background service worker. *([extension/background.js](extension/background.js))*
+- [x] On install + every 24h, fetch `https://raw.githubusercontent.com/clay-good/armorly/main/extension/lib/ad-patterns.json` (note: convert ad-patterns.js to a pure-JSON data file + a small loader to make remote updates safe — no remote code execution). *(Done; alarms fire daily, schema-validated on receipt.)*
+- [x] Cache in `chrome.storage.local`. *(Under `cached_patterns`.)*
+- [x] Content scripts prefer the cached version if newer than the bundled one. *(Implemented as a union: bundled values are the floor; the cache can only ADD entries, never remove them — mitigates supply-chain risk.)*
+- [x] **Critically**: only data, never code. Web Store policy forbids remote code execution and reviewers will reject otherwise. *(Schema validator rejects anything that isn't object/array/string. Regex-driven detection stays bundled.)*
 
 ### 4.5 "Report a missed ad" link in popup (v2.4.0)
 
