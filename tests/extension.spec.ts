@@ -151,6 +151,46 @@ test('@demo end-to-end ChatGPT-mock walkthrough for the hero video', async () =>
   await worker.evaluate(() => chrome.storage.local.set({ disabled_domains: [] }));
 });
 
+test('auto-update bridge: cached pattern SDK names reach the MAIN-world interceptor', async () => {
+  // SPEC.md Phase 4.4 was originally only wired to the isolated-world script,
+  // so newly-added SDK function names from the daily refresh never got
+  // proxied. This test seeds a synthetic name in `cached_patterns`, opens a
+  // page, and asserts the MAIN-world sdk-blocker installed a proxy for it.
+  let [worker] = context.serviceWorkers();
+  if (!worker) worker = await context.waitForEvent('serviceworker');
+
+  await worker.evaluate(() =>
+    chrome.storage.local.set({
+      cached_patterns: {
+        version: '9999-12-31', // strictly newer than BUNDLED_VERSION
+        adSDKs: {
+          future_network: {
+            functions: ['ArmorlyAutoUpdateProbe'],
+            methods: ['init'],
+            domainPatterns: []
+          }
+        }
+      }
+    })
+  );
+
+  const page = await context.newPage();
+  await page.goto(`${FIXTURES}/fake-ads.html`);
+
+  // The bridge is async: ai-ad-blocker's storage callback resolves, it
+  // postMessages the new function list, sdk-blocker proxies it. Allow up
+  // to 5s for the round trip — typically lands in well under 100ms.
+  await page.waitForFunction(
+    () => typeof (window as any).ArmorlyAutoUpdateProbe !== 'undefined',
+    undefined,
+    { timeout: 5000 }
+  );
+  expect(await page.evaluate(() => typeof (window as any).ArmorlyAutoUpdateProbe)).toBe('object');
+
+  // Cleanup so the rest of the suite isn't influenced by a fake cached snapshot.
+  await worker.evaluate(() => chrome.storage.local.set({ cached_patterns: null }));
+});
+
 test('hidden-content shield empties white-on-white injection but leaves visible content', async () => {
   const page = await context.newPage();
   await page.goto(`${FIXTURES}/hidden-injection.html`);

@@ -369,7 +369,20 @@
       // service worker. Bundled patterns are the floor; this can only ADD.
       if (data.cached_patterns && typeof patterns.mergeCachedPatterns === 'function') {
         const applied = patterns.mergeCachedPatterns(data.cached_patterns);
-        if (applied) console.log('[Armorly] Using cached patterns', patterns.version);
+        if (applied) {
+          console.log('[Armorly] Using cached patterns', patterns.version);
+          // Push the updated SDK function list to the MAIN-world sdk-blocker
+          // so newly-named SDKs from the daily refresh also get proxied.
+          // Without this hop, auto-update only covers DOM selectors and
+          // affiliate params — the actual interceptor stayed bundled-only.
+          try {
+            window.postMessage({
+              source: 'armorly',
+              type: 'update-sdk-list',
+              functions: patterns.getAllSDKFunctions()
+            }, '*');
+          } catch (_) { /* noop */ }
+        }
       }
       init();
     });

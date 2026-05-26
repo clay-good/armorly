@@ -19,7 +19,11 @@
   'use strict';
 
   if (!window.ArmorlyAdPatterns) return;
-  const sdkFunctions = window.ArmorlyAdPatterns.getAllSDKFunctions();
+
+  // Names we've already installed proxies for. Used to ignore duplicates
+  // when the isolated-world script later pushes an updated list pulled
+  // from cached_patterns (chrome.storage.local). See message listener below.
+  const installed = new Set();
 
   function createProxy() {
     return new Proxy({}, {
@@ -37,16 +41,38 @@
     });
   }
 
-  sdkFunctions.forEach(function (name) {
-    try {
-      const proxy = createProxy();
-      Object.defineProperty(window, name, {
-        get: function () { return proxy; },
-        set: function () { return true; },
-        configurable: false
-      });
-    } catch (_) {
-      // Property may already be defined non-configurable. Skip.
+  function installProxiesFor(names) {
+    if (!Array.isArray(names)) return;
+    for (const name of names) {
+      if (typeof name !== 'string' || installed.has(name)) continue;
+      try {
+        const proxy = createProxy();
+        Object.defineProperty(window, name, {
+          get: function () { return proxy; },
+          set: function () { return true; },
+          configurable: false
+        });
+        installed.add(name);
+      } catch (_) {
+        // Property may already be defined non-configurable on the page; skip.
+      }
+    }
+  }
+
+  // First pass: install from the bundled patterns. Runs synchronously at
+  // document_start so the proxy lands before any inline ad-SDK call.
+  installProxiesFor(window.ArmorlyAdPatterns.getAllSDKFunctions());
+
+  // Second pass: when ai-ad-blocker.js (isolated world) finishes its
+  // chrome.storage.local lookup and merges cached_patterns, it postMessages
+  // the updated function list to us so we can proxy any names the daily
+  // background refresh added since the bundle was packaged.
+  window.addEventListener('message', function (event) {
+    if (event.source !== window) return;
+    const data = event.data;
+    if (!data || data.source !== 'armorly') return;
+    if (data.type === 'update-sdk-list' && Array.isArray(data.functions)) {
+      installProxiesFor(data.functions);
     }
   });
 })();

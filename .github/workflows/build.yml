@@ -9,6 +9,11 @@ on:
 permissions:
   contents: read
 
+# Opt JavaScript actions into the Node 24 runtime ahead of GitHub's June 2026
+# default flip. Silences the deprecation warning we hit on every run.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -87,7 +92,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: pw-${{ runner.os }}-${{ hashFiles('package.json') }}
 
-      - run: npm install
+      - run: npm ci
 
       - run: npx playwright install --with-deps chromium
 

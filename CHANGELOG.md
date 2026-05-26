@@ -4,10 +4,14 @@ All notable user-facing changes to Armorly are documented here. Format loosely f
 
 ## [Unreleased]
 
+### Fixed
+- **Auto-update now actually reaches the SDK interceptor.** Phase 4.4 wired the daily refresh into `chrome.storage.local.cached_patterns` and merged the snapshot into the isolated-world script's patterns object — but the MAIN-world [sdk-blocker.js](extension/content/sdk-blocker.js) only saw the bundled list, so any *newly-named* SDK from the daily refresh was never proxied. Fix: when the isolated-world script merges a newer snapshot, it postMessages the updated function list to the MAIN world; sdk-blocker listens and installs proxies for any names it hasn't seen yet (deduped via a Set). DOM selectors and affiliate params were always being auto-updated correctly; this gap was specific to SDK function-name coverage. New Playwright test seeds a synthetic name in `cached_patterns` and asserts the proxy lands.
+
 ### Added
 - **Automated demo recording (Phase 3).** New ChatGPT-styled fixture page ([tests/fixtures/chatgpt-mock.html](tests/fixtures/chatgpt-mock.html)) plus an off→on storyboard in the `@demo` Playwright test produce a deterministic 7.6-second walkthrough. `./scripts/make-demo-gif.sh` converts the webm to a 900 KB GIF via ffmpeg + gifsicle. Output is committed at [docs/demo.gif](docs/demo.gif) and embedded at the top of the README — what used to require a manual screen recording now lives in the repo and replays exactly the same every build.
 
 ### Changed
+- CI: switched `npm install` → `npm ci` (we have a committed lock file) and set `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at the workflow level to opt into Node 24 ahead of GitHub's June 2026 default flip. Silences the deprecation banner on every run.
 - **README restructured** along the lines of SPEC.md Phase 1.1: install table moved to the top, "Why ads will destroy AI" essay shifted below the practical sections, developer content consolidated under a single "For developers" heading. Stale facts corrected — limitation #4 now reflects the v2.5.0 pattern auto-update, limitation #12's "no network-level blocking" claim removed (we added that in v2.3.0), the project-structure tree now lists `background.js`, `sdk-blocker.js`, `rules/`, and `ad-patterns.json`. Added a build-status badge linking to the [build workflow](.github/workflows/build.yml).
 - **`npm run demo`** now actually produces a webm. It sets `ARMORLY_DEMO=1`, which flips `recordVideo` on the persistent context and runs only the `@demo`-tagged walkthrough — the existing fixture pages, end to end, at 1280×720. Output lands in `test-results/demo/`.
 
