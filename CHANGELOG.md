@@ -4,6 +4,12 @@ All notable user-facing changes to Armorly are documented here. Format loosely f
 
 ## [Unreleased]
 
+### Added
+- **Chrome Web Store listing stills, automated.** The `@demo` Playwright test now records at 1280×800 (the listing hero aspect), and a new `scripts/make-listing-stills.sh` extracts `docs/listing/before.png` (Armorly OFF, sponsored card visible) and `docs/listing/after.png` (Armorly ON, card gone) straight from the same source webm. One command end-to-end: `npm run stills`. SPEC.md Phase 3.4 items previously requiring a manual screen capture are now reproducible.
+
+### Changed
+- Hero `docs/demo.gif` regenerated at the new 1280×800 source resolution — file size dropped to 422 KB even though the source is now taller, because the regenerated palette dedupes better against the cleaner background.
+
 ## [2.9.0]
 
 ### Fixed

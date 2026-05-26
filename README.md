@@ -185,7 +185,10 @@ Convert to GIF with:
 
 ```bash
 ./scripts/make-demo-gif.sh        # needs ffmpeg + gifsicle
-# writes docs/demo.gif (~900KB, 12fps, 960px wide)
+# writes docs/demo.gif (~400-900 KB, 12fps, 960px wide)
+
+npm run stills                    # rebuild + extract before.png/after.png
+# writes docs/listing/{before,after}.png (1280x800, Chrome Web Store aspect)
 ```
 
 ## Contributing

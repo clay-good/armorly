@@ -32,7 +32,7 @@ test.beforeAll(async () => {
     // listing (SPEC.md Phase 3). Playwright's `use.video` config doesn't
     // apply to manually-launched persistent contexts, so we wire it here.
     ...(process.env.ARMORLY_DEMO
-      ? { recordVideo: { dir: 'test-results/demo', size: { width: 1280, height: 720 } } }
+      ? { recordVideo: { dir: 'test-results/demo', size: { width: 1280, height: 800 } } }
       : {})
   });
 });
@@ -118,7 +118,10 @@ test('@demo end-to-end ChatGPT-mock walkthrough for the hero video', async () =>
   );
 
   const page = await context.newPage();
-  await page.setViewportSize({ width: 1280, height: 720 });
+  // 1280x800 is the Chrome Web Store listing aspect — sizing the @demo
+  // recording to match means the same source webm yields both the README
+  // GIF and the store listing stills (extracted via scripts/make-listing-stills.sh).
+  await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(`${FIXTURES}/chatgpt-mock.html`);
   // Sanity: the sponsored card is visible while Armorly is off.
   await expect(page.locator('.sponsored')).toBeVisible();

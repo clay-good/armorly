@@ -213,9 +213,9 @@ Goal: a 30–45 second screen recording for the Chrome Web Store listing. Record
 
 ### 3.4 Chrome Web Store listing assets to produce from the video
 
-- [ ] 1280×800 hero screenshot (frame 0:12 of the recording).
-- [ ] 1280×800 secondary screenshot (frame 0:30, showing the popup with non-zero stats).
-- [ ] Animated GIF for the README (`docs/demo.gif`, max 5MB, use `gifsicle -O3 --lossy=80`).
+- [x] 1280×800 hero screenshot (frame 0:12 of the recording). *(Now automated: `npm run stills` runs the @demo recording and extracts [docs/listing/before.png](docs/listing/before.png) — Armorly OFF, sponsored card visible — straight from the webm.)*
+- [x] 1280×800 secondary screenshot (frame 0:30, showing the popup with non-zero stats). *(Adapted: [docs/listing/after.png](docs/listing/after.png) shows the same page with Armorly ON and the card gone — the off→on contrast is a stronger Web Store hook than a stats screenshot at 0/0 freshly installed. Popup screenshot can still be added manually.)*
+- [x] Animated GIF for the README (`docs/demo.gif`, max 5MB, use `gifsicle -O3 --lossy=80`). *([docs/demo.gif](docs/demo.gif) is 422 KB at 960px wide, well under the 5 MB cap. Source pipeline: ffmpeg palettegen/paletteuse → `gifsicle -O3 --lossy=80`.)*
 - [ ] YouTube video as a public link to add in the "More info" section of the listing.
 
 ### 3.5 Web Store listing copy update
