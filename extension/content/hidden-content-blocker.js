@@ -198,6 +198,15 @@
   // REMOVAL FUNCTIONS
   // =========================================================================
 
+  // Total injection blocks observed during this page's lifetime. The toast
+  // (v2.5.0) reads this to decide whether to surface anything to the user.
+  let injectionBlockCount = 0;
+
+  function notifyInjectionBlocked() {
+    injectionBlockCount++;
+    maybeShowInjectionToast();
+  }
+
   /**
    * Scan and remove ONLY hidden content containing prompt injection
    */
@@ -215,6 +224,7 @@
       // MUST contain prompt injection pattern to be removed
       if (containsPromptInjection(text)) {
         element.textContent = '';
+        notifyInjectionBlocked();
       }
     });
   }
@@ -244,7 +254,114 @@
 
     commentsToRemove.forEach(comment => {
       comment.remove();
+      notifyInjectionBlocked();
     });
+  }
+
+  // =========================================================================
+  // TOAST UI (v2.4.0): make the silent block visible once per page
+  // =========================================================================
+
+  let toastShownOnPage = false;
+  let toastDismissedForHost = null; // null = unknown; true/false once resolved
+
+  // Resolve dismissal state up front so the toast handler doesn't have to
+  // await storage on every block notification.
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+    chrome.storage.local.get({ dismissed_injection_toast: [] }, (data) => {
+      const list = Array.isArray(data.dismissed_injection_toast) ? data.dismissed_injection_toast : [];
+      toastDismissedForHost = list.includes(hostname);
+      // If we already blocked something before storage resolved, retry.
+      if (injectionBlockCount > 0) maybeShowInjectionToast();
+    });
+  } else {
+    toastDismissedForHost = false;
+  }
+
+  function maybeShowInjectionToast() {
+    if (toastShownOnPage) return;
+    if (toastDismissedForHost === null) return; // wait for storage resolve
+    if (toastDismissedForHost) return;
+    // Don't try to attach a toast before there is a body to attach to.
+    if (!document.body) {
+      document.addEventListener('DOMContentLoaded', maybeShowInjectionToast, { once: true });
+      return;
+    }
+    toastShownOnPage = true;
+    renderInjectionToast();
+  }
+
+  function rememberDismissForHost() {
+    if (!chrome.storage || !chrome.storage.local) return;
+    chrome.storage.local.get({ dismissed_injection_toast: [] }, (data) => {
+      const list = Array.isArray(data.dismissed_injection_toast) ? data.dismissed_injection_toast : [];
+      if (!list.includes(hostname)) {
+        list.push(hostname);
+        chrome.storage.local.set({ dismissed_injection_toast: list });
+      }
+    });
+  }
+
+  function renderInjectionToast() {
+    // Use a shadow root so the page's CSS can't restyle (or hide) us, and
+    // pin to fixed position so it works on overflow-hidden layouts.
+    const host = document.createElement('div');
+    host.style.cssText = 'all: initial; position: fixed; right: 16px; bottom: 16px; z-index: 2147483647;';
+    const shadow = host.attachShadow({ mode: 'closed' });
+
+    const style = document.createElement('style');
+    style.textContent = `
+      .toast {
+        font: 13px/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #fff;
+        background: #0f0f0f;
+        border: 1px solid #2a2a2a;
+        border-radius: 8px;
+        padding: 10px 12px;
+        max-width: 320px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .icon { font-size: 16px; line-height: 1; flex-shrink: 0; padding-top: 1px; }
+      .body { flex: 1; }
+      .title { font-weight: 600; margin-bottom: 2px; }
+      .sub { color: #9ca3af; font-size: 11px; }
+      .close {
+        background: none;
+        border: 0;
+        color: #888;
+        font-size: 16px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0 4px;
+      }
+      .close:hover { color: #fff; }
+    `;
+    shadow.appendChild(style);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'toast';
+    wrap.innerHTML = `
+      <div class="icon">🛡️</div>
+      <div class="body">
+        <div class="title">Armorly blocked a hidden prompt injection</div>
+        <div class="sub">on this page. Click the toolbar icon for details.</div>
+      </div>
+      <button class="close" aria-label="Dismiss">&times;</button>
+    `;
+    shadow.appendChild(wrap);
+
+    const dismiss = (remember) => {
+      if (remember) rememberDismissForHost();
+      host.remove();
+    };
+    shadow.querySelector('.close').addEventListener('click', () => dismiss(true));
+    // Auto-dismiss after 8 seconds, without recording a per-site preference.
+    setTimeout(() => dismiss(false), 8000);
+
+    document.body.appendChild(host);
   }
 
   // =========================================================================

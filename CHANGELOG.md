@@ -4,6 +4,15 @@ All notable user-facing changes to Armorly are documented here. Format loosely f
 
 ## [Unreleased]
 
+## [2.4.0]
+
+### Added
+- **"Saw an ad we missed? Report it" link** in the popup footer. Pre-fills the [GitHub issue template](.github/ISSUE_TEMPLATE/missed-ad.md) with the current tab's URL, the Armorly version, and the user-agent string — so reports show up with the context maintainers actually need.
+- **Hidden-injection toast.** When the prompt-injection shield removes content, a small dismissible toast appears in the bottom-right of the page: "Armorly blocked a hidden prompt injection." Auto-dismisses after 8s; the × button hides it permanently for that hostname (stored under `dismissed_injection_toast` in `chrome.storage.local`). Rendered in a closed shadow root so page CSS can't restyle it.
+
+### Deferred
+- Phase 4.4 (auto-update of the ad-pattern data from GitHub) is intentionally postponed — it needs `ad-patterns.js` split into pure-data JSON + a loader plus a background service worker, which is too much to land alongside two visible UX features. Tracked in SPEC.md.
+
 ## [2.3.0]
 
 ### Added

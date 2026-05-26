@@ -251,7 +251,11 @@ Most-requested feature for any blocker; needed to recover from false positives.
 - [x] This is a defense-in-depth layer on top of the existing global-object interception. Same patterns, network-level enforcement.
 - [x] Keep the existing DOM/global blocking too; the SDK might inline.
 
-### 4.4 Pattern auto-update from GitHub (v2.4.0)
+### 4.4 Pattern auto-update from GitHub (deferred past v2.4.0)
+
+> **Status:** Deferred. Shipped 4.5 + 4.6 as v2.4.0 instead. 4.4 needs a careful split of `ad-patterns.js` into pure-data JSON + a synchronous loader, because SDK interception must run at `document_start` (before `chrome.storage.local.get` resolves). The minimal viable design is: bundled patterns load synchronously and start blocking immediately; the background service worker fetches a newer JSON on install + every 24h; later DOM/affiliate passes use the union of bundled + cached. Worth a dedicated PR.
+
+
 
 This solves limitation #8 in the README.
 
@@ -263,15 +267,15 @@ This solves limitation #8 in the README.
 
 ### 4.5 "Report a missed ad" link in popup (v2.4.0)
 
-- [ ] Footer link: "Saw an ad we missed? Report it →" → opens the GitHub issue template URL with `?title=&body=<auto-populated URL & user agent>`.
-- [ ] Cheap to add, crowdsources pattern updates.
+- [x] Footer link: "Saw an ad we missed? Report it →" → opens the GitHub issue template URL with `?title=&body=<auto-populated URL & user agent>`.
+- [x] Cheap to add, crowdsources pattern updates.
 
 ### 4.6 Hidden prompt-injection toast (v2.5.0)
 
 The injection shield currently runs invisibly. Users have no idea it's working.
 
-- [ ] When `hidden-content-blocker.js` removes elements, show a small bottom-right toast: "Armorly blocked a hidden prompt injection on this page" with a "Details" link to the popup.
-- [ ] Make it dismissible. Per-site remember dismissal.
+- [x] When `hidden-content-blocker.js` removes elements, show a small bottom-right toast: "Armorly blocked a hidden prompt injection on this page" with a "Details" link to the popup. *(Implemented as a self-contained toast rendered in a closed shadow root — content scripts can't programmatically open the action popup, so the sub-line points users to the toolbar icon instead.)*
+- [x] Make it dismissible. Per-site remember dismissal. *(Stored under `dismissed_injection_toast` in `chrome.storage.local`; auto-dismiss after 8s does NOT record a preference.)*
 
 ---
 

@@ -252,6 +252,45 @@
     });
   }
 
+  // ---------------------------------------------------------------------------
+  // Report-a-missed-ad link (v2.4.0)
+  // ---------------------------------------------------------------------------
+
+  function setupReportLink(tabUrl) {
+    const a = document.getElementById('report-link');
+    if (!a) return;
+    const version = chrome.runtime.getManifest().version;
+    const body = [
+      '<!-- The page URL and browser are pre-filled below.',
+      'Please attach a screenshot and paste any `[Armorly]` console output. -->',
+      '',
+      '**URL where you saw the ad**',
+      isToggleableUrl(tabUrl) ? tabUrl : '(unknown — please paste it here)',
+      '',
+      '**Screenshot**',
+      '',
+      '**Console output**',
+      '',
+      '```',
+      '(paste here)',
+      '```',
+      '',
+      '**Ad network guess (optional)**',
+      '',
+      `**Armorly version**`,
+      version,
+      '',
+      '**Browser & OS**',
+      navigator.userAgent
+    ].join('\n');
+    const params = new URLSearchParams({
+      template: 'missed-ad.md',
+      title: '[missed ad] ',
+      body
+    });
+    a.href = `https://github.com/clay-good/armorly/issues/new?${params.toString()}`;
+  }
+
   // Initialize popup
   document.addEventListener('DOMContentLoaded', async () => {
     setVersion();
@@ -261,12 +300,14 @@
 
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab && tab.url) {
-        const hostname = new URL(tab.url).hostname;
-        await setupSiteToggle(hostname, tab.url);
+      const url = tab && tab.url ? tab.url : '';
+      setupReportLink(url);
+      if (url) {
+        const hostname = new URL(url).hostname;
+        await setupSiteToggle(hostname, url);
       }
     } catch {
-      // Tab might be restricted — leave toggle hidden.
+      setupReportLink('');
     }
   });
 

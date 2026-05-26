@@ -73,6 +73,8 @@ Armorly detects hidden elements using:
 
 Content is only removed if it contains known prompt injection patterns like "ignore previous instructions", "jailbreak", "DAN mode", etc. This conservative approach prevents false positives while catching actual attacks.
 
+When the shield fires, a small toast appears in the bottom-right of the page so the protection is visible. Click × to suppress the toast on that hostname forever; otherwise it auto-dismisses after 8 seconds. The shield itself keeps running regardless.
+
 ## Limitations
 
 **This extension cannot do everything. Here's what it cannot do:**
