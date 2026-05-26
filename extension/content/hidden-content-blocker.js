@@ -306,6 +306,21 @@
     }
   }
 
-  init();
+  // Honour the per-site whitelist set in the popup (v2.2.0). Mirror the gate
+  // in ai-ad-blocker.js so disabling Armorly on a site disables both
+  // protections atomically.
+  function isDisabledForHost(disabledDomains) {
+    if (!Array.isArray(disabledDomains)) return false;
+    return disabledDomains.some(d => hostname === d || hostname.endsWith('.' + d));
+  }
+
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+    chrome.storage.local.get({ disabled_domains: [] }, (data) => {
+      if (isDisabledForHost(data.disabled_domains)) return;
+      init();
+    });
+  } else {
+    init();
+  }
 
 })();

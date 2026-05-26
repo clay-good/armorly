@@ -31,6 +31,19 @@
     active: true
   };
 
+  // Deltas since last persistence flush. Reset on every successful flush so
+  // we never double-count across tabs that share the same lifetime totals.
+  const lifetimeDelta = {
+    sdksBlocked: 0,
+    linksCleaned: 0,
+    elementsRemoved: 0
+  };
+
+  function bumpStat(key) {
+    stats[key]++;
+    if (key in lifetimeDelta) lifetimeDelta[key]++;
+  }
+
   // Listen for stats requests from popup
   if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -38,6 +51,41 @@
         sendResponse(stats);
       }
       return true;
+    });
+  }
+
+  // Periodically flush deltas to chrome.storage.local so the popup can show
+  // cumulative numbers since install. We read-modify-write the whole record
+  // because chrome.storage.local has no atomic increment. Single-tab contention
+  // is fine; cross-tab contention can lose at most one flush window of counts.
+  function flushLifetimeStats() {
+    if (!chrome.storage || !chrome.storage.local) return;
+    if (
+      lifetimeDelta.sdksBlocked === 0 &&
+      lifetimeDelta.linksCleaned === 0 &&
+      lifetimeDelta.elementsRemoved === 0
+    ) {
+      return;
+    }
+    const delta = { ...lifetimeDelta };
+    lifetimeDelta.sdksBlocked = 0;
+    lifetimeDelta.linksCleaned = 0;
+    lifetimeDelta.elementsRemoved = 0;
+    chrome.storage.local.get({ lifetime: { sdksBlocked: 0, linksCleaned: 0, elementsRemoved: 0 } }, (data) => {
+      const next = {
+        sdksBlocked: (data.lifetime.sdksBlocked || 0) + delta.sdksBlocked,
+        linksCleaned: (data.lifetime.linksCleaned || 0) + delta.linksCleaned,
+        elementsRemoved: (data.lifetime.elementsRemoved || 0) + delta.elementsRemoved
+      };
+      chrome.storage.local.set({ lifetime: next });
+    });
+  }
+
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+    setInterval(flushLifetimeStats, 5000);
+    // Also flush on page hide so short visits still contribute.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') flushLifetimeStats();
     });
   }
 
@@ -102,7 +150,7 @@
       get: function(target, prop) {
         // Return no-op functions for all SDK methods
         return function() {
-          stats.sdksBlocked++;
+          bumpStat('sdksBlocked');
           return Promise.resolve();
         };
       },
@@ -153,7 +201,7 @@
         const elements = document.querySelectorAll(selector);
         elements.forEach(el => {
           el.remove();
-          stats.elementsRemoved++;
+          bumpStat('elementsRemoved');
         });
       } catch {
         // Invalid selector, skip
@@ -209,7 +257,7 @@
 
     elementsToRemove.forEach(el => {
       el.remove();
-      stats.elementsRemoved++;
+      bumpStat('elementsRemoved');
     });
   }
 
@@ -235,7 +283,7 @@
       if (patterns.hasAffiliateParams(href)) {
         link.href = patterns.cleanUrl(href);
         link.setAttribute('data-armorly-cleaned', 'true');
-        stats.linksCleaned++;
+        bumpStat('linksCleaned');
       }
 
       // Check if it's a known affiliate redirect domain
@@ -325,7 +373,28 @@
     });
   }
 
-  // Run immediately
-  init();
+  // Per-site whitelist (v2.2.0): if the user has flipped Armorly off for this
+  // hostname in the popup, bail before doing any work — the SDK interceptor
+  // must NOT run on disabled sites, otherwise users can't recover from false
+  // positives. chrome.storage.local is async, but ad SDKs typically don't
+  // initialize for tens-to-hundreds of ms after document_start, so even with
+  // the small async gap we still block the vast majority of cases.
+  function isDisabledForHost(disabledDomains) {
+    if (!Array.isArray(disabledDomains)) return false;
+    return disabledDomains.some(d => hostname === d || hostname.endsWith('.' + d));
+  }
+
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+    chrome.storage.local.get({ disabled_domains: [] }, (data) => {
+      if (isDisabledForHost(data.disabled_domains)) {
+        stats.active = false;
+        console.log('[Armorly] Disabled for this site by user setting:', hostname);
+        return;
+      }
+      init();
+    });
+  } else {
+    init();
+  }
 
 })();

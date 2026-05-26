@@ -185,6 +185,119 @@
       color: #60a5fa;
       line-height: 1.4;
     }
+
+    .site-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #1a1a1a;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      gap: 12px;
+    }
+
+    .site-toggle-label {
+      font-size: 12px;
+      color: #e5e5e5;
+    }
+
+    .site-toggle-sub {
+      font-size: 10px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 36px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: #3a3a3a;
+      transition: 0.2s;
+      border-radius: 20px;
+    }
+
+    .slider::before {
+      content: "";
+      position: absolute;
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: #fff;
+      transition: 0.2s;
+      border-radius: 50%;
+    }
+
+    .switch input:checked + .slider {
+      background-color: #22c55e;
+    }
+
+    .switch input:checked + .slider::before {
+      transform: translateX(16px);
+    }
+
+    .lifetime {
+      background: #1a1a1a;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .lifetime-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .lifetime-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #666;
+    }
+
+    .reset-link {
+      font-size: 11px;
+      color: #60a5fa;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      font-family: inherit;
+    }
+
+    .reset-link:hover {
+      text-decoration: underline;
+    }
+
+    .lifetime-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      padding: 4px 0;
+      color: #e5e5e5;
+    }
+
+    .lifetime-row span:last-child {
+      color: #fff;
+      font-weight: 500;
+    }
   </style>
 </head>
 <body>
@@ -204,6 +317,17 @@
   <div class="current-site">
     <div class="current-site-label">Current Site</div>
     <div id="current-site-url" class="current-site-url">Loading...</div>
+  </div>
+
+  <div id="site-toggle" class="site-toggle" style="display: none;">
+    <div>
+      <div class="site-toggle-label">Protect this site</div>
+      <div id="site-toggle-sub" class="site-toggle-sub">On</div>
+    </div>
+    <label class="switch">
+      <input id="site-toggle-input" type="checkbox" checked>
+      <span class="slider"></span>
+    </label>
   </div>
 
   <div class="stats-grid">
@@ -243,6 +367,25 @@
 
   <div id="no-ads-note" class="no-ads-note" style="display: none;">
     No ads detected on this page. This site may not currently serve AI ads.
+  </div>
+
+  <div class="lifetime">
+    <div class="lifetime-header">
+      <span class="lifetime-title">Since install</span>
+      <button id="reset-stats" class="reset-link" type="button">Reset</button>
+    </div>
+    <div class="lifetime-row">
+      <span>SDKs blocked</span>
+      <span id="lifetime-sdks">0</span>
+    </div>
+    <div class="lifetime-row">
+      <span>Links cleaned</span>
+      <span id="lifetime-links">0</span>
+    </div>
+    <div class="lifetime-row">
+      <span>Elements removed</span>
+      <span id="lifetime-elements">0</span>
+    </div>
   </div>
 
   <div class="footer">

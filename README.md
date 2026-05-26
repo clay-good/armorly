@@ -20,7 +20,9 @@ Install → Click the Armorly icon to see protection status. That's it.
 
 The popup shows:
 - Current site being monitored
-- SDKs blocked and links cleaned
+- **Protect this site** toggle — turn Armorly off for a single domain if it's causing a false positive. Reload the page after flipping it.
+- Per-session counts of SDKs blocked and links cleaned
+- **Since install** lifetime totals (with a Reset button)
 - Active protections (SDK interception, sponsored content removal, affiliate cleaning, prompt injection shield)
 
 ## Why Ads Will Destroy AI
@@ -188,14 +190,15 @@ armorly/
 | Permission | Why |
 |------------|-----|
 | `<all_urls>` (host) | Inject content scripts on all sites to detect ads |
+| `storage` | Remember the per-site disable list and lifetime block counts. Local-only — never synced or sent anywhere. |
 
-That's it. One permission. No `storage`, no `tabs`, no `webRequest`, no `cookies`, no `history`.
+No `tabs`, no `webRequest`, no `cookies`, no `history`.
 
 ### Performance
 
 - 6 source files: manifest + 2 content scripts + 1 pattern library + popup HTML/JS
 - MutationObserver with debouncing (100-500ms)
-- No persistent storage
+- Local storage for the per-site disable list and lifetime counters only (no remote sync)
 - No network interception (leaves that to uBlock/Brave)
 - No DOM method overrides (appendChild/insertBefore untouched)
 - Minimal CPU impact

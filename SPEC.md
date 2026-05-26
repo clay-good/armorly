@@ -231,18 +231,18 @@ Ordered by impact-per-effort. Ship each as its own PR + version bump.
 
 Most-requested feature for any blocker; needed to recover from false positives.
 
-- [ ] Add `storage` permission to manifest.
-- [ ] Popup gets a toggle: "Protect this site" (default on). Disabled state stored in `chrome.storage.local` under key `disabled_domains: string[]`.
-- [ ] Content script checks the list at startup and bails before initializing if current hostname is disabled.
-- [ ] Popup shows current site's status with a visible on/off switch.
-- [ ] Add to README's "Usage" section.
+- [x] Add `storage` permission to manifest.
+- [x] Popup gets a toggle: "Protect this site" (default on). Disabled state stored in `chrome.storage.local` under key `disabled_domains: string[]`.
+- [x] Content script checks the list at startup and bails before initializing if current hostname is disabled.
+- [x] Popup shows current site's status with a visible on/off switch.
+- [x] Add to README's "Usage" section.
 
 ### 4.2 Lifetime stats (v2.2.0, ship together with 4.1)
 
-- [ ] Persist `sdksBlocked`, `linksCleaned`, `elementsRemoved` to `chrome.storage.local` (debounced, batched every 5s).
-- [ ] Popup shows BOTH session stats (current value) and lifetime stats ("12,403 SDKs blocked since install").
-- [ ] Add "Reset stats" link in popup.
-- [ ] This is the single biggest engagement hook — a number that grows over time turns the extension from invisible to delightful.
+- [x] Persist `sdksBlocked`, `linksCleaned`, `elementsRemoved` to `chrome.storage.local` (debounced, batched every 5s).
+- [x] Popup shows BOTH session stats (current value) and lifetime stats ("12,403 SDKs blocked since install").
+- [x] Add "Reset stats" link in popup.
+- [x] This is the single biggest engagement hook — a number that grows over time turns the extension from invisible to delightful.
 
 ### 4.3 declarativeNetRequest network blocking (v2.3.0)
 

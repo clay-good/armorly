@@ -170,10 +170,104 @@
     if (el) el.textContent = chrome.runtime.getManifest().version;
   }
 
+  // ---------------------------------------------------------------------------
+  // Per-site whitelist (v2.2.0)
+  // ---------------------------------------------------------------------------
+
+  // chrome:// and similar restricted URLs can't be toggled — keep the row hidden.
+  function isToggleableUrl(url) {
+    return !!url && !url.startsWith('chrome://') &&
+      !url.startsWith('chrome-extension://') && !url.startsWith('about:');
+  }
+
+  function getDisabledDomains() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get({ disabled_domains: [] }, (data) => {
+        resolve(Array.isArray(data.disabled_domains) ? data.disabled_domains : []);
+      });
+    });
+  }
+
+  function setDisabledDomains(list) {
+    return new Promise((resolve) => {
+      chrome.storage.local.set({ disabled_domains: list }, resolve);
+    });
+  }
+
+  async function setupSiteToggle(hostname, url) {
+    const row = document.getElementById('site-toggle');
+    const input = document.getElementById('site-toggle-input');
+    const sub = document.getElementById('site-toggle-sub');
+
+    if (!hostname || !isToggleableUrl(url)) return;
+
+    const disabled = await getDisabledDomains();
+    const isOff = disabled.includes(hostname);
+
+    row.style.display = 'flex';
+    input.checked = !isOff;
+    sub.textContent = isOff ? 'Off — reload to apply' : 'On';
+    if (isOff) {
+      // Override whatever the content-script ping decided — the toggle is the
+      // source of truth for whether Armorly is doing anything on this site.
+      setInactiveState('Disabled here');
+    }
+
+    input.addEventListener('change', async () => {
+      const current = await getDisabledDomains();
+      let next;
+      if (input.checked) {
+        next = current.filter(d => d !== hostname);
+        sub.textContent = 'On — reload to apply';
+      } else {
+        next = current.includes(hostname) ? current : [...current, hostname];
+        sub.textContent = 'Off — reload to apply';
+      }
+      await setDisabledDomains(next);
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Lifetime stats (v2.2.0)
+  // ---------------------------------------------------------------------------
+
+  function renderLifetime(lifetime) {
+    const l = lifetime || { sdksBlocked: 0, linksCleaned: 0, elementsRemoved: 0 };
+    document.getElementById('lifetime-sdks').textContent = (l.sdksBlocked || 0).toLocaleString();
+    document.getElementById('lifetime-links').textContent = (l.linksCleaned || 0).toLocaleString();
+    document.getElementById('lifetime-elements').textContent = (l.elementsRemoved || 0).toLocaleString();
+  }
+
+  function loadLifetime() {
+    chrome.storage.local.get({ lifetime: { sdksBlocked: 0, linksCleaned: 0, elementsRemoved: 0 } }, (data) => {
+      renderLifetime(data.lifetime);
+    });
+  }
+
+  function setupResetButton() {
+    const btn = document.getElementById('reset-stats');
+    btn.addEventListener('click', () => {
+      const empty = { sdksBlocked: 0, linksCleaned: 0, elementsRemoved: 0 };
+      chrome.storage.local.set({ lifetime: empty }, () => renderLifetime(empty));
+    });
+  }
+
   // Initialize popup
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     setVersion();
-    updatePopup();
+    setupResetButton();
+    loadLifetime();
+    await updatePopup();
+
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab && tab.url) {
+        const hostname = new URL(tab.url).hostname;
+        await setupSiteToggle(hostname, tab.url);
+      }
+    } catch {
+      // Tab might be restricted — leave toggle hidden.
+    }
   });
 
 })();

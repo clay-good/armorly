@@ -1,10 +1,13 @@
 #!/bin/bash
-# Build script for Armorly Chrome Extension v2.1.0
+# Build script for Armorly Chrome Extension
 # AI ad blocker with popup UI - no network blocking, just client-side protection
 
 set -e  # Exit on error
 
-echo "🛡️  Building Armorly v2.1.0 (AI Ad Blocker)..."
+# Read version from manifest so this script never drifts.
+VERSION=$(grep -E '"version"' extension/manifest.json | head -1 | sed -E 's/.*"version": *"([^"]+)".*/\1/')
+
+echo "🛡️  Building Armorly v${VERSION} (AI Ad Blocker)..."
 
 # Clean previous build
 echo "📦 Cleaning previous build..."
