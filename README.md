@@ -2,9 +2,17 @@
 
 Protect against AI chatbot ads. Blocks ad SDKs, removes sponsored labels, and cleans affiliate tracking.
 
-![Armorly popup showing protection status on Perplexity](armorly-perplexity.jpg)
-![Armorly popup showing protection status on ChatGPT](armorly-chatgpt.jpg)
-![Armorly Console Logs](armorly-console.jpg)
+![Armorly popup showing protection status on Perplexity](docs/screenshots/armorly-perplexity.jpg)
+
+> Demo video and animated GIF coming soon — see [SPEC.md](SPEC.md) Phase 3.
+
+<details>
+<summary>More screenshots</summary>
+
+![Armorly popup showing protection status on ChatGPT](docs/screenshots/armorly-chatgpt.jpg)
+![Armorly console logs confirming the blocker is active](docs/screenshots/armorly-console.jpg)
+
+</details>
 
 ## Usage
 
@@ -126,7 +134,7 @@ Works on all websites. Platform-specific detection for:
 ### Development Build
 
 ```bash
-git clone https://github.com/yourusername/armorly.git
+git clone https://github.com/clay-good/armorly.git
 cd armorly
 ./build.sh
 ```
@@ -136,6 +144,15 @@ Then in Chrome:
 2. Enable "Developer mode"
 3. Click "Load unpacked"
 4. Select the `build` folder
+
+### Verify it's working
+
+1. Visit any supported chatbot (e.g. [chatgpt.com](https://chatgpt.com), [perplexity.ai](https://perplexity.ai)).
+2. Open DevTools (`Cmd+Option+I` / `Ctrl+Shift+I`) and switch to the Console tab.
+3. You should see `[Armorly] AI ad blocker active` shortly after page load.
+4. Click the Armorly toolbar icon — the popup will show "Monitoring" and the current site.
+
+If you don't see the console line, the content script didn't inject — open an issue with the URL and the console output.
 
 ## Project Structure
 
@@ -176,7 +193,7 @@ That's it. One permission. No `storage`, no `tabs`, no `webRequest`, no `cookies
 
 ### Performance
 
-- 5 files: 2 content scripts + 1 pattern library + popup UI
+- 6 source files: manifest + 2 content scripts + 1 pattern library + popup HTML/JS
 - MutationObserver with debouncing (100-500ms)
 - No persistent storage
 - No network interception (leaves that to uBlock/Brave)
@@ -191,3 +208,17 @@ That's it. One permission. No `storage`, no `tabs`, no `webRequest`, no `cookies
 - No user tracking
 - All processing happens in-browser
 - Open source and auditable
+
+## Contributing
+
+Pattern updates and bug reports are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to add a new ad-network pattern.
+
+For security disclosures, see [SECURITY.md](SECURITY.md).
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for user-facing changes per release.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

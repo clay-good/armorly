@@ -72,4 +72,8 @@ echo "   2. Enable 'Developer mode'"
 echo "   3. Click 'Load unpacked' and select the 'build' folder"
 echo "   OR"
 echo "   4. Upload armorly-extension.zip to Chrome Web Store"
+
+# TODO(phase-2): headless smoke test — load the built extension in Chromium
+# and assert the console emits `[Armorly] AI ad blocker active`. See SPEC.md
+# Phase 2 (Playwright harness) for the implementation plan.
 echo ""

@@ -162,7 +162,18 @@
     note.style.display = 'block';
   }
 
+  /**
+   * Populate the version string from the manifest so it never drifts.
+   */
+  function setVersion() {
+    const el = document.getElementById('version');
+    if (el) el.textContent = chrome.runtime.getManifest().version;
+  }
+
   // Initialize popup
-  document.addEventListener('DOMContentLoaded', updatePopup);
+  document.addEventListener('DOMContentLoaded', () => {
+    setVersion();
+    updatePopup();
+  });
 
 })();
