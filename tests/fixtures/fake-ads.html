@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>fake ads fixture</title>
+</head>
+<body>
+  <h1>Fixture: synthetic ads</h1>
+
+  <!-- Should be removed by Armorly's selector pass. -->
+  <div id="sponsored-flag" data-sponsored="true">Buy now!</div>
+
+  <!-- Should be removed by the Koah selector. -->
+  <div id="koah-ad" data-koah-ad>Koah ad container</div>
+
+  <!-- Affiliate-tracked links: the href should be rewritten without `tag=`
+       and `utm_source=` once the content script runs. -->
+  <a id="affiliate-link" href="https://example.com/path?tag=affid-20&utm_source=evil&keep=yes">Affiliate link</a>
+
+  <script>
+    // The content script's SDK interceptor runs from a chrome.storage.local
+    // callback (so the per-site disable check completes first). That callback
+    // is async, so the proxy may be installed anywhere from a few ms to a
+    // couple hundred ms after document_start. Poll until it lands, or give
+    // up after ~3 seconds. Real-world ad SDKs arrive in a network response
+    // and reliably hit the proxy; this delay only matters for inline calls.
+    (function probe(attempts) {
+      var t = typeof window.Koah;
+      if (t !== 'undefined' || attempts === 0) {
+        window.__koahInstalled = t !== 'undefined';
+        try {
+          window.__koahInitResult = window.Koah && window.Koah.init && window.Koah.init('SHOULD_BE_BLOCKED');
+        } catch (e) {
+          window.__koahError = String(e);
+        }
+        window.__armorlyProbeDone = true;
+        return;
+      }
+      setTimeout(function () { probe(attempts - 1); }, 50);
+    })(60);
+  </script>
+</body>
+</html>

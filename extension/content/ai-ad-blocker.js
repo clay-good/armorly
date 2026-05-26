@@ -139,52 +139,26 @@
   const patterns = window.ArmorlyAdPatterns;
 
   // =========================================================================
-  // 1. AI AD SDK INTERCEPTION (All Networks)
+  // 1. AI AD SDK INTERCEPTION (Page-world, via sdk-blocker.js)
+  //
+  // The actual proxy installation runs in the MAIN content-script world
+  // (extension/content/sdk-blocker.js). That script can't access chrome.*
+  // APIs, so when it absorbs an SDK call it postMessages back here and
+  // we bump the stats counter on its behalf.
+  //
+  // Why split worlds: content scripts in the default ISOLATED world get a
+  // different `window` from the page, so any property defined on `window`
+  // here is invisible to page scripts — making the previous in-line
+  // interceptor a no-op in production. Phase 2 tests caught this.
   // =========================================================================
 
-  /**
-   * Create a no-op proxy that absorbs all SDK method calls
-   */
-  function createSDKProxy(sdkName) {
-    return new Proxy({}, {
-      get: function(target, prop) {
-        // Return no-op functions for all SDK methods
-        return function() {
-          bumpStat('sdksBlocked');
-          return Promise.resolve();
-        };
-      },
-      set: function() {
-        return true;
-      }
-    });
-  }
-
-  /**
-   * Block all AI ad SDKs by intercepting their initialization
-   * This prevents SDK global objects from being usable even if script loads
-   */
-  function blockAllAdSDKs() {
-    // Get all SDK function names from patterns
-    const sdkFunctions = patterns.getAllSDKFunctions();
-
-    sdkFunctions.forEach(funcName => {
-      try {
-        const sdkProxy = createSDKProxy(funcName);
-        Object.defineProperty(window, funcName, {
-          get: function() {
-            return sdkProxy;
-          },
-          set: function() {
-            return true;
-          },
-          configurable: false
-        });
-      } catch {
-        // Property may already be defined, skip
-      }
-    });
-  }
+  window.addEventListener('message', (event) => {
+    if (event.source !== window) return;
+    const data = event.data;
+    if (data && data.source === 'armorly' && data.type === 'sdk-blocked') {
+      bumpStat('sdksBlocked');
+    }
+  });
 
   // =========================================================================
   // 2. DOM-BASED AD REMOVAL
@@ -345,8 +319,8 @@
     console.log('[Armorly] AI ad blocker active');
     console.log('[Armorly] Blocking SDKs:', patterns.getAllSDKFunctions().slice(0, 10).join(', '), '...');
 
-    // Block SDK globals (makes SDK objects unusable even if script loads)
-    blockAllAdSDKs();
+    // SDK globals are blocked by content/sdk-blocker.js in the MAIN world.
+    // We only handle DOM/affiliate work here.
 
     // Initial scan when DOM is ready
     if (document.readyState === 'loading') {

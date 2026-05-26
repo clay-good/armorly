@@ -186,3 +186,6 @@ armorly-edge.zip
 armorly-brave.zip
 armorly-opera.zip
 armorly-safari.zip
+
+# Playwright outputs
+/playwright-report/

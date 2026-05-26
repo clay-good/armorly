@@ -169,6 +169,19 @@ Or in Firefox:
 2. Click "Load Temporary Add-on…"
 3. Select `build/manifest.json`
 
+### Running the test suite
+
+```bash
+npm install
+npx playwright install --with-deps chromium
+npm test
+```
+
+`npm test` rebuilds the extension via the `pretest` hook, then runs four
+Playwright tests against fixture pages: SDK proxy install, DOM ad removal,
+affiliate-link cleaning, and the hidden-injection shield. See
+[tests/README.md](tests/README.md) for what's covered and what isn't.
+
 ### Verify it's working
 
 1. Visit any supported chatbot (e.g. [chatgpt.com](https://chatgpt.com), [perplexity.ai](https://perplexity.ai)).

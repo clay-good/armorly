@@ -1,0 +1,15 @@
+{
+  "name": "armorly",
+  "version": "2.8.0",
+  "private": true,
+  "description": "Test harness for the Armorly browser extension. The extension itself has no build step.",
+  "scripts": {
+    "build": "./build.sh chrome",
+    "pretest": "./build.sh chrome",
+    "test": "playwright test",
+    "demo": "playwright test --grep @demo"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}

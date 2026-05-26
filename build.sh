@@ -45,6 +45,10 @@ cp extension/manifest.json build/
 cp -r extension/icons build/
 cp -r extension/content build/
 cp -r extension/lib build/
+# Chrome dedupes identical content-script paths across world entries — so the
+# MAIN-world entry needs its OWN copy of the patterns library under a
+# different filename. Single source of truth stays at extension/lib/ad-patterns.js.
+cp build/lib/ad-patterns.js build/lib/ad-patterns-main.js
 cp -r extension/popup build/
 cp -r extension/rules build/
 cp extension/background.js build/
@@ -73,6 +77,7 @@ fi
 echo "✅ Verifying build..."
 for f in build/manifest.json build/lib/ad-patterns.js build/lib/ad-patterns.json \
          build/content/ai-ad-blocker.js build/content/hidden-content-blocker.js \
+         build/content/sdk-blocker.js \
          build/rules/ad-sdks.json build/background.js; do
   if [ ! -f "$f" ]; then
     echo "❌ Error: $f missing!"

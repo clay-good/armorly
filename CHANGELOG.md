@@ -4,6 +4,18 @@ All notable user-facing changes to Armorly are documented here. Format loosely f
 
 ## [Unreleased]
 
+## [2.8.0]
+
+### Fixed
+- **Critical: SDK global-object interception was broken since launch.** The SDK-blocking proxies were being installed on the content script's *isolated-world* `window`, which is a different object from the page's `window`. Page-level scripts reading `window.Koah` (etc.) never saw the proxy, so the headline feature of the extension was a no-op in production. The hidden bug went unnoticed because the SDKs in question also default to `undefined` when not loaded — there was no behavioural difference. This release moves the proxy installer to a new MAIN-world content script ([extension/content/sdk-blocker.js](extension/content/sdk-blocker.js)); the isolated-world script now listens for a postMessage from it and bumps the stats counter on each absorbed call. Detected by Phase 2's new fixture test.
+
+### Added
+- **Phase 2 Playwright harness.** `npm test` builds the extension, boots a tiny static server, and exercises the built `build/` directory against fixture pages under headed Chromium. Four tests gate every commit: SDK proxy install, DOM removal of `[data-sponsored="true"]` and `[data-koah-ad]`, affiliate-param stripping (with non-affiliate params preserved), and the hidden-injection shield emptying white-on-white text. Real-chatbot smoke tests are intentionally out of scope — see [tests/README.md](tests/README.md).
+- New CI job (`test`) runs Playwright under `xvfb` after the build matrix passes.
+
+### Notes
+- `extension/lib/ad-patterns.js` is now copied to `lib/ad-patterns-main.js` at build time because Chrome dedupes identical content-script paths across world entries, leaving the MAIN-world entry without a patterns dependency. Source still has one file.
+
 ## [2.7.0]
 
 ### Added
