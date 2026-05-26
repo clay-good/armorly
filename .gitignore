@@ -29,8 +29,10 @@ dist/
 
 eggs/
 .eggs/
-lib/
-lib64/
+# Scoped to repo root — was matching extension/lib/ and silently dropping
+# the ad-pattern library from git. See SPEC.md Phase 0.1.
+/lib/
+/lib64/
 parts/
 sdist/
 var/

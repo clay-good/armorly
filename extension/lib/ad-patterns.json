@@ -1,0 +1,118 @@
+{
+  "version": "2026-05-26",
+  "_comment": "Auto-updatable subset of the ad-patterns library. Regex-driven detection (scriptPatterns, adLabels.patterns, commercialIntent.*) stays in ad-patterns.js — only flat string data lives here. The background service worker fetches this file from the main branch every 24h; bundled values are the floor.",
+  "adSDKs": {
+    "grok": {
+      "functions": ["GrokAds", "grokAds", "XAds", "xAds"],
+      "methods": ["init", "show", "display", "track", "impression"],
+      "domainPatterns": ["grok.x.com", "ads.x.com"]
+    },
+    "koah": {
+      "functions": ["Koah", "koah", "KoahAds"],
+      "methods": ["init", "showAd", "displayAd", "trackImpression", "trackClick", "monetize"],
+      "domainPatterns": ["koah.io", "koah.ai", "api.koah.io", "sdk.koah.io"]
+    },
+    "monetzly": {
+      "functions": ["Monetzly", "monetzly", "MonetzlyAds"],
+      "methods": ["init", "displayAd", "monetize", "showAd", "trackImpression", "trackClick"],
+      "domainPatterns": ["monetzly.com", "monetzly.io", "api.monetzly.com", "sdk.monetzly.com"]
+    },
+    "sponsoredso": {
+      "functions": ["Sponsored", "sponsored", "SponsoredAds", "SponsoredSo"],
+      "methods": ["init", "show", "display", "track", "impression", "click"],
+      "domainPatterns": ["sponsored.so", "api.sponsored.so", "sdk.sponsored.so"]
+    },
+    "imprezia": {
+      "functions": ["Imprezia", "imprezia"],
+      "methods": ["init", "monetize", "showAd", "trackImpression", "trackClick"],
+      "domainPatterns": ["imprezia.ai", "api.imprezia.ai", "sdk.imprezia.ai"]
+    },
+    "adsense": {
+      "functions": ["adsbygoogle"],
+      "methods": ["push"],
+      "domainPatterns": ["pagead2.googlesyndication.com", "adservice.google.com"]
+    }
+  },
+  "affiliateParams": [
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_content",
+    "utm_term",
+    "ref",
+    "aff",
+    "affiliate",
+    "partner_id",
+    "partner",
+    "tracking_id",
+    "click_id",
+    "campaign_id",
+    "source",
+    "tag"
+  ],
+  "affiliateDomains": [
+    "amzn.to",
+    "bit.ly",
+    "t.co",
+    "geni.us",
+    "rstyle.me",
+    "shopstyle.it",
+    "go.redirectingat.com",
+    "anrdoezrs.net",
+    "awin1.com",
+    "tkqlhce.com",
+    "jdoqocy.com",
+    "dpbolvw.net",
+    "kqzyfj.com",
+    "commission-junction.com",
+    "shareasale.com",
+    "pjatr.com",
+    "pjtra.com",
+    "pntrac.com",
+    "pntrs.com"
+  ],
+  "platformSelectors": {
+    "grok": [
+      "[data-testid=\"promotedIndicator\"]",
+      "[data-testid=\"promotedTweet\"]",
+      ".promoted-tweet",
+      ".grok-ad-container",
+      ".grok-sponsored-content"
+    ],
+    "perplexity": [
+      "[data-testid=\"sponsored-question\"]",
+      ".sponsored-followup",
+      ".pplx-sponsored"
+    ],
+    "chatgpt": [
+      "[data-testid=\"shopping-card\"]",
+      "[data-testid=\"product-recommendation\"]",
+      ".chatgpt-sponsored",
+      ".openai-ad"
+    ],
+    "koah": [
+      "[data-koah-ad]",
+      "[data-ad-provider=\"koah\"]",
+      ".koah-ad-container",
+      ".koah-sponsored"
+    ],
+    "monetzly": [
+      "[data-monetzly-ad]",
+      "[data-ad-provider=\"monetzly\"]",
+      ".monetzly-ad",
+      ".monetzly-sponsored"
+    ],
+    "sponsoredso": [
+      "[data-sponsored-so]",
+      "[data-ad-provider=\"sponsored.so\"]",
+      ".sponsored-so-ad"
+    ],
+    "generic": [
+      "[data-ad-provider]",
+      "[data-sponsored=\"true\"]",
+      "[data-promoted=\"true\"]",
+      "[aria-label=\"Sponsored\"]",
+      "[aria-label=\"Advertisement\"]"
+    ]
+  }
+}
