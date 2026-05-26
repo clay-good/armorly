@@ -191,6 +191,34 @@ test('auto-update bridge: cached pattern SDK names reach the MAIN-world intercep
   await worker.evaluate(() => chrome.storage.local.set({ cached_patterns: null }));
 });
 
+test('per-site disable tears down MAIN-world SDK proxies (not just DOM removal)', async () => {
+  // Before this fix, flipping "Protect this site" off only gated the
+  // isolated-world script — sdk-blocker.js kept its proxies installed,
+  // so window.Koah was still a no-op on disabled sites. Verify the
+  // disable-site bridge actually un-proxies in MAIN world.
+  let [worker] = context.serviceWorkers();
+  if (!worker) worker = await context.waitForEvent('serviceworker');
+
+  await worker.evaluate(() =>
+    chrome.storage.local.set({ disabled_domains: ['127.0.0.1', 'localhost'] })
+  );
+
+  const page = await context.newPage();
+  await page.goto(`${FIXTURES}/fake-ads.html`);
+  // sdk-blocker installs proxies synchronously at document_start; the
+  // disable signal arrives a tick later via the storage round-trip. Poll
+  // for window.Koah to disappear.
+  await page.waitForFunction(
+    () => typeof (window as any).Koah === 'undefined',
+    undefined,
+    { timeout: 5000 }
+  );
+  expect(await page.evaluate(() => typeof (window as any).Koah)).toBe('undefined');
+
+  // Restore so other tests aren't affected.
+  await worker.evaluate(() => chrome.storage.local.set({ disabled_domains: [] }));
+});
+
 test('hidden-content shield empties white-on-white injection but leaves visible content', async () => {
   const page = await context.newPage();
   await page.goto(`${FIXTURES}/hidden-injection.html`);

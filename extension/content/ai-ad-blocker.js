@@ -363,6 +363,14 @@
       if (isDisabledForHost(data.disabled_domains)) {
         stats.active = false;
         console.log('[Armorly] Disabled for this site by user setting:', hostname);
+        // Tell the MAIN-world SDK interceptor to tear down its proxies too.
+        // Without this, flipping "Protect this site" off only stops DOM
+        // removal — `window.Koah` etc. would still resolve to the no-op
+        // proxy and a legit page using one of those names as a non-ad
+        // global would stay broken.
+        try {
+          window.postMessage({ source: 'armorly', type: 'disable-site' }, '*');
+        } catch (_) { /* noop */ }
         return;
       }
       // Phase 4.4: apply any newer pattern snapshot fetched by the background

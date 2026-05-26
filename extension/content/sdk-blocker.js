@@ -50,7 +50,13 @@
         Object.defineProperty(window, name, {
           get: function () { return proxy; },
           set: function () { return true; },
-          configurable: false
+          // `configurable: true` so we can tear the proxy down if the user
+          // disables Armorly for this site (see `disable-site` handler).
+          // The cost is that a hostile page could `delete window.<name>`
+          // to evade us; the AI ad SDKs we target don't do this, and the
+          // page-side recovery is what makes the per-site disable actually
+          // work end to end.
+          configurable: true
         });
         installed.add(name);
       } catch (_) {
@@ -73,6 +79,15 @@
     if (!data || data.source !== 'armorly') return;
     if (data.type === 'update-sdk-list' && Array.isArray(data.functions)) {
       installProxiesFor(data.functions);
+    } else if (data.type === 'disable-site') {
+      // User toggled "Protect this site" off in the popup. Tear down every
+      // proxy we installed so the page sees the original globals again
+      // (typically undefined). Delivered from ai-ad-blocker.js after its
+      // chrome.storage.local lookup.
+      for (const name of installed) {
+        try { delete window[name]; } catch (_) { /* noop */ }
+      }
+      installed.clear();
     }
   });
 })();
