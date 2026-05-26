@@ -91,7 +91,7 @@ When the shield fires, a small toast appears in the bottom-right of the page so 
 
 6. **We cannot verify if an AI recommendation is paid but undisclosed.** If an AI company accepts payment to recommend products but doesn't label them as sponsored (illegal under FTC rules, but enforcement is slow), we have no way to detect this. We're not mind readers.
 
-7. **Safari, Firefox, and Edge are not supported yet.** Chrome/Chromium only for now.
+7. **Safari is not supported yet.** Chrome/Edge/Brave install directly; a Firefox MV3 build (`./build.sh firefox`) is produced by CI but the Mozilla Add-ons submission is still pending. Safari requires Xcode + an Apple Developer account and is on the roadmap, not implemented.
 
 8. **Pattern auto-update is data-only.** As of v2.5.0, the flat data fields in [ad-patterns.json](extension/lib/ad-patterns.json) — SDK function names, domain patterns, platform selectors, affiliate params/domains — refresh once a day from this repo's `main` branch. Regex-driven detection (script URL patterns, ad-label regexes, commercial-intent scoring) still requires an extension update because regex doesn't round-trip through JSON cleanly.
 
@@ -136,19 +136,27 @@ Works on all websites. Platform-specific detection for:
 
 [Install from Chrome Web Store](https://chromewebstore.google.com/detail/armorly/ojjmbhddhccnnepgojahamfilcpfddbp)
 
+Works on Brave directly. Edge: submission pending; in the meantime, sideload `armorly-chrome.zip` from the [latest CI run](https://github.com/clay-good/armorly/actions). Firefox AMO submission pending too — use `armorly-firefox.zip` until then.
+
 ### Development Build
 
 ```bash
 git clone https://github.com/clay-good/armorly.git
 cd armorly
-./build.sh
+./build.sh                  # Chrome / Edge / Brave (produces armorly-chrome.zip)
+./build.sh firefox          # Firefox (produces armorly-firefox.zip)
 ```
 
-Then in Chrome:
+Then in Chrome / Edge / Brave:
 1. Open `chrome://extensions/`
 2. Enable "Developer mode"
 3. Click "Load unpacked"
 4. Select the `build` folder
+
+Or in Firefox:
+1. Open `about:debugging#/runtime/this-firefox`
+2. Click "Load Temporary Add-on…"
+3. Select `build/manifest.json`
 
 ### Verify it's working
 

@@ -279,16 +279,23 @@ The injection shield currently runs invisibly. Users have no idea it's working.
 
 ### 5.1 Firefox
 
-- [ ] Firefox MV3 supports `<all_urls>` content scripts and `declarativeNetRequest` (since FF 113).
-- [ ] Add `browser_specific_settings.gecko.id` to manifest.
-- [ ] `build.sh` should produce `armorly-firefox.zip` with the Firefox-flavored manifest.
-- [ ] Submit to addons.mozilla.org.
+- [x] Firefox MV3 supports `<all_urls>` content scripts and `declarativeNetRequest` (since FF 113).
+- [x] Add `browser_specific_settings.gecko.id` to manifest. *(Generated via jq for the firefox target — single source of truth stays at `extension/manifest.json`.)*
+- [x] `build.sh` should produce `armorly-firefox.zip` with the Firefox-flavored manifest. *(`./build.sh firefox` — also swaps `background.service_worker` for `background.scripts` since Firefox stable doesn't accept the SW form universally yet.)*
+- [ ] Submit to addons.mozilla.org. *(Manual one-time; thereafter auto-publish runs from `release.yml` once `FIREFOX_JWT_*` secrets are in place.)*
 
 ### 5.2 Edge
 
-- [ ] Edge accepts Chrome extensions directly; no code changes.
-- [ ] Just submit the existing zip to the Edge Add-ons store.
-- [ ] Listing copy can be identical.
+- [x] Edge accepts Chrome extensions directly; no code changes.
+- [x] Just submit the existing zip to the Edge Add-ons store. *(`armorly-chrome.zip` works as-is.)*
+- [x] Listing copy can be identical.
+- [ ] Submit to edge.microsoft.com. *(Manual one-time; thereafter auto-publish via `release.yml` once `EDGE_*` secrets are in place.)*
+
+### 5.x CI/CD (added 2026-05-26)
+
+- [x] `.github/workflows/build.yml` runs on every push and PR: JSON validation, JS syntax check, BUNDLED_VERSION ↔ ad-patterns.json consistency check, builds chrome + firefox, uploads artifacts. Makes the green check on `main` meaningful.
+- [x] `.github/workflows/release.yml` scaffolds tag-triggered publishing for Chrome / Firefox / Edge. Each job is gated on `vars.DEPLOY_*` AND the secrets it needs, so the workflow stays green until a store is wired up. See header comments in the workflow file for exact secret names.
+- Notes: Safari has no public publishing API (manual via App Store Connect / Transporter). Opera also manual. Brave reuses the Chrome listing.
 
 ### 5.3 Safari (stretch goal)
 

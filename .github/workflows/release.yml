@@ -1,0 +1,110 @@
+name: release
+
+# Publishes the extension to each store when a `v*` tag is pushed.
+#
+# This workflow is intentionally scaffolded but inert until the relevant
+# secrets exist on the repo. Each store job is gated on a `vars` flag PLUS
+# the presence of the secrets it needs, so the workflow stays green even
+# when stores aren't wired up yet.
+#
+# How to enable a store (one-time per store):
+#
+#   Chrome Web Store
+#     Settings → Variables → DEPLOY_CHROME = "true"
+#     Settings → Secrets → CHROME_EXTENSION_ID, CHROME_CLIENT_ID,
+#                          CHROME_CLIENT_SECRET, CHROME_REFRESH_TOKEN
+#     (Generate via https://developer.chrome.com/docs/webstore/using-api )
+#
+#   Firefox AMO
+#     Settings → Variables → DEPLOY_FIREFOX = "true"
+#     Settings → Secrets → FIREFOX_JWT_ISSUER, FIREFOX_JWT_SECRET
+#     (Generate at https://addons.mozilla.org/en-US/developers/addon/api/key/ )
+#
+#   Edge Add-ons
+#     Settings → Variables → DEPLOY_EDGE = "true"
+#     Settings → Secrets → EDGE_PRODUCT_ID, EDGE_CLIENT_ID, EDGE_CLIENT_SECRET
+#     (Generate via Partner Center → API access)
+#
+# To release: `git tag v2.6.0 && git push origin v2.6.0`
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: sudo apt-get update && sudo apt-get install -y jq
+      - id: ver
+        run: echo "version=$(jq -r .version extension/manifest.json)" >> "$GITHUB_OUTPUT"
+      - run: ./build.sh chrome
+      - run: ./build.sh firefox
+      - uses: actions/upload-artifact@v4
+        with:
+          name: armorly-chrome
+          path: armorly-chrome.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: armorly-firefox
+          path: armorly-firefox.zip
+
+  deploy-chrome:
+    needs: build
+    runs-on: ubuntu-latest
+    if: vars.DEPLOY_CHROME == 'true'
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: armorly-chrome
+      - name: Upload to Chrome Web Store
+        uses: wdzeng/chrome-extension@v1
+        with:
+          extension-id: ${{ secrets.CHROME_EXTENSION_ID }}
+          zip-path: armorly-chrome.zip
+          client-id: ${{ secrets.CHROME_CLIENT_ID }}
+          client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
+          refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
+
+  deploy-firefox:
+    needs: build
+    runs-on: ubuntu-latest
+    if: vars.DEPLOY_FIREFOX == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: armorly-firefox
+      - name: Upload to addons.mozilla.org
+        uses: wdzeng/firefox-addon@v1
+        with:
+          addon-guid: "armorly@claygood.com"
+          xpi-path: armorly-firefox.zip
+          jwt-issuer: ${{ secrets.FIREFOX_JWT_ISSUER }}
+          jwt-secret: ${{ secrets.FIREFOX_JWT_SECRET }}
+
+  deploy-edge:
+    needs: build
+    runs-on: ubuntu-latest
+    if: vars.DEPLOY_EDGE == 'true'
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: armorly-chrome
+      - name: Upload to Edge Add-ons
+        uses: wdzeng/edge-addon@v2
+        with:
+          product-id: ${{ secrets.EDGE_PRODUCT_ID }}
+          zip-path: armorly-chrome.zip
+          client-id: ${{ secrets.EDGE_CLIENT_ID }}
+          client-secret: ${{ secrets.EDGE_CLIENT_SECRET }}

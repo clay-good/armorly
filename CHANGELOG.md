@@ -4,6 +4,17 @@ All notable user-facing changes to Armorly are documented here. Format loosely f
 
 ## [Unreleased]
 
+## [2.6.0]
+
+### Added
+- **Multi-target build.** `./build.sh chrome` (default) and `./build.sh firefox` produce browser-specific zips (`armorly-chrome.zip`, `armorly-firefox.zip`). Edge accepts the Chrome zip unmodified. Firefox manifest is generated via `jq` with `browser_specific_settings.gecko.id`, `strict_min_version: "115.0"` (ESR baseline), and `background.scripts` (the AMO-recommended MV3 form). The legacy `armorly-extension.zip` is preserved as an alias for the Chrome build.
+- **`.github/workflows/build.yml`** runs on every push and PR to `main`: validates JSON, syntax-checks every JS file with `node --check`, asserts that `BUNDLED_VERSION` matches `ad-patterns.json`, builds both targets, and uploads the zips as artifacts.
+- **`.github/workflows/release.yml`** scaffolds publish jobs for the Chrome Web Store, Firefox AMO, and Edge Add-ons when a `v*` tag is pushed. Each job is gated on a per-store `vars.DEPLOY_*` flag plus the secrets it needs, so the workflow stays green until a store is wired up. See the comments at the top of `release.yml` for the exact secrets/vars each store requires.
+
+### Notes
+- Safari has no public publishing API; submissions there remain manual (App Store Connect / Transporter).
+- Opera reviews manually too. Brave reuses the Chrome Web Store listing, so no separate flow is needed.
+
 ## [2.5.0]
 
 ### Added

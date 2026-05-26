@@ -1,30 +1,43 @@
 #!/bin/bash
-# Build script for Armorly Chrome Extension
-# AI ad blocker with popup UI - no network blocking, just client-side protection
+# Build script for Armorly browser extension.
+#
+# Usage:
+#   ./build.sh               # builds for Chrome/Edge/Brave (default)
+#   ./build.sh chrome        # explicit
+#   ./build.sh firefox       # produces a Firefox MV3-compatible zip
+#
+# Edge accepts the Chrome zip without modification, so there is no
+# separate Edge build target.
 
-set -e  # Exit on error
+set -e
 
-# Read version from manifest so this script never drifts.
+TARGET="${1:-chrome}"
+case "$TARGET" in
+  chrome|firefox) ;;
+  *)
+    echo "❌ Unknown target: $TARGET (expected chrome|firefox)"
+    exit 1
+    ;;
+esac
+
 VERSION=$(grep -E '"version"' extension/manifest.json | head -1 | sed -E 's/.*"version": *"([^"]+)".*/\1/')
 
-echo "🛡️  Building Armorly v${VERSION} (AI Ad Blocker)..."
+echo "🛡️  Building Armorly v${VERSION} for ${TARGET}..."
 
 # Clean previous build
 echo "📦 Cleaning previous build..."
 rm -rf build
-rm -f armorly-extension.zip
+# Remove the artifact for the target we're about to produce. We don't touch
+# zips for the OTHER target so a cross-target build doesn't wipe them.
+case "$TARGET" in
+  chrome)  rm -f armorly-chrome.zip armorly-extension.zip ;;
+  firefox) rm -f armorly-firefox.zip ;;
+esac
 
-# Create build directory
-echo "📁 Creating build directory..."
 mkdir -p build
 
-# Copy required files from extension folder
 echo "📋 Copying extension files..."
-
-# Core files
 cp extension/manifest.json build/
-
-# Directories
 cp -r extension/icons build/
 cp -r extension/content build/
 cp -r extension/lib build/
@@ -32,47 +45,39 @@ cp -r extension/popup build/
 cp -r extension/rules build/
 cp extension/background.js build/
 
-# Verify critical files exist
+# Firefox needs a tweaked manifest: gecko addon ID + minimum version, and a
+# `background.scripts` field instead of `background.service_worker` (the
+# service_worker key is only stable in Firefox 121+, while scripts is the
+# AMO-recommended MV3 form for current ESR).
+if [ "$TARGET" = "firefox" ]; then
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "❌ jq is required to build the Firefox target. Install via Homebrew (mac) or apt (linux)."
+    exit 1
+  fi
+  jq '. + {
+        "browser_specific_settings": {
+          "gecko": {
+            "id": "armorly@claygood.com",
+            "strict_min_version": "115.0"
+          }
+        }
+      } | .background = { "scripts": ["background.js"] }' \
+    extension/manifest.json > build/manifest.json
+fi
+
+# Verify critical files
 echo "✅ Verifying build..."
+for f in build/manifest.json build/lib/ad-patterns.js build/lib/ad-patterns.json \
+         build/content/ai-ad-blocker.js build/content/hidden-content-blocker.js \
+         build/rules/ad-sdks.json build/background.js; do
+  if [ ! -f "$f" ]; then
+    echo "❌ Error: $f missing!"
+    exit 1
+  fi
+done
 
-if [ ! -f build/manifest.json ]; then
-  echo "❌ Error: manifest.json missing!"
-  exit 1
-fi
-
-if [ ! -f build/lib/ad-patterns.js ]; then
-  echo "❌ Error: ad-patterns.js missing!"
-  exit 1
-fi
-
-if [ ! -f build/content/ai-ad-blocker.js ]; then
-  echo "❌ Error: ai-ad-blocker.js missing!"
-  exit 1
-fi
-
-if [ ! -f build/content/hidden-content-blocker.js ]; then
-  echo "❌ Error: hidden-content-blocker.js missing!"
-  exit 1
-fi
-
-if [ ! -f build/rules/ad-sdks.json ]; then
-  echo "❌ Error: rules/ad-sdks.json missing!"
-  exit 1
-fi
-
-if [ ! -f build/background.js ]; then
-  echo "❌ Error: background.js missing!"
-  exit 1
-fi
-
-if [ ! -f build/lib/ad-patterns.json ]; then
-  echo "❌ Error: lib/ad-patterns.json missing!"
-  exit 1
-fi
-
-# Phase 4.4: the BUNDLED_VERSION constant in ad-patterns.js must match the
-# `version` field in ad-patterns.json — otherwise the cache-vs-bundled
-# comparison in mergeCachedPatterns will misbehave.
+# Phase 4.4: BUNDLED_VERSION in ad-patterns.js must match the `version` field
+# in ad-patterns.json — otherwise mergeCachedPatterns misbehaves.
 JS_VER=$(grep -E "const BUNDLED_VERSION" extension/lib/ad-patterns.js | head -1 | sed -E "s/.*'([^']+)'.*/\1/")
 JSON_VER=$(grep -E '"version"' extension/lib/ad-patterns.json | head -1 | sed -E 's/.*"version": *"([^"]+)".*/\1/')
 if [ "$JS_VER" != "$JSON_VER" ]; then
@@ -80,28 +85,46 @@ if [ "$JS_VER" != "$JSON_VER" ]; then
   exit 1
 fi
 
-# Create zip package
-echo "📦 Creating extension package..."
+# Package
+ZIP_NAME="armorly-${TARGET}.zip"
+echo "📦 Creating ${ZIP_NAME}..."
 cd build
-zip -r ../armorly-extension.zip . -q
+zip -r "../${ZIP_NAME}" . -q
 cd ..
 
-# Get file size
-SIZE=$(du -h armorly-extension.zip | cut -f1)
+# Backwards-compat alias: keep armorly-extension.zip pointing at the chrome
+# build so anyone with bookmarks or scripts referencing the old name still
+# gets a usable artifact.
+if [ "$TARGET" = "chrome" ]; then
+  cp "${ZIP_NAME}" armorly-extension.zip
+fi
+
+SIZE=$(du -h "${ZIP_NAME}" | cut -f1)
 FILE_COUNT=$(find build -type f | wc -l | tr -d ' ')
 
 echo ""
 echo "✅ Extension packaged successfully!"
-echo "📦 Package: armorly-extension.zip"
+echo "📦 Package: ${ZIP_NAME}"
 echo "📊 Size: $SIZE"
 echo "📁 Files: $FILE_COUNT"
 echo ""
-echo "🚀 Next steps:"
-echo "   1. Go to chrome://extensions/"
-echo "   2. Enable 'Developer mode'"
-echo "   3. Click 'Load unpacked' and select the 'build' folder"
-echo "   OR"
-echo "   4. Upload armorly-extension.zip to Chrome Web Store"
+case "$TARGET" in
+  chrome)
+    echo "🚀 Next steps:"
+    echo "   1. Go to chrome://extensions/"
+    echo "   2. Enable 'Developer mode'"
+    echo "   3. Click 'Load unpacked' and select the 'build' folder"
+    echo "   OR"
+    echo "   4. Upload ${ZIP_NAME} to the Chrome Web Store (also accepted by Edge Add-ons and Brave)"
+    ;;
+  firefox)
+    echo "🚀 Next steps:"
+    echo "   1. Go to about:debugging#/runtime/this-firefox"
+    echo "   2. Click 'Load Temporary Add-on...' and select build/manifest.json"
+    echo "   OR"
+    echo "   3. Upload ${ZIP_NAME} to addons.mozilla.org"
+    ;;
+esac
 
 # TODO(phase-2): headless smoke test — load the built extension in Chromium
 # and assert the console emits `[Armorly] AI ad blocker active`. See SPEC.md

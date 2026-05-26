@@ -1,0 +1,77 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node (for syntax checks)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Validate JSON files
+        run: |
+          set -euo pipefail
+          for f in extension/manifest.json extension/lib/ad-patterns.json extension/rules/ad-sdks.json; do
+            echo "Checking $f"
+            jq empty "$f"
+          done
+
+      - name: JS syntax check
+        run: |
+          set -euo pipefail
+          for f in extension/background.js extension/lib/*.js extension/content/*.js extension/popup/*.js; do
+            echo "Checking $f"
+            node --check "$f"
+          done
+
+      - name: Assert BUNDLED_VERSION matches ad-patterns.json
+        run: |
+          JS_VER=$(grep -E "const BUNDLED_VERSION" extension/lib/ad-patterns.js | head -1 | sed -E "s/.*'([^']+)'.*/\1/")
+          JSON_VER=$(jq -r '.version' extension/lib/ad-patterns.json)
+          if [ "$JS_VER" != "$JSON_VER" ]; then
+            echo "::error::BUNDLED_VERSION ($JS_VER) != ad-patterns.json version ($JSON_VER)"
+            exit 1
+          fi
+
+      - name: Build Chrome target
+        run: ./build.sh chrome
+
+      - name: Build Firefox target
+        run: ./build.sh firefox
+
+      - name: Validate built artifacts
+        run: |
+          set -euo pipefail
+          unzip -p armorly-chrome.zip manifest.json | jq -e '.manifest_version == 3'
+          unzip -p armorly-firefox.zip manifest.json | jq -e '.browser_specific_settings.gecko.id'
+          unzip -p armorly-firefox.zip manifest.json | jq -e '.background.scripts | length > 0'
+
+      - name: Upload Chrome build
+        uses: actions/upload-artifact@v4
+        with:
+          name: armorly-chrome
+          path: armorly-chrome.zip
+          if-no-files-found: error
+
+      - name: Upload Firefox build
+        uses: actions/upload-artifact@v4
+        with:
+          name: armorly-firefox
+          path: armorly-firefox.zip
+          if-no-files-found: error

@@ -173,3 +173,12 @@ test-results/
 # --------------------
 .fastembed_cache/
 */.fastembed_cache/
+
+# --------------------
+# Armorly build artifacts
+# --------------------
+# armorly-extension.zip is tracked as the canonical legacy artifact.
+# The per-browser zips are CI build outputs only; rebuild locally with
+# `./build.sh chrome` or `./build.sh firefox`.
+armorly-chrome.zip
+armorly-firefox.zip
