@@ -167,7 +167,19 @@ Note: these tests don't require login; they verify the landing page only. Logged
 
 ---
 
-## Phase 3 — Manual demo video script (record yourself, ~20 min to film)
+## Phase 3 — Demo video (now automated via Playwright)
+
+> The hero video that was originally planned as a manual screen recording is
+> now produced by `npm run demo` + `./scripts/make-demo-gif.sh` against a
+> ChatGPT-styled fixture page. Output lands at [docs/demo.gif](docs/demo.gif)
+> and is embedded at the top of the README. ~8 seconds, ~900 KB, 960px wide.
+>
+> The manual-recording script below is left in the spec as a reference for
+> producing a longer voiceover-narrated version for the Chrome Web Store
+> listing (the 1280×800 listing screenshots and longer YouTube cut still
+> benefit from a human narrator).
+
+## Phase 3 (legacy) — Manual demo video script (record yourself, ~20 min to film)
 
 Goal: a 30–45 second screen recording for the Chrome Web Store listing. Record on a clean Chrome profile with no other extensions installed. Use QuickTime (Cmd+Shift+5 on Mac) or Loom.
 

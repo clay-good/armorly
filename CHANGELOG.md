@@ -4,6 +4,9 @@ All notable user-facing changes to Armorly are documented here. Format loosely f
 
 ## [Unreleased]
 
+### Added
+- **Automated demo recording (Phase 3).** New ChatGPT-styled fixture page ([tests/fixtures/chatgpt-mock.html](tests/fixtures/chatgpt-mock.html)) plus an off→on storyboard in the `@demo` Playwright test produce a deterministic 7.6-second walkthrough. `./scripts/make-demo-gif.sh` converts the webm to a 900 KB GIF via ffmpeg + gifsicle. Output is committed at [docs/demo.gif](docs/demo.gif) and embedded at the top of the README — what used to require a manual screen recording now lives in the repo and replays exactly the same every build.
+
 ### Changed
 - **README restructured** along the lines of SPEC.md Phase 1.1: install table moved to the top, "Why ads will destroy AI" essay shifted below the practical sections, developer content consolidated under a single "For developers" heading. Stale facts corrected — limitation #4 now reflects the v2.5.0 pattern auto-update, limitation #12's "no network-level blocking" claim removed (we added that in v2.3.0), the project-structure tree now lists `background.js`, `sdk-blocker.js`, `rules/`, and `ad-patterns.json`. Added a build-status badge linking to the [build workflow](.github/workflows/build.yml).
 - **`npm run demo`** now actually produces a webm. It sets `ARMORLY_DEMO=1`, which flips `recordVideo` on the persistent context and runs only the `@demo`-tagged walkthrough — the existing fixture pages, end to end, at 1280×720. Output lands in `test-results/demo/`.

@@ -5,13 +5,14 @@
 [![build](https://github.com/clay-good/armorly/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/clay-good/armorly/actions/workflows/build.yml)
 [![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-![Armorly popup showing protection status on Perplexity](docs/screenshots/armorly-perplexity.jpg)
+![Armorly removing a sponsored card from a ChatGPT-style response](docs/demo.gif)
 
-> Demo video and animated GIF coming soon — see [SPEC.md](SPEC.md) Phase 3.
+<sup>Recorded by [`npm run demo`](tests/extension.spec.ts) against a ChatGPT-styled fixture page (the real chatbots don't show ads yet — Armorly is ready for when they do). [How the demo is generated.](#demo-generation)</sup>
 
 <details>
-<summary>More screenshots</summary>
+<summary>Popup screenshots</summary>
 
+![Armorly popup showing protection status on Perplexity](docs/screenshots/armorly-perplexity.jpg)
 ![Armorly popup showing protection status on ChatGPT](docs/screenshots/armorly-chatgpt.jpg)
 ![Armorly console logs confirming the blocker is active](docs/screenshots/armorly-console.jpg)
 
@@ -173,6 +174,19 @@ npm test
 ### Release flow
 
 Tag-driven. See [docs/RELEASING.md](docs/RELEASING.md) for the runbook.
+
+### Demo generation
+
+The hero GIF at the top of this README is reproducible. `npm run demo` runs
+a single Playwright test that opens a ChatGPT-styled mock page with the
+extension disabled (sponsored card visible), waits, toggles Armorly on via
+the service worker, reloads, and waits again. Output: `test-results/demo/*.webm`.
+Convert to GIF with:
+
+```bash
+./scripts/make-demo-gif.sh        # needs ffmpeg + gifsicle
+# writes docs/demo.gif (~900KB, 12fps, 960px wide)
+```
 
 ## Contributing
 

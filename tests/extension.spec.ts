@@ -93,31 +93,62 @@ test('affiliate-link cleaning strips tag= and utm_source= but keeps unrelated pa
   expect(href!).toContain('keep=yes');
 });
 
-// Phase 2.5: a single end-to-end test tagged `@demo` that walks through the
-// before/after of the fixture page. Playwright records video for any test in
-// `npm run demo` thanks to the `video: 'on'` override there. The output ends
-// up under test-results/<test-name>/video.webm.
-test('@demo end-to-end fixture walkthrough for the screen recording', async () => {
+// Phase 2.5 / Phase 3: a single end-to-end test tagged `@demo` that walks a
+// ChatGPT-styled mock page through "Armorly off" -> "Armorly on", suitable
+// for the README hero video. Run with `npm run demo` to enable video at
+// 1280x720; the webm lands in test-results/demo/.
+//
+// Storyboard (~8 seconds):
+//   t=0.0-2.5s   chatgpt-mock.html, Armorly disabled for this host
+//                via chrome.storage. Sponsored "PrecisionGlide" card visible.
+//                Pill in the corner reads "Armorly OFF" (red).
+//   t=2.5-3.0s   service worker clears `disabled_domains` and the page reloads.
+//   t=3.0-8.0s   Same page, now with Armorly active. Sponsored card is gone;
+//                affiliate `tag=`/`utm_*` params on the inline link are
+//                stripped. Pill reads "Armorly ON" (green).
+test('@demo end-to-end ChatGPT-mock walkthrough for the hero video', async () => {
+  // Find the extension service worker so we can drive chrome.storage from
+  // the test. MV3 spins it up lazily — wait for it if it isn't there yet.
+  let [worker] = context.serviceWorkers();
+  if (!worker) worker = await context.waitForEvent('serviceworker');
+
+  // Phase 1: Armorly disabled for localhost so the ad stays put.
+  await worker.evaluate(() =>
+    chrome.storage.local.set({ disabled_domains: ['127.0.0.1', 'localhost'] })
+  );
+
   const page = await context.newPage();
-  await page.goto(`${FIXTURES}/fake-ads.html`);
-  await page.waitForFunction(() => (window as any).__armorlyProbeDone === true, undefined, { timeout: 5000 });
-  await page.waitForFunction(
-    () => !document.querySelector('#sponsored-flag') && !document.querySelector('#koah-ad'),
-    undefined,
-    { timeout: 5000 }
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto(`${FIXTURES}/chatgpt-mock.html`);
+  // Sanity: the sponsored card is visible while Armorly is off.
+  await expect(page.locator('.sponsored')).toBeVisible();
+  // Hold the "before" state long enough for the recording to land it.
+  await page.waitForTimeout(2500);
+
+  // Phase 2: enable Armorly and reload to show the cleanup happening.
+  await worker.evaluate(() =>
+    chrome.storage.local.set({ disabled_domains: [] })
   );
-  // Hold on the cleaned fake-ads page long enough that the recording shows it.
-  await page.waitForTimeout(500);
-  await page.goto(`${FIXTURES}/hidden-injection.html`);
-  await page.waitForFunction(
-    () => {
-      const el = document.querySelector('#hidden-injection');
-      return !!el && el.textContent!.trim() === '';
-    },
-    undefined,
-    { timeout: 5000 }
-  );
-  await page.waitForTimeout(500);
+  await page.evaluate(() => {
+    const pill = document.getElementById('status-pill');
+    if (pill) { pill.textContent = 'Armorly ON'; pill.classList.add('on'); }
+  });
+  await page.reload();
+
+  // After reload the page's status pill JS doesn't run (it's a static label),
+  // so we re-apply the "on" state via page.evaluate before holding the frame.
+  await page.evaluate(() => {
+    const pill = document.getElementById('status-pill');
+    if (pill) { pill.textContent = 'Armorly ON'; pill.classList.add('on'); }
+  });
+
+  // The sponsored card should be removed by the DOM-removal pass.
+  await expect(page.locator('.sponsored')).toHaveCount(0, { timeout: 5000 });
+  // Hold the "after" state.
+  await page.waitForTimeout(5000);
+
+  // Restore the disabled-domains list so other tests aren't affected.
+  await worker.evaluate(() => chrome.storage.local.set({ disabled_domains: [] }));
 });
 
 test('hidden-content shield empties white-on-white injection but leaves visible content', async () => {
