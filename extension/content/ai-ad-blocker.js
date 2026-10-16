@@ -2,7 +2,8 @@
  * Armorly - AI Ad Blocker
  *
  * Blocks AI-native advertising from all major ad networks:
- * - Koah, Monetzly, Sponsored.so, Grok/X, Imprezia, Google AdSense
+ * - Koah, Monetzly, Sponsored.so, Grok/X, Imprezia, Kontext, Gravity,
+ *   Thrad, ZeroClick, EarnLayer, Lulu, ChatAds, Google AdSense
  *
  * Methods:
  * 1. SDK interception (block init/monetize calls before they run)

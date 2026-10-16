@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>AI ad networks fixture</title>
+</head>
+<body>
+  <h1>Fixture: AI ad networks</h1>
+  <p id="answer">Here is a normal AI answer that must stay on the page.</p>
+
+  <!-- Markup each network's published npm SDK renders (see ad-patterns.js). -->
+
+  <!-- Kontext (@kontextso/sdk-js): container + iframe from server.megabrain.co -->
+  <div id="kontext-ad" class="kontextso-ad-container">
+    <iframe class="kontextso-ad-iframe" title="Ad for message 1"></iframe>
+  </div>
+
+  <!-- Gravity (@gravity-ai/react / @gravity-ai/embed) -->
+  <div id="gravity-ad" data-gravity-ad data-variant="card">
+    <span data-gravity-ad-badge>Ad</span>
+    <a data-gravity-ad-link href="https://example.com/offer">Try Acme CRM</a>
+  </div>
+
+  <!-- EarnLayer (@earnlayer/chat-ads) -->
+  <div id="earnlayer-ad" class="earnlayer-ad earnlayer-ad-banner">
+    <div class="earnlayer-ad-title">Sponsored: Acme VPN</div>
+  </div>
+
+  <!-- Lulu (lulu-ads): sponsored click-through link -->
+  <p>Cheap flights: <a id="lulu-ad" href="https://ads.getlulu.dev/c/9f2a1c">TLV–BKK from $412</a></p>
+
+  <!-- A regular link that must be left alone. -->
+  <a id="legit-link" href="https://example.com/docs">Documentation</a>
+
+  <script>
+    // Fire one detached image request per ad-network domain so each DNR
+    // rule is exercised without DOM removal racing it (a removed iframe
+    // shows up as ERR_ABORTED, not ERR_BLOCKED_BY_CLIENT).
+    window.__adNetworkHosts = [
+      'app.koahlabs.com', 'server.megabrain.co', 'kontext.so',
+      'server.trygravity.ai', 'trygravity.com', 'sdk.thrad.ai', 'thrads.ai',
+      'cdn.zeroclick.io', 'zeroclick.ai', 'api.earnlayerai.com',
+      'api.earnlayer.com', 'ads.getlulu.dev', 'api.getchatads.com'
+    ];
+    window.__adNetworkHosts.forEach(function (h) {
+      new Image().src = 'https://' + h + '/armorly-probe.gif';
+    });
+  </script>
+</body>
+</html>

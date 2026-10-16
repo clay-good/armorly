@@ -260,3 +260,67 @@ test('Imprezia bundled SDK via same-origin proxy: card removed, r.imprezia.net b
   await expect.poll(() => blocked.length, { timeout: 5000 }).toBeGreaterThan(0);
   expect(blocked[0]).toContain('r.imprezia.net');
 });
+
+test('AI ad networks: Kontext, Gravity, EarnLayer and Lulu ads removed, legit content kept', async () => {
+  const page = await context.newPage();
+  await page.goto(`${FIXTURES}/ai-ad-networks.html`);
+
+  for (const id of ['#kontext-ad', '#gravity-ad', '#earnlayer-ad', '#lulu-ad']) {
+    await expect(page.locator(id), id).toHaveCount(0, { timeout: 5000 });
+  }
+  await expect(page.locator('#answer')).toBeVisible();
+  await expect(page.locator('#legit-link')).toBeVisible();
+});
+
+test('AI ad networks: every ad-network domain is blocked at the network layer', async () => {
+  const page = await context.newPage();
+  const blocked = new Set<string>();
+  page.on('requestfailed', (req) => {
+    if (req.failure()?.errorText === 'net::ERR_BLOCKED_BY_CLIENT') blocked.add(new URL(req.url()).hostname);
+  });
+
+  await page.goto(`${FIXTURES}/ai-ad-networks.html`);
+  const hosts: string[] = await page.evaluate(() => (window as any).__adNetworkHosts);
+  expect(hosts.length).toBeGreaterThan(10);
+
+  await expect.poll(() => hosts.filter((h) => !blocked.has(h)), { timeout: 5000 }).toEqual([]);
+});
+
+test('AI ad networks: Thrad and Gravity page globals become no-op proxies', async () => {
+  const page = await context.newPage();
+  await page.goto(`${FIXTURES}/ai-ad-networks.html`);
+  await page.waitForFunction(() => typeof (window as any).thrad !== 'undefined', undefined, { timeout: 5000 });
+
+  const isThenable = await page.evaluate(() => {
+    const r = (window as any).thrad.render({ target: document.body });
+    const p = (window as any).gravityPixel.track('PageView');
+    return [r, p].every((x) => x !== null && typeof x === 'object' && typeof x.then === 'function');
+  });
+  expect(isThenable).toBe(true);
+});
+
+test('first-party ads: ChatGPT ad units removed on chatgpt.com, answer and sources kept', async () => {
+  const page = await context.newPage();
+  // Serve the fixture on the real hostname so the chatgpt-only selectors apply.
+  await page.route('https://chatgpt.com/armorly-fixture', (route) =>
+    route.fulfill({ path: path.resolve(__dirname, 'fixtures', 'chatgpt-ads.html'), contentType: 'text/html' })
+  );
+  await page.goto('https://chatgpt.com/armorly-fixture');
+
+  for (const id of ['#gpt-ad-unit', '#gpt-ad-border', '#gpt-ad-bazaar', '#gpt-ad-section']) {
+    await expect(page.locator(id), id).toHaveCount(0, { timeout: 5000 });
+  }
+  await expect(page.locator('#gpt-answer')).toBeVisible();
+  await expect(page.locator('#gpt-sources')).toBeVisible();
+});
+
+test('first-party ads: Copilot ads card removed on copilot.microsoft.com', async () => {
+  const page = await context.newPage();
+  await page.route('https://copilot.microsoft.com/armorly-fixture', (route) =>
+    route.fulfill({ path: path.resolve(__dirname, 'fixtures', 'copilot-ads.html'), contentType: 'text/html' })
+  );
+  await page.goto('https://copilot.microsoft.com/armorly-fixture');
+
+  await expect(page.locator('#copilot-ad')).toHaveCount(0, { timeout: 5000 });
+  await expect(page.locator('#copilot-answer')).toBeVisible();
+});

@@ -45,7 +45,7 @@ AI ads come from the same API as the real chatbot response — there's no separa
 1. **SDK interception.** A MAIN-world content script wraps `window.Koah`, `window.Monetzly`, `window.Sponsored`, etc. in no-op proxies *before* any page script runs. Calls return resolved Promises and never reach the network.
 2. **DOM removal.** Per-platform selectors and FTC-disclosure pattern matching delete sponsored cards, promoted suggestions, and ad containers as they appear. Conservative — only elements with explicit ad markers (`data-sponsored`, `data-koah-ad`, `aria-label="Sponsored"`, etc.) are touched.
 3. **Affiliate-link cleaning.** Outbound links get `tag=`, `utm_*`, `ref`, `affiliate`, etc. stripped from their query strings. Non-affiliate params are preserved.
-4. **Network-level blocking** (v2.3.0+). Static `declarativeNetRequest` rules drop requests to AI-specific ad-SDK domains — Koah, Monetzly, Sponsored.so, Imprezia — before they even reach the page. Defense in depth on top of the SDK proxies.
+4. **Network-level blocking** (v2.3.0+). Static `declarativeNetRequest` rules drop requests to AI-specific ad-SDK domains — Koah, Monetzly, Sponsored.so, Imprezia, Kontext, Gravity, Thrad, ZeroClick, EarnLayer, Lulu, ChatAds — before they even reach the page. Defense in depth on top of the SDK proxies.
 
 For generic web ads (AdSense, DoubleClick, etc.), use uBlock Origin or Brave alongside Armorly. Network-level blocking of those is intentionally out of scope.
 
@@ -61,11 +61,12 @@ When the shield fires, a small toast appears in the bottom-right of the page so 
 
 Works on every website. Platform-specific detection for:
 
-- ChatGPT / OpenAI (prepared for upcoming ad rollouts)
+- ChatGPT / OpenAI (live sponsored cards and shopping units)
 - Perplexity AI (active sponsored follow-ups)
 - Grok / X (active promoted suggestions)
+- Microsoft Copilot and You.com (ads cards)
 - Claude, Gemini, Poe
-- Any chatbot using Koah, Monetzly, Sponsored.so, or Imprezia
+- Any chatbot using Koah, Monetzly, Sponsored.so, Imprezia, Kontext, Gravity, Thrad, ZeroClick, EarnLayer, Lulu, or ChatAds
 
 ## Verify it's working
 

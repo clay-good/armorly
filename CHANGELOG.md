@@ -4,11 +4,26 @@ All notable user-facing changes to Armorly are documented here. Format loosely f
 
 ## [Unreleased]
 
-### Fixed
-- **Imprezia ads are now actually blocked.** Real Imprezia publishers (e.g. TravelDealz.ai) bundle the SDK with no `window.Imprezia` global and route it through a same-origin `/api/proxy`, so neither the SDK proxy nor the `||imprezia.ai^` rule ever fired and the "Sponsored by …" cards stayed on the page. Armorly now removes Imprezia's card markup (`a.imprezia-card`, `.imprezia-card-banner-html`, `[data-imprezia-viewability-gate]`) on every site and blocks the `r.imprezia.net` tracker frames with a new network rule. A new Playwright fixture ([tests/fixtures/imprezia-bundled.html](tests/fixtures/imprezia-bundled.html)) reproduces the bundled, proxied setup; its test fails on the old code and passes now. Pattern version bumped to `2026-10-16`.
+## [2.10.0]
 
 ### Added
+- **Blocks the rest of the AI ad networks.** Coverage now spans every AI ad network with a published browser SDK or ad domain, not just the original four. Selectors come from each network's real npm SDK, and domains are cross-checked against EasyList/EasyPrivacy:
+  - **Kontext** (`.kontextso-ad-container`, ad iframes from `server.megabrain.co`)
+  - **Gravity** (`[data-gravity-ad]`, `[data-gravity-frame]`, `window.gravityPixel`, `trygravity.ai/.com`)
+  - **Thrad** (`window.thrad`, `sdk.thrad.ai`, `thrads.ai`)
+  - **ZeroClick** (`zeroclick.io`/`.ai` badge + API)
+  - **EarnLayer** (`.earnlayer-ad`, `earnlayerai.com`)
+  - **Lulu** (`ads.getlulu.dev` sponsored links)
+  - **ChatAds** (`getchatads.com`)
+  - **Koah** (adds `koahlabs.com`)
+
+  13 new network rules.
+- **ChatGPT, Copilot and You.com first-party ads.** Added the ChatGPT ad units EasyList currently tracks on chatgpt.com (`aside[data-assistant-ads-unit]`, `bazaar-*` shopping cards, "Ad options" cards, `section:has(> [aria-label="Sponsored"])`, …) and added Copilot's `ads-card` and You.com's `microsoft-ads`.
 - **Chrome Web Store listing stills, automated.** The `@demo` Playwright test now records at 1280×800 (the listing hero aspect), and a new `scripts/make-listing-stills.sh` extracts `docs/listing/before.png` (Armorly OFF, sponsored card visible) and `docs/listing/after.png` (Armorly ON, card gone) straight from the same source webm. One command end-to-end: `npm run stills`. SPEC.md Phase 3.4 items previously requiring a manual screen capture are now reproducible.
+
+### Fixed
+- Platform and SDK selectors now run before the generic label selectors, so removing an inner "Sponsored" label no longer leaves the outer ad container behind.
+- **Imprezia ads are now actually blocked.** Real Imprezia publishers (e.g. TravelDealz.ai) bundle the SDK with no `window.Imprezia` global and route it through a same-origin `/api/proxy`, so neither the SDK proxy nor the `||imprezia.ai^` rule ever fired and the "Sponsored by …" cards stayed on the page. Armorly now removes Imprezia's card markup (`a.imprezia-card`, `.imprezia-card-banner-html`, `[data-imprezia-viewability-gate]`) on every site and blocks the `r.imprezia.net` tracker frames with a new network rule. A new Playwright fixture ([tests/fixtures/imprezia-bundled.html](tests/fixtures/imprezia-bundled.html)) reproduces the bundled, proxied setup; its test fails on the old code and passes now. Pattern version bumped to `2026-10-16`.
 
 ### Changed
 - Hero `docs/demo.gif` regenerated at the new 1280×800 source resolution — file size dropped to 422 KB even though the source is now taller, because the regenerated palette dedupes better against the cleaner background.

@@ -10,7 +10,7 @@
     "koah": {
       "functions": ["Koah", "koah", "KoahAds"],
       "methods": ["init", "showAd", "displayAd", "trackImpression", "trackClick", "monetize"],
-      "domainPatterns": ["koah.io", "koah.ai", "api.koah.io", "sdk.koah.io"]
+      "domainPatterns": ["koah.io", "koah.ai", "api.koah.io", "sdk.koah.io", "koahlabs.com", "app.koah.ai"]
     },
     "monetzly": {
       "functions": ["Monetzly", "monetzly", "MonetzlyAds"],
@@ -26,6 +26,41 @@
       "functions": ["Imprezia", "imprezia"],
       "methods": ["init", "monetize", "showAd", "trackImpression", "trackClick"],
       "domainPatterns": ["imprezia.ai", "api.imprezia.ai", "sdk.imprezia.ai", "imprezia.net", "r.imprezia.net"]
+    },
+    "kontext": {
+      "functions": [],
+      "methods": ["addMessage", "render"],
+      "domainPatterns": ["kontext.so", "megabrain.co", "server.megabrain.co"]
+    },
+    "gravity": {
+      "functions": ["gravityPixel"],
+      "methods": ["track", "getSessionId"],
+      "domainPatterns": ["trygravity.ai", "server.trygravity.ai", "api.trygravity.ai", "trygravity.com"]
+    },
+    "thrad": {
+      "functions": ["thrad"],
+      "methods": ["render"],
+      "domainPatterns": ["thrad.ai", "sdk.thrad.ai", "cdn.thrad.ai", "thrads.ai"]
+    },
+    "zeroclick": {
+      "functions": [],
+      "methods": [],
+      "domainPatterns": ["zeroclick.io", "api.zeroclick.io", "cdn.zeroclick.io", "zeroclick.ai"]
+    },
+    "earnlayer": {
+      "functions": [],
+      "methods": [],
+      "domainPatterns": ["earnlayerai.com", "api.earnlayerai.com", "earnlayer.com", "api.earnlayer.com"]
+    },
+    "lulu": {
+      "functions": [],
+      "methods": [],
+      "domainPatterns": ["getlulu.dev", "ads.getlulu.dev"]
+    },
+    "chatads": {
+      "functions": [],
+      "methods": [],
+      "domainPatterns": ["getchatads.com", "api.getchatads.com"]
     },
     "adsense": {
       "functions": ["adsbygoogle"],
@@ -88,7 +123,25 @@
       "[data-testid=\"shopping-card\"]",
       "[data-testid=\"product-recommendation\"]",
       ".chatgpt-sponsored",
-      ".openai-ad"
+      ".openai-ad",
+      "aside[data-assistant-ads-unit]",
+      "div[data-assistant-ads]",
+      "[class*=\"_assistantAds\"]",
+      "div[data-message-supplement]:has(aside[data-partial-island=\"assistant-ads\"])",
+      "[data-testid=\"bazaar-v2-elevated-box\"]",
+      "div[data-testid=\"bazaar-single-card-container\"]",
+      "section:has(> [aria-label=\"Sponsored\"])",
+      ".border-token-border-default.mt-2.border-t:has(button[aria-label=\"Ad options\"])",
+      "div.opacity-100.transition-opacity.ease-out:has(button[aria-label=\"Sponsored options\"], button[aria-label=\"Ad options\"])",
+      "div[role=\"complementary\"]:has(a[href*=\"oppref=\"])",
+      "a[rel][target=\"_blank\"][href*=\"?utm_\"][href*=\"&oppref=\"]"
+    ],
+    "copilot": [
+      "div[data-testid=\"ads-card\"]",
+      ".b_ad"
+    ],
+    "youcom": [
+      "[data-testid=\"microsoft-ads\"]"
     ],
     "koah": [
       "[data-koah-ad]",
@@ -107,10 +160,12 @@
       "[data-ad-provider=\"sponsored.so\"]",
       ".sponsored-so-ad"
     ],
-    "imprezia": [
-      "a.imprezia-card",
-      ".imprezia-card-banner-html",
-      "[data-imprezia-viewability-gate]"
+    "imprezia": ["a.imprezia-card", ".imprezia-card-banner-html", "[data-imprezia-viewability-gate]"],
+    "kontext": [".kontextso-ad-container", "iframe.kontextso-ad-iframe", "iframe.kontextso-modal-iframe"],
+    "gravity": ["[data-gravity-ad]", "[data-gravity-frame]", "[data-gravity-leadform-overlay]"],
+    "earnlayer": [".earnlayer-ad", ".earnlayer-mcp-ads", "a.earnlayer-mcp-ad-link"],
+    "lulu": [
+      "a[href*=\"ads.getlulu.dev/c/\"]"
     ],
     "generic": [
       "[data-ad-provider]",

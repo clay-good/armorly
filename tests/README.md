@@ -17,6 +17,12 @@ npm test
 - **SDK global-object interception** — `window.Koah` becomes a no-op proxy.
 - **DOM ad removal** — `[data-sponsored="true"]` and `[data-koah-ad]` are
   deleted by the selector pass.
+- **AI ad networks** — Imprezia (bundled SDK behind a same-origin proxy),
+  Kontext, Gravity, EarnLayer and Lulu ad markup is removed; every
+  ad-network domain is blocked by a DNR rule; Thrad and Gravity globals
+  become no-op proxies.
+- **First-party chatbot ads** — ChatGPT and Copilot ad units are removed
+  when the fixture is served on the real hostname via `page.route`.
 - **Affiliate-link cleaning** — `tag=` and `utm_source=` are stripped from
   hrefs; unrelated query params are preserved.
 - **Hidden prompt-injection shield** — white-on-white text containing a

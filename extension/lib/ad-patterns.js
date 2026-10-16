@@ -55,7 +55,9 @@
           'koah.io',
           'koah.ai',
           'api.koah.io',
-          'sdk.koah.io'
+          'sdk.koah.io',
+          'koahlabs.com',
+          'app.koah.ai'
         ]
       },
 
@@ -108,6 +110,110 @@
           'sdk.imprezia.ai',
           'imprezia.net',
           'r.imprezia.net'
+        ]
+      },
+
+      // Kontext (kontext.so) - inline ad iframes served from server.megabrain.co
+      kontext: {
+        functions: [],
+        methods: ['addMessage', 'render'],
+        scriptPatterns: [
+          /megabrain\.co/i,
+          /kontext\.so/i,
+          /@kontextso/i
+        ],
+        domainPatterns: [
+          'kontext.so',
+          'megabrain.co',
+          'server.megabrain.co'
+        ]
+      },
+
+      // Gravity (trygravity.ai) - per-turn ads + gravityPixel tracker
+      gravity: {
+        functions: ['gravityPixel'],
+        methods: ['track', 'getSessionId'],
+        scriptPatterns: [
+          /trygravity\.(?:ai|com)/i,
+          /@gravity-ai/i,
+          /gravity-ad\.js/i
+        ],
+        domainPatterns: [
+          'trygravity.ai',
+          'server.trygravity.ai',
+          'api.trygravity.ai',
+          'trygravity.com'
+        ]
+      },
+
+      // Thrad (thrad.ai) - native ads under AI replies, sdk.thrad.ai/sdk.js
+      thrad: {
+        functions: ['thrad'],
+        methods: ['render'],
+        scriptPatterns: [
+          /thrads?\.ai/i
+        ],
+        domainPatterns: [
+          'thrad.ai',
+          'sdk.thrad.ai',
+          'cdn.thrad.ai',
+          'thrads.ai'
+        ]
+      },
+
+      // ZeroClick - ads woven into model output; badge script on cdn.zeroclick.io
+      zeroclick: {
+        functions: [],
+        methods: [],
+        scriptPatterns: [
+          /zeroclick\.(?:io|ai)/i
+        ],
+        domainPatterns: [
+          'zeroclick.io',
+          'api.zeroclick.io',
+          'cdn.zeroclick.io',
+          'zeroclick.ai'
+        ]
+      },
+
+      // EarnLayer - contextual chat ads + sponsored hyperlinks
+      earnlayer: {
+        functions: [],
+        methods: [],
+        scriptPatterns: [
+          /earnlayer(?:ai)?\.com/i
+        ],
+        domainPatterns: [
+          'earnlayerai.com',
+          'api.earnlayerai.com',
+          'earnlayer.com',
+          'api.earnlayer.com'
+        ]
+      },
+
+      // Lulu (getlulu.dev) - sponsored slots in MCP tool output
+      lulu: {
+        functions: [],
+        methods: [],
+        scriptPatterns: [
+          /getlulu\.dev/i
+        ],
+        domainPatterns: [
+          'getlulu.dev',
+          'ads.getlulu.dev'
+        ]
+      },
+
+      // ChatAds (getchatads.com)
+      chatads: {
+        functions: [],
+        methods: [],
+        scriptPatterns: [
+          /getchatads\.com/i
+        ],
+        domainPatterns: [
+          'getchatads.com',
+          'api.getchatads.com'
         ]
       },
 
@@ -278,8 +384,32 @@
         '[data-testid="shopping-card"]',
         '[data-testid="product-recommendation"]',
         '.chatgpt-sponsored',
-        '.openai-ad'
+        '.openai-ad',
+        // Live ChatGPT ad units, mirrored from EasyList's chatgpt.com rules
+        'aside[data-assistant-ads-unit]',
+        'div[data-assistant-ads]',
+        '[class*="_assistantAds"]',
+        'div[data-message-supplement]:has(aside[data-partial-island="assistant-ads"])',
+        '[data-testid="bazaar-v2-elevated-box"]',
+        'div[data-testid="bazaar-single-card-container"]',
+        'section:has(> [aria-label="Sponsored"])',
+        '.border-token-border-default.mt-2.border-t:has(button[aria-label="Ad options"])',
+        'div.opacity-100.transition-opacity.ease-out:has(button[aria-label="Sponsored options"], button[aria-label="Ad options"])',
+        'div[role="complementary"]:has(a[href*="oppref="])',
+        'a[rel][target="_blank"][href*="?utm_"][href*="&oppref="]'
       ],
+
+      // Microsoft Copilot (copilot.microsoft.com)
+      copilot: [
+        'div[data-testid="ads-card"]',
+        '.b_ad'
+      ],
+
+      // You.com
+      youcom: [
+        '[data-testid="microsoft-ads"]'
+      ],
+
 
       // Koah-powered apps (Luzia, Liner, DeepAI)
       koah: [
@@ -311,6 +441,31 @@
         'a.imprezia-card',
         '.imprezia-card-banner-html',
         '[data-imprezia-viewability-gate]'
+      ],
+
+      // Kontext, Gravity, EarnLayer and Lulu markup, taken from their
+      // published npm SDKs (@kontextso/sdk-js, @gravity-ai/react + embed,
+      // @earnlayer/chat-ads, lulu-ads).
+      kontext: [
+        '.kontextso-ad-container',
+        'iframe.kontextso-ad-iframe',
+        'iframe.kontextso-modal-iframe'
+      ],
+
+      gravity: [
+        '[data-gravity-ad]',
+        '[data-gravity-frame]',
+        '[data-gravity-leadform-overlay]'
+      ],
+
+      earnlayer: [
+        '.earnlayer-ad',
+        '.earnlayer-mcp-ads',
+        'a.earnlayer-mcp-ad-link'
+      ],
+
+      lulu: [
+        'a[href*="ads.getlulu.dev/c/"]'
       ],
 
       // Generic patterns - ONLY very specific ad indicators
@@ -446,7 +601,10 @@
      */
     getSelectorsForPlatform: function() {
       const hostname = window.location.hostname.toLowerCase();
-      let selectors = [...this.platformSelectors.generic];
+      // Generic selectors go last: they match small inner labels, and removing
+      // those first would stop container rules like `section:has(> [aria-label
+      // ="Sponsored"])` from matching, leaving an empty ad shell behind.
+      let selectors = [];
 
       if (hostname.includes('x.com') || hostname.includes('twitter.com')) {
         selectors = selectors.concat(this.platformSelectors.grok);
@@ -454,6 +612,10 @@
         selectors = selectors.concat(this.platformSelectors.perplexity);
       } else if (hostname.includes('chatgpt') || hostname.includes('openai')) {
         selectors = selectors.concat(this.platformSelectors.chatgpt);
+      } else if (hostname === 'copilot.microsoft.com') {
+        selectors = selectors.concat(this.platformSelectors.copilot);
+      } else if (hostname === 'you.com' || hostname.endsWith('.you.com')) {
+        selectors = selectors.concat(this.platformSelectors.youcom);
       }
 
       // Always include SDK-specific selectors
@@ -461,6 +623,11 @@
       selectors = selectors.concat(this.platformSelectors.monetzly);
       selectors = selectors.concat(this.platformSelectors.sponsoredso);
       selectors = selectors.concat(this.platformSelectors.imprezia);
+      selectors = selectors.concat(this.platformSelectors.kontext);
+      selectors = selectors.concat(this.platformSelectors.gravity);
+      selectors = selectors.concat(this.platformSelectors.earnlayer);
+      selectors = selectors.concat(this.platformSelectors.lulu);
+      selectors = selectors.concat(this.platformSelectors.generic);
 
       return [...new Set(selectors)]; // Remove duplicates
     },
