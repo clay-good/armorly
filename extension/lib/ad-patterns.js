@@ -14,7 +14,7 @@
   // remote copy is newer. Keep in lockstep with the `version` field in the
   // sibling extension/lib/ad-patterns.json — the build script verifies they
   // match before packaging.
-  const BUNDLED_VERSION = '2026-05-26';
+  const BUNDLED_VERSION = '2026-10-16';
 
   // Expose patterns globally for content scripts
   window.ArmorlyAdPatterns = {
@@ -105,7 +105,9 @@
         domainPatterns: [
           'imprezia.ai',
           'api.imprezia.ai',
-          'sdk.imprezia.ai'
+          'sdk.imprezia.ai',
+          'imprezia.net',
+          'r.imprezia.net'
         ]
       },
 
@@ -302,6 +304,15 @@
         '.sponsored-so-ad'
       ],
 
+      // Imprezia-powered apps. Publishers usually bundle the SDK (no
+      // window global) and route it through a same-origin proxy, so the
+      // rendered card is the only reliable hook.
+      imprezia: [
+        'a.imprezia-card',
+        '.imprezia-card-banner-html',
+        '[data-imprezia-viewability-gate]'
+      ],
+
       // Generic patterns - ONLY very specific ad indicators
       generic: [
         '[data-ad-provider]',
@@ -449,6 +460,7 @@
       selectors = selectors.concat(this.platformSelectors.koah);
       selectors = selectors.concat(this.platformSelectors.monetzly);
       selectors = selectors.concat(this.platformSelectors.sponsoredso);
+      selectors = selectors.concat(this.platformSelectors.imprezia);
 
       return [...new Set(selectors)]; // Remove duplicates
     },

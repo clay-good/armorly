@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>imprezia bundled-SDK fixture</title>
+</head>
+<body>
+  <h1>Fixture: Imprezia bundled SDK</h1>
+  <p id="answer">Here are some flight options for your trip.</p>
+  <div id="ad-slot"></div>
+
+  <!-- Mimics how TravelDealz.ai ships @adimpress/imprezia-sdk: bundled into a
+       module (no window.Imprezia, so the MAIN-world proxy never fires) and
+       initialized with endpoint "/api/proxy", a same-origin server proxy the
+       ||imprezia.ai^ DNR rule can't see. Only the rendered card and the
+       r.imprezia.net tracker frame are visible to Armorly. -->
+  <script type="module">
+    const sdk = {
+      endpoint: '/api/proxy',
+      async monetize(slot) {
+        const res = await fetch(`${this.endpoint}/v1/monetize/append`, { method: 'POST' });
+        const { ads } = await res.json();
+        for (const ad of ads) {
+          const card = document.createElement('a');
+          card.id = 'imprezia-card';
+          card.className = 'imprezia-card imprezia-card-horizontal';
+          card.rel = 'noopener noreferrer sponsored';
+          card.href = ad.url;
+          card.setAttribute('data-tracking-id', ad.trackingId);
+          card.innerHTML =
+            '<span class="imprezia-card-text">' + ad.title + '</span>' +
+            '<span class="imprezia-card-text">Sponsored by ' + ad.advertiser + '</span>' +
+            '<span>Ad</span>';
+          slot.appendChild(card);
+
+          const tracker = document.createElement('iframe');
+          tracker.id = 'imprezia-tracker';
+          tracker.src = ad.trackerUrl;
+          tracker.width = '1';
+          tracker.height = '1';
+          slot.appendChild(tracker);
+        }
+        window.__impreziaRendered = true;
+      }
+    };
+    sdk.monetize(document.getElementById('ad-slot'));
+  </script>
+</body>
+</html>

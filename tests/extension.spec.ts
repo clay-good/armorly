@@ -238,3 +238,25 @@ test('hidden-content shield empties white-on-white injection but leaves visible 
   // Sentinel: legitimate body content must be untouched.
   await expect(page.locator('text=This sentinel paragraph is also visible')).toBeVisible();
 });
+
+test('Imprezia bundled SDK via same-origin proxy: card removed, r.imprezia.net blocked', async () => {
+  // Real publishers (e.g. TravelDealz.ai) bundle the Imprezia SDK with no
+  // window global and route it through a same-origin /api/proxy, so neither
+  // the MAIN-world proxy nor the ||imprezia.ai^ rule fires. The card markup
+  // and the r.imprezia.net tracker frame are what Armorly has to catch.
+  const page = await context.newPage();
+  const blocked: string[] = [];
+  page.on('requestfailed', (req) => {
+    if (req.url().includes('imprezia.net') && req.failure()?.errorText === 'net::ERR_BLOCKED_BY_CLIENT') {
+      blocked.push(req.url());
+    }
+  });
+
+  await page.goto(`${FIXTURES}/imprezia-bundled.html`);
+  await page.waitForFunction(() => (window as any).__impreziaRendered === true, undefined, { timeout: 5000 });
+
+  await expect(page.locator('.imprezia-card')).toHaveCount(0, { timeout: 5000 });
+  await expect(page.locator('text=Sponsored by Trip.com')).toHaveCount(0);
+  await expect.poll(() => blocked.length, { timeout: 5000 }).toBeGreaterThan(0);
+  expect(blocked[0]).toContain('r.imprezia.net');
+});

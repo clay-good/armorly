@@ -61,5 +61,14 @@
       "urlFilter": "||imprezia.com^",
       "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
     }
+  },
+  {
+    "id": 8,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||imprezia.net^",
+      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+    }
   }
 ]

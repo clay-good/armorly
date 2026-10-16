@@ -4,6 +4,9 @@ All notable user-facing changes to Armorly are documented here. Format loosely f
 
 ## [Unreleased]
 
+### Fixed
+- **Imprezia ads are now actually blocked.** Real Imprezia publishers (e.g. TravelDealz.ai) bundle the SDK with no `window.Imprezia` global and route it through a same-origin `/api/proxy`, so neither the SDK proxy nor the `||imprezia.ai^` rule ever fired and the "Sponsored by …" cards stayed on the page. Armorly now removes Imprezia's card markup (`a.imprezia-card`, `.imprezia-card-banner-html`, `[data-imprezia-viewability-gate]`) on every site and blocks the `r.imprezia.net` tracker frames with a new network rule. A new Playwright fixture ([tests/fixtures/imprezia-bundled.html](tests/fixtures/imprezia-bundled.html)) reproduces the bundled, proxied setup; its test fails on the old code and passes now. Pattern version bumped to `2026-10-16`.
+
 ### Added
 - **Chrome Web Store listing stills, automated.** The `@demo` Playwright test now records at 1280×800 (the listing hero aspect), and a new `scripts/make-listing-stills.sh` extracts `docs/listing/before.png` (Armorly OFF, sponsored card visible) and `docs/listing/after.png` (Armorly ON, card gone) straight from the same source webm. One command end-to-end: `npm run stills`. SPEC.md Phase 3.4 items previously requiring a manual screen capture are now reproducible.
 
