@@ -11,6 +11,23 @@ All notable user-facing changes to Armorly are documented here. Format loosely f
 - **Imprezia: every ad format is covered, not just the `<a>` cards.** Verified against the exact markup Imprezia's SDK renders on its own playground (demo.imprezia.ai) for all 12 formats. 2.10.0 caught them only through the SDK's `data-imprezia-viewability-gate` wrapper; Lead Gen, Date Picker, Text CTA and Hyperlink CTA leaked whenever a publisher rendered cards without it. Now matched directly: `.imprezia-card` (any element), `.imprezia-cta-container`, `.imprezia-cta-link`, `.imprezia-cta-button`, `.imprezia-cta-sponsored`.
 - **Imprezia inline sponsored links** (`a.imprezia-link`, woven into the AI's answer) are unwrapped to plain text, so the tracking link is gone but the sentence still reads.
 - Imprezia ad creative images (`storage.googleapis.com/imprezia-assets/`) are blocked at the network layer.
+- **Every network re-verified against its real SDK.** Selectors were previously written from reading SDK code. Each network's real SDK has now been rendered in Chromium (ad servers mocked with API-shaped responses), and 101 formats were captured verbatim into `tests/fixtures/captures/`. The new tests require every one to be hidden. 2.10.0 left 14 of them visible, plus every Lulu MCP-app frame. Gaps closed:
+  - **Kontext:** the React SDK emits no classes. It's now matched by its fixed iframe `title` + `data-testid`.
+  - **Gravity:** `GravityAd.mount()` slots, lead-in wrappers and lead-form cards are hidden, the `window.GravityAd` global is proxied, and the jsDelivr/unpkg embed builds are blocked.
+  - **Thrad:** the SDK wrapper `div.adsdk-container[data-thrad-format]` is hidden.
+  - **Koah:** `[data-koah="root"]` added as a backup to `.koah-ad-container`.
+  - **ZeroClick:** offer links in answers (`mcp.zeroclick.ai/…/offers`, `zeroclick.dev/api/v2/clicks`, `zero.click/…`) are hidden, and `zeroclick.dev` and `zero.click` are blocked.
+  - **Lulu:** MCP-app widgets, result-frame sponsor strips, README sponsor badges, and text sponsor cards/suffixes in answers are hidden.
+  - **ChatAds:** affiliate links in the widget's answers are unwrapped to plain text, and the legacy `chataside.com` script is blocked.
+  - **EarnLayer:** `@earnlayer/ai-ads-sdk` components are hidden.
+- **Ads inside `srcdoc` / `about:blank` frames** (how MCP-app hosts embed widgets) are now reached: content scripts run with `match_about_blank` and `match_origin_as_fallback`.
+- **ChatGPT, Copilot and You.com:** added the ad units EasyList, uBlock and AdGuard currently target (ChatGPT `data-ad-card-root` and image cards, Copilot `data-ads-rg`, You.com `youchat-ads`), plus Character.ai's ad slot.
+- **Page breakage:** Armorly proxied `window.sponsored`, so any page with `var sponsored = …` got Armorly's object back. Sponsored.so turned out not to exist (unregistered domain, no SDK anywhere) and has been removed. Proxied SDK calls now resolve to `{ filled: false }` instead of `undefined`, so publisher code like `const { filled } = await koah.requestAd(…)` no longer throws.
+- **Vendor sites keep working:** every network rule now exempts requests made by the vendor's own sites, so their docs and dashboards load. Ads are still blocked on publisher sites.
+
+### Removed
+- Monetzly's selectors and globals. It has no browser SDK: it rewrites the LLM stream server-side. Only its API host stays blocked.
+- `zeroclick.io` (seller payments, not ads), `koahlabs.com` (docs and dashboard only), and the EarnLayer domain rules. EarnLayer is defunct, and `earnlayerai.com` now belongs to an unrelated site.
 
 ## [2.10.0]
 

@@ -301,7 +301,7 @@ test('first-party ads: ChatGPT ad units removed on chatgpt.com, answer and sourc
   );
   await page.goto('https://chatgpt.com/armorly-fixture');
 
-  for (const id of ['#gpt-ad-unit', '#gpt-ad-border', '#gpt-ad-bazaar', '#gpt-ad-section']) {
+  for (const id of ['#gpt-ad-unit', '#gpt-ad-border', '#gpt-ad-bazaar', '#gpt-ad-section', '#gpt-ad-aside', '#gpt-ad-card-root', '#gpt-ad-options']) {
     await expect(page.locator(`${id}:visible`), id).toHaveCount(0, { timeout: 5000 });
   }
   await expect(page.locator('#gpt-answer')).toBeVisible();
@@ -316,6 +316,7 @@ test('first-party ads: Copilot ads card removed on copilot.microsoft.com', async
   await page.goto('https://copilot.microsoft.com/armorly-fixture');
 
   await expect(page.locator('#copilot-ad:visible')).toHaveCount(0, { timeout: 5000 });
+  await expect(page.locator('#copilot-ad-rg:visible')).toHaveCount(0, { timeout: 5000 });
   await expect(page.locator('#copilot-answer')).toBeVisible();
 });
 
@@ -359,4 +360,113 @@ test('Imprezia real SDK markup: every ad format hidden (with and without its wra
 
   // Ad creative images never load.
   await expect.poll(() => blockedImages.length, { timeout: 5000 }).toBeGreaterThan(0);
+});
+
+// Verbatim ad markup captured from each network's real SDK (rendered in
+// Chromium with the published package; ad servers mocked with API-shaped
+// responses). One file per format in tests/fixtures/captures/. Each capture
+// is mounted in its own slot; after Armorly runs, a slot may show no ad
+// text, iframe or image. PUBLISHER_TEXT lists the few captures where the
+// publisher's own words sit around an inline ad and must stay.
+const CAPTURES_DIR = path.resolve(__dirname, 'fixtures', 'captures');
+const PUBLISHER_TEXT: Record<string, string> = {
+  'gravity-react-adtext.html': 'Try this:',
+  'gravity-react-adtext-noclick.html': 'Try this:',
+  // Thrad's no-fill notice is SDK chrome, not an ad.
+  'thrad-nofill.html': 'No ad available',
+  // ZeroClick ads are offer links inside the model's own sentence.
+  'zeroclick-mcp-inline-offer-links.html': 'For trail running, the is a solid pick (sponsored). Another option is .',
+  // ChatAds is the publisher's chatbot; its affiliate links are unwrapped to
+  // plain text, so the answer reads the same without the tracking links.
+  'chatads-inline-links.html': 'For a small kitchen I would go with the Ninja AF101 Air Fryer - compact and easy to clean. If you want more capacity, the Cosori Pro LE is worth a look. Our full air fryer guide has the test data.',
+  'chatads-widget-panel.html': '× Which air fryer for a small kitchen? For a small kitchen I would go with the Ninja AF101 Air Fryer - compact and easy to clean. If you want more capacity, the Cosori Pro LE is worth a look. Our full air fryer guide has the test data. Hit daily limit. Try again tomorrow. Please keep your question under 100 words. Links may include affiliate offers Powered by ChatAds For a small kitchen I would go with the Ninja AF101 Air Fryer - compact and easy to clean. If you want more capacity, the Cosori Pro LE is worth a look. Our full air fryer guide has the test data.',
+  // The README's own caption under the (hidden) sponsor badge.
+  'lulu-readme-sponsor-badge-github-live.html': '↑ live rendered sponsor card — real rotating ad demand, refreshes every ~60s. Any claimed listing can embed this in its own README.'
+};
+
+test('real SDK captures: every network ad format is hidden', async () => {
+  const fs = await import('node:fs');
+  const files = fs.readdirSync(CAPTURES_DIR).filter((f) => f.endsWith('.html')).sort();
+  expect(files.length).toBeGreaterThan(50);
+  const slots = files
+    .map((f, i) => {
+      const body = fs.readFileSync(path.join(CAPTURES_DIR, f), 'utf8').replace(/\sid="slot"/g, '');
+      return `<section class="capture" id="c${i}" data-file="${f}" data-allow="${PUBLISHER_TEXT[f] ?? ''}">${body}</section>`;
+    })
+    .join('\n');
+
+  const page = await context.newPage();
+  await page.route(`${FIXTURES}/__captures`, (route) =>
+    route.fulfill({ contentType: 'text/html', body: `<!doctype html><html><head><meta charset="utf-8"></head><body>${slots}</body></html>` })
+  );
+  await page.goto(`${FIXTURES}/__captures`);
+
+  const leaks = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('section.capture')]
+        .filter((s) => {
+          const text = s.innerText.replace(/\s+/g, ' ').trim();
+          const media = [...s.querySelectorAll<HTMLElement>('iframe, img, video')].some((e) => e.offsetWidth || e.offsetHeight);
+          return media || text !== (s.dataset.allow ?? '');
+        })
+        .map((s) => `${s.dataset.file}: "${s.innerText.replace(/\s+/g, ' ').trim().slice(0, 60)}"`)
+    );
+  await expect.poll(leaks, { timeout: 5000 }).toEqual([]);
+  await expect(page.locator('section.capture a[rel~="sponsored"] >> visible=true')).toHaveCount(0);
+});
+
+// Lulu ads render as MCP-app frame documents (Claude.ai / ChatGPT apps).
+// Each capture is loaded both as its own frame document and inside a
+// srcdoc iframe, which needs match_about_blank + match_origin_as_fallback.
+const FRAME_CAPTURES_DIR = path.resolve(__dirname, 'fixtures', 'captures-frames');
+const SPONSOR_TEXT = /sponsored|lulu ads/i;
+
+test('real SDK captures: Lulu widget and result-frame sponsors hidden, standalone and in srcdoc frames', async () => {
+  const fs = await import('node:fs');
+  const files = fs.readdirSync(FRAME_CAPTURES_DIR).filter((f) => f.endsWith('.html')).sort();
+  expect(files.length).toBeGreaterThan(10);
+  const page = await context.newPage();
+  const visibleSponsorText = (frame: import('@playwright/test').Frame) =>
+    frame.evaluate((re) => {
+      const rx = new RegExp(re, 'i');
+      return document.body.innerText.split('\n').map((l) => l.trim()).filter((l) => rx.test(l));
+    }, SPONSOR_TEXT.source);
+
+  const leaks: string[] = [];
+  for (const f of files) {
+    const doc = fs.readFileSync(path.join(FRAME_CAPTURES_DIR, f), 'utf8');
+
+    await page.route(`${FIXTURES}/__frame`, (route) => route.fulfill({ contentType: 'text/html', body: doc }));
+    await page.goto(`${FIXTURES}/__frame`);
+    await expect.poll(() => visibleSponsorText(page.mainFrame()), { timeout: 5000 }).toEqual([]).catch(() => leaks.push(`${f} [standalone]`));
+    await page.unroute(`${FIXTURES}/__frame`);
+
+    const host = `<!doctype html><html><body><iframe id="app" style="width:600px;height:400px" srcdoc="${doc.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}"></iframe></body></html>`;
+    await page.route(`${FIXTURES}/__host`, (route) => route.fulfill({ contentType: 'text/html', body: host }));
+    await page.goto(`${FIXTURES}/__host`);
+    const frame = page.frames().find((fr) => fr !== page.mainFrame())!;
+    await expect.poll(() => visibleSponsorText(frame), { timeout: 5000 }).toEqual([]).catch(() => leaks.push(`${f} [srcdoc]`));
+    await page.unroute(`${FIXTURES}/__host`);
+  }
+  expect(leaks).toEqual([]);
+});
+
+test('network rules exempt the vendor\'s own site (docs and dashboards keep working)', async () => {
+  const page = await context.newPage();
+  const results: Record<string, string> = {};
+  page.on('requestfinished', (r) => { if (r.url().includes('armorly-probe')) results[new URL(r.url()).hostname] = 'loaded'; });
+  page.on('requestfailed', (r) => { if (r.url().includes('armorly-probe')) results[new URL(r.url()).hostname] = r.failure()?.errorText ?? 'failed'; });
+  await page.route('https://cdn.thrad.ai/armorly-probe.gif', (route) => route.fulfill({ contentType: 'image/gif', body: Buffer.from('R0lGODlhAQABAAAAACw=', 'base64') }));
+  await page.route('https://docs.thrad.ai/armorly-fixture', (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<!doctype html><img src="https://cdn.thrad.ai/armorly-probe.gif">' })
+  );
+  await page.goto('https://docs.thrad.ai/armorly-fixture');
+  await expect.poll(() => results['cdn.thrad.ai'], { timeout: 5000 }).toBe('loaded');
+});
+
+test('SDK proxies do not break ordinary page code', async () => {
+  const page = await context.newPage();
+  await page.goto(`${FIXTURES}/page-globals.html`);
+  expect(await page.evaluate(() => (window as any).__sponsoredCount)).toBe(3);
+  await expect.poll(() => page.evaluate(() => (window as any).__koahResult), { timeout: 5000 }).toBe('no-fill');
 });

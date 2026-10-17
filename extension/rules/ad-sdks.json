@@ -5,7 +5,8 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||koah.io^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
+      "excludedInitiatorDomains": ["koah.ai", "koah.io", "koahlabs.com"]
     }
   },
   {
@@ -14,7 +15,8 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||koah.ai^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
+      "excludedInitiatorDomains": ["koah.ai", "koah.io", "koahlabs.com"]
     }
   },
   {
@@ -23,7 +25,8 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||monetzly.com^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
+      "excludedInitiatorDomains": ["monetzly.com"]
     }
   },
   {
@@ -31,8 +34,9 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||monetzly.io^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||imprezia.ai^",
+      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
+      "excludedInitiatorDomains": ["imprezia.ai", "imprezia.com", "imprezia.net"]
     }
   },
   {
@@ -40,8 +44,9 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||sponsored.so^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||imprezia.com^",
+      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
+      "excludedInitiatorDomains": ["imprezia.ai", "imprezia.com", "imprezia.net"]
     }
   },
   {
@@ -49,8 +54,9 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||imprezia.ai^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||imprezia.net^",
+      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
+      "excludedInitiatorDomains": ["imprezia.ai", "imprezia.com", "imprezia.net"]
     }
   },
   {
@@ -58,8 +64,9 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||imprezia.com^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||storage.googleapis.com/imprezia-assets/",
+      "resourceTypes": ["image", "media"],
+      "excludedInitiatorDomains": ["imprezia.ai", "imprezia.com", "imprezia.net"]
     }
   },
   {
@@ -67,8 +74,9 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||imprezia.net^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||megabrain.co^",
+      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
+      "excludedInitiatorDomains": ["kontext.so", "megabrain.co"]
     }
   },
   {
@@ -76,8 +84,9 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||koahlabs.com^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||kontext.so^",
+      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
+      "excludedInitiatorDomains": ["kontext.so", "megabrain.co"]
     }
   },
   {
@@ -85,8 +94,9 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||megabrain.co^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||cdn.jsdelivr.net/npm/@kontextso/",
+      "resourceTypes": ["script"],
+      "excludedInitiatorDomains": ["kontext.so", "megabrain.co"]
     }
   },
   {
@@ -94,8 +104,9 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||kontext.so^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||unpkg.com/@kontextso/",
+      "resourceTypes": ["script"],
+      "excludedInitiatorDomains": ["kontext.so", "megabrain.co"]
     }
   },
   {
@@ -104,7 +115,8 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||trygravity.ai^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
+      "excludedInitiatorDomains": ["trygravity.ai", "trygravity.com"]
     }
   },
   {
@@ -113,7 +125,8 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||trygravity.com^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
+      "excludedInitiatorDomains": ["trygravity.ai", "trygravity.com"]
     }
   },
   {
@@ -121,8 +134,9 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||thrad.ai^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||cdn.jsdelivr.net/npm/@gravity-ai/",
+      "resourceTypes": ["script"],
+      "excludedInitiatorDomains": ["trygravity.ai", "trygravity.com"]
     }
   },
   {
@@ -130,8 +144,9 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||thrads.ai^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||unpkg.com/@gravity-ai/",
+      "resourceTypes": ["script"],
+      "excludedInitiatorDomains": ["trygravity.ai", "trygravity.com"]
     }
   },
   {
@@ -139,8 +154,9 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||zeroclick.io^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||thrad.ai^",
+      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
+      "excludedInitiatorDomains": ["thrad.ai", "thrads.ai"]
     }
   },
   {
@@ -148,8 +164,9 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||zeroclick.ai^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||thrads.ai^",
+      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
+      "excludedInitiatorDomains": ["thrad.ai", "thrads.ai"]
     }
   },
   {
@@ -157,8 +174,9 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||earnlayerai.com^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||zeroclick.ai^",
+      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
+      "excludedInitiatorDomains": ["zeroclick.ai", "zeroclick.dev", "zero.click", "zeroclick.io"]
     }
   },
   {
@@ -166,8 +184,9 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||earnlayer.com^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||zeroclick.dev^",
+      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
+      "excludedInitiatorDomains": ["zeroclick.ai", "zeroclick.dev", "zero.click", "zeroclick.io"]
     }
   },
   {
@@ -175,8 +194,9 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||getlulu.dev^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||zero.click^",
+      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
+      "excludedInitiatorDomains": ["zeroclick.ai", "zeroclick.dev", "zero.click", "zeroclick.io"]
     }
   },
   {
@@ -184,8 +204,9 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||getchatads.com^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||getlulu.dev^",
+      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
+      "excludedInitiatorDomains": ["getlulu.dev"]
     }
   },
   {
@@ -193,8 +214,19 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||storage.googleapis.com/imprezia-assets/",
-      "resourceTypes": ["image", "media"]
+      "urlFilter": "||getchatads.com^",
+      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
+      "excludedInitiatorDomains": ["getchatads.com", "chataside.com"]
+    }
+  },
+  {
+    "id": 23,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||chataside.com^",
+      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
+      "excludedInitiatorDomains": ["getchatads.com", "chataside.com"]
     }
   }
 ]

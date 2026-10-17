@@ -37,10 +37,10 @@
     // rule is exercised without DOM removal racing it (a removed iframe
     // shows up as ERR_ABORTED, not ERR_BLOCKED_BY_CLIENT).
     window.__adNetworkHosts = [
-      'app.koahlabs.com', 'server.megabrain.co', 'kontext.so',
+      'app.koah.ai', 'server.megabrain.co', 'kontext.so',
       'server.trygravity.ai', 'trygravity.com', 'sdk.thrad.ai', 'thrads.ai',
-      'cdn.zeroclick.io', 'zeroclick.ai', 'api.earnlayerai.com',
-      'api.earnlayer.com', 'ads.getlulu.dev', 'api.getchatads.com'
+      'cdn.zeroclick.ai', 'zeroclick.dev', 'zero.click', 'www.chataside.com', 
+      'ads.getlulu.dev', 'api.getchatads.com'
     ];
     window.__adNetworkHosts.forEach(function (h) {
       new Image().src = 'https://' + h + '/armorly-probe.gif';

@@ -2,8 +2,8 @@
  * Armorly - AI Ad Blocker
  *
  * Blocks AI-native advertising from all major ad networks:
- * - Koah, Monetzly, Sponsored.so, Grok/X, Imprezia, Kontext, Gravity,
- *   Thrad, ZeroClick, EarnLayer, Lulu, ChatAds, Google AdSense
+ * - Koah, Imprezia, Kontext, Gravity, Thrad, ZeroClick, Lulu, ChatAds,
+ *   EarnLayer, Monetzly (network only), Grok/X, Google AdSense
  *
  * Methods:
  * 1. SDK interception (block init/monetize calls before they run)
@@ -246,10 +246,9 @@
           // ONLY remove if element has CLEAR ad-specific indicators
           // Be very conservative to avoid false positives
           if (
-            classes.match(/\bsponsored\b|\bkoah\b|\bmonetzly\b|\bpplx-sponsored\b|\bimprezia-card\b|\bimprezia-cta-container\b/i) ||
+            classes.match(/\bsponsored\b|\bkoah\b|\bpplx-sponsored\b|\bimprezia-card\b|\bimprezia-cta-container\b/i) ||
             container.hasAttribute('data-ad-provider') ||
             container.hasAttribute('data-koah-ad') ||
-            container.hasAttribute('data-monetzly-ad') ||
             container.hasAttribute('data-sponsored')
           ) {
             elementsToRemove.add(container);

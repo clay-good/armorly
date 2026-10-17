@@ -42,10 +42,10 @@ AI ads come from the same API as the real chatbot response — there's no separa
 
 ## How it works
 
-1. **SDK interception.** A MAIN-world content script wraps `window.Koah`, `window.Monetzly`, `window.Sponsored`, etc. in no-op proxies *before* any page script runs. Calls return resolved Promises and never reach the network.
+1. **SDK interception.** A MAIN-world content script wraps `window.koah`, `window.thrad`, `window.GravityAd`, etc. in no-op proxies *before* any page script runs. Calls resolve to a "no ad" result and never reach the network.
 2. **DOM removal.** Per-platform selectors and FTC-disclosure pattern matching hide sponsored cards, promoted suggestions, and ad containers as they appear. Conservative — only elements with explicit ad markers (`data-sponsored`, `data-koah-ad`, `aria-label="Sponsored"`, etc.) are touched.
 3. **Affiliate-link cleaning.** Outbound links get `tag=`, `utm_*`, `ref`, `affiliate`, etc. stripped from their query strings. Non-affiliate params are preserved.
-4. **Network-level blocking** (v2.3.0+). Static `declarativeNetRequest` rules drop requests to AI-specific ad-SDK domains — Koah, Monetzly, Sponsored.so, Imprezia, Kontext, Gravity, Thrad, ZeroClick, EarnLayer, Lulu, ChatAds — before they even reach the page. Defense in depth on top of the SDK proxies.
+4. **Network-level blocking** (v2.3.0+). Static `declarativeNetRequest` rules drop requests to AI-specific ad-SDK domains — Koah, Imprezia, Kontext, Gravity, Thrad, ZeroClick, Lulu, ChatAds, Monetzly — before they even reach the page. Each vendor's own site (docs, dashboards) is exempt. Defense in depth on top of the SDK proxies.
 
 For generic web ads (AdSense, DoubleClick, etc.), use uBlock Origin or Brave alongside Armorly. Network-level blocking of those is intentionally out of scope.
 
@@ -66,7 +66,8 @@ Works on every website. Platform-specific detection for:
 - Grok / X (active promoted suggestions)
 - Microsoft Copilot and You.com (ads cards)
 - Claude, Gemini, Poe
-- Any chatbot using Koah, Monetzly, Sponsored.so, Imprezia, Kontext, Gravity, Thrad, ZeroClick, EarnLayer, Lulu, or ChatAds
+- Any chatbot using Koah, Imprezia, Kontext, Gravity, Thrad, ZeroClick, Lulu, ChatAds, EarnLayer, or Monetzly
+- Selectors are tested against ad markup captured from each network's real SDK ([tests/fixtures/captures/](tests/fixtures/captures/))
 
 ## Verify it's working
 

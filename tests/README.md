@@ -21,6 +21,15 @@ npm test
   Imprezia's own playground (demo.imprezia.ai), is hidden both inside and
   outside the SDK's viewability wrapper; inline sponsored links are
   unwrapped to plain text.
+- **Real SDK captures** — 101 ad formats captured verbatim from the real
+  SDKs of Koah, Imprezia, Kontext, Gravity, Thrad, ZeroClick, Lulu,
+  ChatAds and EarnLayer (`tests/fixtures/captures/`), plus Lulu's MCP-app
+  frame documents (`tests/fixtures/captures-frames/`, also loaded inside
+  `srcdoc` iframes). Every one must end up hidden.
+- **No page breakage** — ordinary page globals (`var sponsored`) are left
+  alone, and proxied SDK calls resolve to a destructurable "no ad" result.
+- **Vendor sites exempt** — network rules don't block a vendor's own docs
+  and dashboards.
 - **No React crashes** — ads are hidden, not detached, so a framework that
   later calls `removeChild` on them doesn't throw and blank the app.
 - **AI ad networks** — Imprezia (bundled SDK behind a same-origin proxy),

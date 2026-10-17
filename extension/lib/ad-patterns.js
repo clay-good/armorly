@@ -2,7 +2,7 @@
  * Armorly - AI Ad Patterns Library
  *
  * Detection patterns for AI-native advertising networks and SDKs.
- * Blocks ads from: Grok/X, Koah, Monetzly, Sponsored.so, Imprezia, and others.
+ * Blocks ads from: Grok/X, Koah, Imprezia, Kontext, Gravity, Thrad, and others.
  *
  * This file is designed to be easily updatable as ad networks evolve.
  */
@@ -56,42 +56,22 @@
           'koah.ai',
           'api.koah.io',
           'sdk.koah.io',
-          'koahlabs.com',
           'app.koah.ai'
         ]
       },
 
-      // Monetzly - "Google Ads for AI conversations"
+      // Monetzly - server-side only (rewrites the LLM stream; the publisher
+      // renders the text), so there is no browser global or markup to match.
+      // Only its API host is blocked.
       monetzly: {
-        functions: ['Monetzly', 'monetzly', 'MonetzlyAds'],
-        methods: ['init', 'displayAd', 'monetize', 'showAd', 'trackImpression', 'trackClick'],
+        functions: [],
+        methods: [],
         scriptPatterns: [
-          /monetzly\.com/i,
-          /monetzly\.io/i,
-          /monetzly-sdk/i,
-          /monetzly\.js/i
+          /monetzly\.com/i
         ],
         domainPatterns: [
           'monetzly.com',
-          'monetzly.io',
-          'api.monetzly.com',
-          'sdk.monetzly.com'
-        ]
-      },
-
-      // Sponsored.so - Native AI ad platform
-      sponsoredso: {
-        functions: ['Sponsored', 'sponsored', 'SponsoredAds', 'SponsoredSo'],
-        methods: ['init', 'show', 'display', 'track', 'impression', 'click'],
-        scriptPatterns: [
-          /sponsored\.so/i,
-          /sponsored-sdk/i,
-          /sponsoredso/i
-        ],
-        domainPatterns: [
-          'sponsored.so',
-          'api.sponsored.so',
-          'sdk.sponsored.so'
+          'api.monetzly.com'
         ]
       },
 
@@ -131,7 +111,7 @@
 
       // Gravity (trygravity.ai) - per-turn ads + gravityPixel tracker
       gravity: {
-        functions: ['gravityPixel'],
+        functions: ['gravityPixel', 'GravityAd'],
         methods: ['track', 'getSessionId'],
         scriptPatterns: [
           /trygravity\.(?:ai|com)/i,
@@ -161,32 +141,35 @@
         ]
       },
 
-      // ZeroClick - ads woven into model output; badge script on cdn.zeroclick.io
+      // ZeroClick - offer links woven into model output, tracked by
+      // cdn.zeroclick.ai/scripts/mcp-*.js (zeroclick.io is payments, not ads)
       zeroclick: {
         functions: [],
         methods: [],
         scriptPatterns: [
-          /zeroclick\.(?:io|ai)/i
+          /zeroclick\.(?:ai|dev)/i,
+          /zero\.click/i
         ],
         domainPatterns: [
-          'zeroclick.io',
-          'api.zeroclick.io',
-          'cdn.zeroclick.io',
-          'zeroclick.ai'
+          'zeroclick.ai',
+          'mcp.zeroclick.ai',
+          'cdn.zeroclick.ai',
+          'zeroclick.dev',
+          'zero.click'
         ]
       },
 
-      // EarnLayer - contextual chat ads + sponsored hyperlinks
+      // EarnLayer - contextual chat ads. The service is defunct (its API
+      // hosts don't resolve; earnlayerai.com is now an unrelated site), so
+      // only its still-installable npm components are matched, by markup.
       earnlayer: {
         functions: [],
         methods: [],
         scriptPatterns: [
-          /earnlayer(?:ai)?\.com/i
+          /api\.earnlayer(?:ai)?\.com/i
         ],
         domainPatterns: [
-          'earnlayerai.com',
           'api.earnlayerai.com',
-          'earnlayer.com',
           'api.earnlayer.com'
         ]
       },
@@ -385,7 +368,7 @@
         '[data-testid="product-recommendation"]',
         '.chatgpt-sponsored',
         '.openai-ad',
-        // Live ChatGPT ad units, mirrored from EasyList's chatgpt.com rules
+        // Live ChatGPT ad units, mirrored from EasyList's and uBlock's chatgpt.com rules
         'aside[data-assistant-ads-unit]',
         'div[data-assistant-ads]',
         '[class*="_assistantAds"]',
@@ -396,18 +379,30 @@
         '.border-token-border-default.mt-2.border-t:has(button[aria-label="Ad options"])',
         'div.opacity-100.transition-opacity.ease-out:has(button[aria-label="Sponsored options"], button[aria-label="Ad options"])',
         'div[role="complementary"]:has(a[href*="oppref="])',
-        'a[rel][target="_blank"][href*="?utm_"][href*="&oppref="]'
+        'a[rel][target="_blank"][href*="?utm_"][href*="&oppref="]',
+        '.wm-app-threadContent aside[aria-label^="Sponsored"]',
+        'div[class]:has(> div.flex > button[aria-label="Ad options"])',
+        'div[data-testid] div[class^="max-"] > div[data-ad-card-root]',
+        'div[data-testid] div[class^="max-"] > div[data-testid="image-card-v2"]:has(button[aria-label="Sponsored options"])',
+        'div[data-testid] div[class^="relative max-"]:has(> div[data-testid="image-card-v2"] + .pointer-events-none button[aria-label="Sponsored options"])'
       ],
 
       // Microsoft Copilot (copilot.microsoft.com)
       copilot: [
         'div[data-testid="ads-card"]',
-        '.b_ad'
+        '.b_ad',
+        'div[data-ads-rg]'
       ],
 
       // You.com
       youcom: [
-        '[data-testid="microsoft-ads"]'
+        '[data-testid="microsoft-ads"]',
+        'div[data-testid="youchat-ads"]'
+      ],
+
+      // Character.ai (EasyList)
+      characterai: [
+        '.z-40.max-w-\\[970px\\]'
       ],
 
 
@@ -416,22 +411,9 @@
         '[data-koah-ad]',
         '[data-ad-provider="koah"]',
         '.koah-ad-container',
-        '.koah-sponsored'
-      ],
-
-      // Monetzly-powered apps
-      monetzly: [
-        '[data-monetzly-ad]',
-        '[data-ad-provider="monetzly"]',
-        '.monetzly-ad',
-        '.monetzly-sponsored'
-      ],
-
-      // Sponsored.so-powered apps
-      sponsoredso: [
-        '[data-sponsored-so]',
-        '[data-ad-provider="sponsored.so"]',
-        '.sponsored-so-ad'
+        '.koah-sponsored',
+        // Root of every Koah web SDK format (seen in real renders)
+        '[data-koah="root"]'
       ],
 
       // Imprezia-powered apps. Publishers usually bundle the SDK (no
@@ -453,23 +435,62 @@
       kontext: [
         '.kontextso-ad-container',
         'iframe.kontextso-ad-iframe',
-        'iframe.kontextso-modal-iframe'
+        'iframe.kontextso-modal-iframe',
+        // @kontextso/sdk-react emits no classes; match its fixed title+testid pair
+        'iframe[data-testid="ad-iframe"][title="ad-iframe"]',
+        'iframe[data-testid="modal-ad-iframe"][title="modal-ad-iframe"]',
+        'div:has(> iframe[data-testid="ad-iframe"][title="ad-iframe"])',
+        'div[data-testid^="inline-ad-"]:has(> .kontextso-ad-container)'
       ],
 
       gravity: [
         '[data-gravity-ad]',
         '[data-gravity-frame]',
-        '[data-gravity-leadform-overlay]'
+        '[data-gravity-leadform-overlay]',
+        // @gravity-ai/embed's GravityAd.mount() marks the publisher's slot with
+        // state+variant only; React's contextual/suggestion/tooltip wrap the ad
+        // in a theme root with lead-in copy
+        '[data-gravity-state="loaded"][data-gravity-variant]',
+        'a[data-gravity-ad-link]',
+        '[data-gravity-theme-root]:has(> a[data-gravity-ad])',
+        'section[data-gravity-leadform-card]'
       ],
 
       earnlayer: [
         '.earnlayer-ad',
         '.earnlayer-mcp-ads',
-        'a.earnlayer-mcp-ad-link'
+        'a.earnlayer-mcp-ad-link',
+        // @earnlayer/ai-ads-sdk
+        'div.managed-ad-component[class*="ad-type-"]'
+      ],
+
+      // Thrad JS SDK wrapper (sdk.thrad.ai/sdk.js)
+      thrad: [
+        'div.adsdk-container[data-thrad-format]'
+      ],
+
+      // ZeroClick offer links inside the AI's answer. Hidden, not unwrapped:
+      // chat UIs usually render these anchors with React.
+      zeroclick: [
+        'a[href*="mcp.zeroclick.ai/api/v1/offers/"]',
+        'a[href*="mcp.zeroclick.ai/offers/"]',
+        'a[href*="zeroclick.dev/api/v2/clicks"]',
+        'a[href^="https://zero.click/"]'
       ],
 
       lulu: [
-        'a[href*="ads.getlulu.dev/c/"]'
+        'a[href*="ads.getlulu.dev/c/"]',
+        // MCP-app widget documents (the CTA is a button[data-url], not a link)
+        'body:has(> #lulu-ads-opts) > #root',
+        // Sponsor strip inside tool-result frames
+        '#card.lw-card > .lw-strip',
+        '#card.lw-card > .lw-strip-flip',
+        // README / page sponsor badges
+        'a[href*="getlulu.dev/api/mcps/sponsor-click/"]',
+        // Text sponsor card / suffix printed into the answer: the block that
+        // carries the click link is the ad
+        'pre:has(a[href*="ads.getlulu.dev/c/"])',
+        'p:has(> a[href*="ads.getlulu.dev/c/"])'
       ],
 
       // Generic patterns - ONLY very specific ad indicators
@@ -485,7 +506,10 @@
     // Sponsored links inside the AI's answer text. These are unwrapped to
     // plain text (not hidden) so the sentence around them still reads.
     inlineAdLinks: [
-      'a.imprezia-link'
+      'a.imprezia-link',
+      // ChatAds widget: affiliate links in the bot's answer (its own-site
+      // links carry rel="noopener" only)
+      'a.chataside-inline-link[rel~="sponsored"]'
     ],
 
     // =========================================================================
@@ -626,17 +650,19 @@
         selectors = selectors.concat(this.platformSelectors.copilot);
       } else if (hostname === 'you.com' || hostname.endsWith('.you.com')) {
         selectors = selectors.concat(this.platformSelectors.youcom);
+      } else if (hostname === 'character.ai' || hostname.endsWith('.character.ai')) {
+        selectors = selectors.concat(this.platformSelectors.characterai);
       }
 
       // Always include SDK-specific selectors
       selectors = selectors.concat(this.platformSelectors.koah);
-      selectors = selectors.concat(this.platformSelectors.monetzly);
-      selectors = selectors.concat(this.platformSelectors.sponsoredso);
       selectors = selectors.concat(this.platformSelectors.imprezia);
       selectors = selectors.concat(this.platformSelectors.kontext);
       selectors = selectors.concat(this.platformSelectors.gravity);
       selectors = selectors.concat(this.platformSelectors.earnlayer);
       selectors = selectors.concat(this.platformSelectors.lulu);
+      selectors = selectors.concat(this.platformSelectors.thrad);
+      selectors = selectors.concat(this.platformSelectors.zeroclick);
       selectors = selectors.concat(this.platformSelectors.generic);
 
       return [...new Set(selectors)]; // Remove duplicates
