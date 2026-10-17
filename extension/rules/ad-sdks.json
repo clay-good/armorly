@@ -187,5 +187,14 @@
       "urlFilter": "||getchatads.com^",
       "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
     }
+  },
+  {
+    "id": 22,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||storage.googleapis.com/imprezia-assets/",
+      "resourceTypes": ["image", "media"]
+    }
   }
 ]

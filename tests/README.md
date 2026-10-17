@@ -17,6 +17,12 @@ npm test
 - **SDK global-object interception** — `window.Koah` becomes a no-op proxy.
 - **DOM ad removal** — `[data-sponsored="true"]` and `[data-koah-ad]` are
   deleted by the selector pass.
+- **Imprezia real markup** — every ad format, captured verbatim from
+  Imprezia's own playground (demo.imprezia.ai), is hidden both inside and
+  outside the SDK's viewability wrapper; inline sponsored links are
+  unwrapped to plain text.
+- **No React crashes** — ads are hidden, not detached, so a framework that
+  later calls `removeChild` on them doesn't throw and blank the app.
 - **AI ad networks** — Imprezia (bundled SDK behind a same-origin proxy),
   Kontext, Gravity, EarnLayer and Lulu ad markup is removed; every
   ad-network domain is blocked by a DNR rule; Thrad and Gravity globals

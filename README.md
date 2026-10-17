@@ -43,7 +43,7 @@ AI ads come from the same API as the real chatbot response — there's no separa
 ## How it works
 
 1. **SDK interception.** A MAIN-world content script wraps `window.Koah`, `window.Monetzly`, `window.Sponsored`, etc. in no-op proxies *before* any page script runs. Calls return resolved Promises and never reach the network.
-2. **DOM removal.** Per-platform selectors and FTC-disclosure pattern matching delete sponsored cards, promoted suggestions, and ad containers as they appear. Conservative — only elements with explicit ad markers (`data-sponsored`, `data-koah-ad`, `aria-label="Sponsored"`, etc.) are touched.
+2. **DOM removal.** Per-platform selectors and FTC-disclosure pattern matching hide sponsored cards, promoted suggestions, and ad containers as they appear. Conservative — only elements with explicit ad markers (`data-sponsored`, `data-koah-ad`, `aria-label="Sponsored"`, etc.) are touched.
 3. **Affiliate-link cleaning.** Outbound links get `tag=`, `utm_*`, `ref`, `affiliate`, etc. stripped from their query strings. Non-affiliate params are preserved.
 4. **Network-level blocking** (v2.3.0+). Static `declarativeNetRequest` rules drop requests to AI-specific ad-SDK domains — Koah, Monetzly, Sponsored.so, Imprezia, Kontext, Gravity, Thrad, ZeroClick, EarnLayer, Lulu, ChatAds — before they even reach the page. Defense in depth on top of the SDK proxies.
 

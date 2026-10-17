@@ -1,5 +1,5 @@
 {
-  "version": "2026-10-16",
+  "version": "2026-10-17",
   "_comment": "Auto-updatable subset of the ad-patterns library. Regex-driven detection (scriptPatterns, adLabels.patterns, commercialIntent.*) stays in ad-patterns.js — only flat string data lives here. The background service worker fetches this file from the main branch every 24h; bundled values are the floor.",
   "adSDKs": {
     "grok": {
@@ -160,7 +160,15 @@
       "[data-ad-provider=\"sponsored.so\"]",
       ".sponsored-so-ad"
     ],
-    "imprezia": ["a.imprezia-card", ".imprezia-card-banner-html", "[data-imprezia-viewability-gate]"],
+    "imprezia": [
+      "[data-imprezia-viewability-gate]",
+      ".imprezia-card",
+      ".imprezia-card-banner-html",
+      ".imprezia-cta-container",
+      "a.imprezia-cta-link",
+      "a.imprezia-cta-button",
+      ".imprezia-cta-sponsored"
+    ],
     "kontext": [".kontextso-ad-container", "iframe.kontextso-ad-iframe", "iframe.kontextso-modal-iframe"],
     "gravity": ["[data-gravity-ad]", "[data-gravity-frame]", "[data-gravity-leadform-overlay]"],
     "earnlayer": [".earnlayer-ad", ".earnlayer-mcp-ads", "a.earnlayer-mcp-ad-link"],

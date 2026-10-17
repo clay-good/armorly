@@ -58,18 +58,12 @@ test('SDK global-object interception installs a no-op Koah proxy', async () => {
   expect(isThenable).toBe(true);
 });
 
-test('DOM-removal pass deletes [data-sponsored="true"] and [data-koah-ad]', async () => {
+test('DOM-removal pass hides [data-sponsored="true"] and [data-koah-ad]', async () => {
   const page = await context.newPage();
   await page.goto(`${FIXTURES}/fake-ads.html`);
 
-  await page.waitForFunction(
-    () => !document.querySelector('#sponsored-flag') && !document.querySelector('#koah-ad'),
-    undefined,
-    { timeout: 5000 }
-  );
-
-  expect(await page.locator('#sponsored-flag').count()).toBe(0);
-  expect(await page.locator('#koah-ad').count()).toBe(0);
+  await expect(page.locator('#sponsored-flag')).toBeHidden({ timeout: 5000 });
+  await expect(page.locator('#koah-ad')).toBeHidden({ timeout: 5000 });
 });
 
 test('affiliate-link cleaning strips tag= and utm_source= but keeps unrelated params', async () => {
@@ -146,7 +140,7 @@ test('@demo end-to-end ChatGPT-mock walkthrough for the hero video', async () =>
   });
 
   // The sponsored card should be removed by the DOM-removal pass.
-  await expect(page.locator('.sponsored')).toHaveCount(0, { timeout: 5000 });
+  await expect(page.locator('.sponsored:visible')).toHaveCount(0, { timeout: 5000 });
   // Hold the "after" state.
   await page.waitForTimeout(5000);
 
@@ -255,8 +249,8 @@ test('Imprezia bundled SDK via same-origin proxy: card removed, r.imprezia.net b
   await page.goto(`${FIXTURES}/imprezia-bundled.html`);
   await page.waitForFunction(() => (window as any).__impreziaRendered === true, undefined, { timeout: 5000 });
 
-  await expect(page.locator('.imprezia-card')).toHaveCount(0, { timeout: 5000 });
-  await expect(page.locator('text=Sponsored by Trip.com')).toHaveCount(0);
+  await expect(page.locator('.imprezia-card:visible')).toHaveCount(0, { timeout: 5000 });
+  await expect(page.locator('text=Sponsored by Trip.com >> visible=true')).toHaveCount(0);
   await expect.poll(() => blocked.length, { timeout: 5000 }).toBeGreaterThan(0);
   expect(blocked[0]).toContain('r.imprezia.net');
 });
@@ -266,7 +260,7 @@ test('AI ad networks: Kontext, Gravity, EarnLayer and Lulu ads removed, legit co
   await page.goto(`${FIXTURES}/ai-ad-networks.html`);
 
   for (const id of ['#kontext-ad', '#gravity-ad', '#earnlayer-ad', '#lulu-ad']) {
-    await expect(page.locator(id), id).toHaveCount(0, { timeout: 5000 });
+    await expect(page.locator(`${id}:visible`), id).toHaveCount(0, { timeout: 5000 });
   }
   await expect(page.locator('#answer')).toBeVisible();
   await expect(page.locator('#legit-link')).toBeVisible();
@@ -308,7 +302,7 @@ test('first-party ads: ChatGPT ad units removed on chatgpt.com, answer and sourc
   await page.goto('https://chatgpt.com/armorly-fixture');
 
   for (const id of ['#gpt-ad-unit', '#gpt-ad-border', '#gpt-ad-bazaar', '#gpt-ad-section']) {
-    await expect(page.locator(id), id).toHaveCount(0, { timeout: 5000 });
+    await expect(page.locator(`${id}:visible`), id).toHaveCount(0, { timeout: 5000 });
   }
   await expect(page.locator('#gpt-answer')).toBeVisible();
   await expect(page.locator('#gpt-sources')).toBeVisible();
@@ -321,6 +315,48 @@ test('first-party ads: Copilot ads card removed on copilot.microsoft.com', async
   );
   await page.goto('https://copilot.microsoft.com/armorly-fixture');
 
-  await expect(page.locator('#copilot-ad')).toHaveCount(0, { timeout: 5000 });
+  await expect(page.locator('#copilot-ad:visible')).toHaveCount(0, { timeout: 5000 });
   await expect(page.locator('#copilot-answer')).toBeVisible();
+});
+
+test('ads are hidden, not detached, so React-style re-renders do not crash the page', async () => {
+  const page = await context.newPage();
+  await page.goto(`${FIXTURES}/framework-owned-ads.html`);
+
+  await expect(page.locator('#ad-gate')).toBeHidden({ timeout: 5000 });
+  // The node must still be where the framework put it.
+  expect(await page.evaluate(() => document.getElementById('ad-gate')?.parentElement?.id)).toBe('chat');
+  expect(await page.evaluate(() => (window as any).__rerender())).toBe('ok');
+  await expect(page.locator('#answer')).toBeVisible();
+});
+
+test('Imprezia real SDK markup: every ad format hidden (with and without its wrapper), inline link unwrapped', async () => {
+  // tests/fixtures/imprezia-real.html is the exact HTML Imprezia's SDK
+  // rendered on demo.imprezia.ai for each ad format.
+  const page = await context.newPage();
+  const blockedImages: string[] = [];
+  page.on('requestfailed', (req) => {
+    if (req.url().includes('imprezia-assets') && req.failure()?.errorText === 'net::ERR_BLOCKED_BY_CLIENT') blockedImages.push(req.url());
+  });
+  await page.goto(`${FIXTURES}/imprezia-real.html`);
+
+  const slots = page.locator('.slot');
+  expect(await slots.count()).toBeGreaterThanOrEqual(20);
+  // Each slot's ad must end up invisible, whichever form it was rendered in.
+  await expect.poll(
+    () => page.evaluate(() =>
+      [...document.querySelectorAll('.slot')]
+        .filter((s) => [...s.querySelectorAll('*')].some((e) => (e as HTMLElement).offsetWidth || (e as HTMLElement).offsetHeight))
+        .map((s) => `${s.getAttribute('data-format')}/${s.getAttribute('data-variant')}`)
+    ),
+    { timeout: 5000 }
+  ).toEqual([]);
+  await expect(page.locator('text=/Sponsored by/ >> visible=true')).toHaveCount(0);
+
+  // Inline sponsored link: link gone, sentence intact.
+  await expect(page.locator('a.imprezia-link')).toHaveCount(0);
+  await expect(page.locator('#answer')).toContainText('the Shinjuku Washington Hotel is a solid pick');
+
+  // Ad creative images never load.
+  await expect.poll(() => blockedImages.length, { timeout: 5000 }).toBeGreaterThan(0);
 });

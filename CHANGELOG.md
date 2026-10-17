@@ -4,6 +4,14 @@ All notable user-facing changes to Armorly are documented here. Format loosely f
 
 ## [Unreleased]
 
+## [2.10.1]
+
+### Fixed
+- **No more blank pages on React chat apps.** Armorly used to delete ad elements outright. Chat apps are mostly React, and when React later re-rendered (new chat, regenerate) it tried to remove the node itself, threw `removeChild … not a child of this node`, and unmounted the whole app. Reproduced with React 18.3.1. Ads are now hidden with an inline `display: none !important` (the same approach EasyList/uBlock use), so the framework's tree stays intact. New regression test replays React's `removeChild` step.
+- **Imprezia: every ad format is covered, not just the `<a>` cards.** Verified against the exact markup Imprezia's SDK renders on its own playground (demo.imprezia.ai) for all 12 formats. 2.10.0 caught them only through the SDK's `data-imprezia-viewability-gate` wrapper; Lead Gen, Date Picker, Text CTA and Hyperlink CTA leaked whenever a publisher rendered cards without it. Now matched directly: `.imprezia-card` (any element), `.imprezia-cta-container`, `.imprezia-cta-link`, `.imprezia-cta-button`, `.imprezia-cta-sponsored`.
+- **Imprezia inline sponsored links** (`a.imprezia-link`, woven into the AI's answer) are unwrapped to plain text, so the tracking link is gone but the sentence still reads.
+- Imprezia ad creative images (`storage.googleapis.com/imprezia-assets/`) are blocked at the network layer.
+
 ## [2.10.0]
 
 ### Added

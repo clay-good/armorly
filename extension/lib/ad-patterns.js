@@ -14,7 +14,7 @@
   // remote copy is newer. Keep in lockstep with the `version` field in the
   // sibling extension/lib/ad-patterns.json — the build script verifies they
   // match before packaging.
-  const BUNDLED_VERSION = '2026-10-16';
+  const BUNDLED_VERSION = '2026-10-17';
 
   // Expose patterns globally for content scripts
   window.ArmorlyAdPatterns = {
@@ -438,9 +438,13 @@
       // window global) and route it through a same-origin proxy, so the
       // rendered card is the only reliable hook.
       imprezia: [
-        'a.imprezia-card',
+        '[data-imprezia-viewability-gate]',
+        '.imprezia-card',
         '.imprezia-card-banner-html',
-        '[data-imprezia-viewability-gate]'
+        '.imprezia-cta-container',
+        'a.imprezia-cta-link',
+        'a.imprezia-cta-button',
+        '.imprezia-cta-sponsored'
       ],
 
       // Kontext, Gravity, EarnLayer and Lulu markup, taken from their
@@ -477,6 +481,12 @@
         '[aria-label="Advertisement"]'
       ]
     },
+
+    // Sponsored links inside the AI's answer text. These are unwrapped to
+    // plain text (not hidden) so the sentence around them still reads.
+    inlineAdLinks: [
+      'a.imprezia-link'
+    ],
 
     // =========================================================================
     // COMMERCIAL INTENT SIGNALS (for scoring, not blocking)
