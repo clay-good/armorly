@@ -69,25 +69,26 @@
   // document_start so the proxy lands before any inline ad-SDK call.
   installProxiesFor(window.ArmorlyAdPatterns.getAllSDKFunctions());
 
-  // Second pass: when ai-ad-blocker.js (isolated world) finishes its
-  // chrome.storage.local lookup and merges cached_patterns, it postMessages
-  // the updated function list to us so we can proxy any names the daily
-  // background refresh added since the bundle was packaged.
-  window.addEventListener('message', function (event) {
-    if (event.source !== window) return;
-    const data = event.data;
-    if (!data || data.source !== 'armorly') return;
-    if (data.type === 'update-sdk-list' && Array.isArray(data.functions)) {
-      installProxiesFor(data.functions);
-    } else if (data.type === 'disable-site') {
-      // User toggled "Protect this site" off in the popup. Tear down every
-      // proxy we installed so the page sees the original globals again
-      // (typically undefined). Delivered from ai-ad-blocker.js after its
-      // chrome.storage.local lookup.
-      for (const name of installed) {
-        try { delete window[name]; } catch (_) { /* noop */ }
+  // Later passes (auto-updated SDK names) and the per-site disable switch
+  // arrive through payload-shield.js, which owns the authenticated channel
+  // to the isolated world. We hand it our controls via a one-shot global
+  // that it deletes before any page script runs. (Previously we listened
+  // for a plain window.postMessage, which any page could forge to switch
+  // Armorly off on itself.)
+  try {
+    Object.defineProperty(window, '__armorlySdkControl', {
+      configurable: true,
+      value: {
+        install: installProxiesFor,
+        disable: function () {
+          // User toggled "Protect this site" off: tear down every proxy so
+          // the page sees the original globals again (typically undefined).
+          for (const name of installed) {
+            try { delete window[name]; } catch (_) { /* noop */ }
+          }
+          installed.clear();
+        }
       }
-      installed.clear();
-    }
-  });
+    });
+  } catch (_) { /* noop */ }
 })();

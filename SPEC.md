@@ -245,6 +245,19 @@ Keep the "HOW TO VERIFY IT'S WORKING" console-check section — it's actually us
 
 ---
 
+## Phase 5 — Server-side / OpenRTB ads (unreleased)
+
+Goal: block ads a chatbot's own server stitches into its responses, deterministically and from the browser alone. The ad must reach the page as data, and the advertiser must get proof of delivery from the browser; both are intercepted. Details in CHANGELOG `[Unreleased]`.
+
+- [x] Payload shield over JSON / SSE / NDJSON / AI-SDK / WebSocket / EventSource / XHR (`content/payload-shield.js`)
+- [x] Proof-of-delivery blocking: learned tracker URLs + ad ids, ad-event payloads, RTB macros, verification hosts, `ping`/`attributionsrc`, Privacy Sandbox ad APIs
+- [x] Disclosure-label ad cards incl. obfuscated labels, closed shadow roots, srcdoc iframes
+- [x] Authenticated MAIN-world control channel (page can't forge "disable")
+- [x] Headless control-vs-Armorly suite with server-side hit counting
+- [ ] Real-chatbot capture: record actual ad payload shapes from live AI ad deployments and add them as fixtures
+- [ ] Make regex label/prefix lists auto-updatable as data (today they ship with the extension)
+- [ ] Firefox: closed shadow roots via `element.openOrClosedShadowRoot()` (Chrome path uses `chrome.dom`)
+
 ## Phase 4 — High-impact features (~2–3 hours)
 
 Ordered by impact-per-effort. Ship each as its own PR + version bump.

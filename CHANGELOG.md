@@ -5,6 +5,22 @@ All notable user-facing changes to Armorly are documented here. Format loosely f
 ## [Unreleased]
 
 ### Added
+- **Server-side / OpenRTB ad blocking.** Ads that a chatbot's own server auctions and stitches into its response (no SDK, no ad domain) are now blocked three ways, all deterministic:
+  - **Payload shield** ([payload-shield.js](extension/content/payload-shield.js), MAIN world): filters JSON, SSE, NDJSON, AI-SDK data streams, WebSocket and EventSource messages and XHR responses, dropping objects that are ads by structure (OpenRTB bid responses and bids, native-ad tracker arrays, self-declared sponsored objects with ad plumbing, `ad`/`sponsored_*` containers). Fails open on any error.
+  - **Proof-of-delivery blocking**: impression/view/win/billing requests via `fetch`, XHR, `sendBeacon`, image/script/iframe `src` and `setAttribute` are blocked when they hit a tracker URL learned from a removed ad, mention a removed ad's id, report an ad event, carry an unsubstituted OpenRTB macro, or target an ad-network/verification host. `ping` and `attributionsrc` are dropped; Protected Audience (`runAdAuction`, interest groups) and Topics return "no ad".
+  - **Disclosed ad cards** ([ai-ad-blocker.js](extension/content/ai-ad-blocker.js)): elements whose whole text is a disclosure label ("Sponsored", "Ad", "Promoted", "Sponsored by X", "Sponsored: …" prefixes) are found after normalizing zero-width characters, lookalike letters and split spans, and the smallest enclosing card with a link/button is hidden (`display:none`, `aria-hidden`, `inert`). Works in closed shadow roots and same-origin/srcdoc iframes. Guard rails keep it off forms, the composer, main/log regions and neighbouring content.
+  - Ad click-redirects are rewritten to their destination; ad click-ids (`gclid`, `msclkid`, `ttclid`, …) are stripped.
+- Shared classifier library [ad-signatures.js](extension/lib/ad-signatures.js) with 86 `node:test` unit tests (`npm run test:unit`) covering real ad shapes and everyday look-alikes that must not match.
+- Headless end-to-end suite [server-side-ads.spec.ts](tests/server-side-ads.spec.ts): a fixture backend stitches ads into seven delivery channels and counts tracker hits; a control run proves every ad and tracker fires without Armorly, the Armorly run proves none do.
+- Network rules now cover every request type (WebSocket, media, fonts, …) for ad-network domains, plus three ad-verification vendors.
+- Generic ad-server markup selectors (`data-ad-slot`, `data-creative-id`, `data-impression-url`, `fencedframe`, …).
+
+### Fixed
+- **A page could switch Armorly off on itself.** The "disable this site" bridge to the MAIN world was a plain `window.postMessage` any page script could forge. It is now authenticated with a per-page key exchanged through a `<html>` attribute before any page script runs.
+
+### Changed
+- Tests run fully headless (Chromium new headless loads MV3 extensions); CI no longer needs `xvfb`.
+- Popup: "SDKs Blocked" is now "Ads Blocked" and also counts stripped ad payloads and blocked ad trackers.
 - **Chrome Web Store listing stills, automated.** The `@demo` Playwright test now records at 1280×800 (the listing hero aspect), and a new `scripts/make-listing-stills.sh` extracts `docs/listing/before.png` (Armorly OFF, sponsored card visible) and `docs/listing/after.png` (Armorly ON, card gone) straight from the same source webm. One command end-to-end: `npm run stills`. SPEC.md Phase 3.4 items previously requiring a manual screen capture are now reproducible.
 
 ### Changed

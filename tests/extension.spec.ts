@@ -10,8 +10,8 @@ import path from 'node:path';
  *
  * The extension is loaded via launchPersistentContext because the
  * default Playwright `chromium` browser doesn't load extensions on
- * its own. CI runs this under xvfb because MV3 extension loading
- * requires a display server.
+ * its own. channel 'chromium' selects Chromium's new headless mode,
+ * which loads MV3 extensions without opening a window.
  */
 
 const extensionPath = path.resolve(__dirname, '..', 'build');
@@ -21,7 +21,8 @@ let context: BrowserContext;
 
 test.beforeAll(async () => {
   context = await chromium.launchPersistentContext('', {
-    headless: false,
+    headless: true,
+    channel: 'chromium',
     args: [
       `--disable-extensions-except=${extensionPath}`,
       `--load-extension=${extensionPath}`,

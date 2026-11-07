@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Server-side ads fixture</title>
+  <style>
+    body { font: 15px/1.5 system-ui, sans-serif; max-width: 760px; margin: 24px auto; padding: 0 16px; }
+    .turn { padding: 12px 0; border-bottom: 1px solid #ddd; }
+    .card { border: 1px solid #c90; border-radius: 8px; padding: 8px 12px; margin: 8px 0; }
+    .meta { font-size: 11px; text-transform: uppercase; color: #a60; }
+    .out { min-height: 1em; }
+  </style>
+</head>
+<body>
+  <!--
+    Every ad on this page carries the marker "AD:" in its visible text so a
+    test can assert "no ad text is visible" with a single check. Negative
+    controls (things that must NOT be hidden) have ids starting with neg-.
+  -->
+  <div role="log" id="conversation">
+
+    <!-- 1. Chat answers streamed from the backend over each channel. -->
+    <div class="turn" id="streamed">
+      <div class="out" id="out-json"></div>
+      <div class="out" id="out-sse"></div>
+      <div class="out" id="out-ndjson"></div>
+      <div class="out" id="out-aisdk"></div>
+      <div class="out" id="out-ws"></div>
+      <div class="out" id="out-eventsource"></div>
+      <div class="out" id="out-xhr"></div>
+    </div>
+
+    <!-- 2. Ads the server stitched straight into HTML: no SDK, no ad class
+         names, no structured data. Only the disclosure label gives them away. -->
+    <div class="turn" id="msg-1">
+      <p id="neg-prose-1">Here are a few wireless mice that work well with a Mac. I compared battery life,
+        comfort, Bluetooth stability and macOS gesture support across a dozen models over two weeks of daily use,
+        and the short version is that the <a href="https://reviews.example/mx3s">Logitech MX Master 3S</a> is
+        still the one to beat for most people.</p>
+      <div class="card" id="ad-card-zero-width">
+        <div class="meta"><span>Spon&#8203;sored</span></div>
+        <div><b>AD:zw PrecisionGlide Pro</b> — glide 40% smoother.</div>
+        <a href="https://shop.example/pg?utm_medium=cpc&gclid=abc123">Shop now</a>
+      </div>
+      <p id="neg-prose-2">If you have smaller hands, the MX Anywhere 3S is the better pick. It fits in a pocket
+        and still supports the horizontal scroll wheel.</p>
+    </div>
+
+    <div class="turn" id="msg-2">
+      <p id="ad-prefix"><strong>Sponsored:</strong> AD:prefix Try TravelNest for Tokyo hotels —
+        <a href="https://travelnest.example/tokyo">book now</a></p>
+      <p id="neg-prose-3">For Tokyo, Shinjuku and Ginza are the most convenient neighborhoods for first-time visitors
+        because of the train connections to both airports.</p>
+    </div>
+
+    <div class="turn" id="msg-3">
+      <p id="neg-prose-4">Comparing travel credit cards, the main things to look at are the annual fee, foreign
+        transaction fees and the lounge network. Most premium cards bundle all three.</p>
+      <div class="card" id="ad-card-cyrillic">
+        <span class="meta">Ѕроnѕоrеd</span>
+        <p>AD:cyr BrightBank Travel Card — 0% foreign fees.</p>
+        <a href="https://brightbank.example/apply">Apply</a>
+      </div>
+      <div class="card" id="ad-card-icon">
+        <span role="img" aria-label="Ad"></span>
+        <p>AD:icon CloudVPN — stay private abroad.</p>
+        <button type="button">Get offer</button>
+      </div>
+      <div class="card" id="ad-card-split">
+        <span class="meta">Pro<b>mo</b>ted</span>
+        <p>AD:split NimbusFly — cheap flights.</p>
+        <a href="https://nimbusfly.example">Search flights</a>
+      </div>
+      <div class="card" id="ad-slot" data-ad-slot="chat-inline-1">
+        <p>AD:slot (ad-server markup, no label)</p>
+      </div>
+    </div>
+
+    <!-- 3. Ad inside a closed shadow root (web-component ad renderers). -->
+    <div class="turn" id="msg-4">
+      <p id="neg-prose-5">Here is a cheaper option if you only need a mouse for travel.</p>
+      <promo-slot id="shadow-host"></promo-slot>
+    </div>
+
+    <!-- 4. Ad inside a same-origin "friendly" iframe. -->
+    <div class="turn" id="msg-5">
+      <iframe id="friendly" title="friendly frame" srcdoc="<div class=card id=ad-iframe><span>Sponsored</span><p>AD:iframe Nimbus Hotels</p><a href='https://nimbus.example'>Go</a></div><p id=neg-iframe>Unrelated iframe text that stays.</p>"></iframe>
+    </div>
+
+    <!-- 5. Links with ad click reporting. -->
+    <div class="turn" id="msg-6">
+      <p id="neg-links">Sources:
+        <a id="link-redirect" ping="/t/ping?src=link" href="https://ads.example/aclk?adurl=https%3A%2F%2Facme.example%2Fshoes">Acme shoes</a>,
+        <a id="link-search" href="https://www.google.com/url?q=https://example.org">a search result</a>,
+        <a id="link-plain" href="https://example.org/article?page=2">an article</a>.
+      </p>
+    </div>
+  </div>
+
+  <!-- Negative controls: must stay visible. -->
+  <section id="negatives">
+    <p id="neg-nih">This study was sponsored by the NIH and the results were published in 2021.
+      <a href="https://nih.example/study">Read the study</a></p>
+    <div class="card" id="neg-promoted-job"><p>Promoted to engineering manager in 2023.</p><a href="https://cv.example">CV</a></div>
+    <table id="neg-invoice"><tr><td>INV-1042</td><td>Paid</td><td><a href="https://billing.example/1042">View</a></td></tr></table>
+    <div class="card" id="neg-card"><h4>Logitech MX Master 3S</h4><p>Our top pick.</p><a href="https://reviews.example/mx3s">Read review</a></div>
+    <form id="neg-composer"><label for="q">Sponsored</label><textarea id="q">Ask anything</textarea><button type="submit">Send</button></form>
+  </section>
+  <footer id="neg-footer"><a href="/advertise">Ads</a> · <a href="/about">About</a> · <a href="/privacy">Privacy</a></footer>
+
+  <script>
+    // Closed shadow root: the page keeps its own reference so the test can
+    // look inside; nobody else (including normal querySelectorAll) can.
+    customElements.define('promo-slot', class extends HTMLElement {
+      constructor() {
+        super();
+        const r = this.attachShadow({ mode: 'closed' });
+        r.innerHTML = '<div class="card" id="ad-shadow"><small>Promoted</small><p>AD:shadow ZipCar rentals</p><a href="https://zip.example">Rent</a></div>';
+        window.__closedRoot = r;
+      }
+    });
+
+    // -----------------------------------------------------------------------
+    // A deliberately cooperative chat client: renders whatever the backend
+    // sends and fires every tracker it finds, each through a different
+    // browser mechanism. This is the worst case for a blocker.
+    // -----------------------------------------------------------------------
+
+    const fired = [];
+
+    function fireTrackers(o) {
+      if (!o || typeof o !== 'object') return;
+      const fireImg = u => { fired.push(u); const i = new Image(); i.src = u; };
+      const fireFetch = u => { fired.push(u); fetch(u).catch(() => {}); };
+      const fireBeacon = u => { fired.push(u); navigator.sendBeacon(u); };
+      const fireXhr = u => { fired.push(u); const x = new XMLHttpRequest(); x.open('GET', u); x.send(); };
+      for (const [k, v] of Object.entries(o)) {
+        if (k === 'impression_url' && typeof v === 'string') fireImg(v);
+        else if (k === 'imptrackers' && Array.isArray(v)) v.forEach(fireImg);
+        else if (k === 'eventtrackers' && Array.isArray(v)) v.forEach(e => e && e.url && fireXhr(e.url));
+        else if (k === 'nurl' && typeof v === 'string') fireFetch(v);
+        else if (k === 'burl' && typeof v === 'string') fireBeacon(v);
+        else if (k === 'view_url' && typeof v === 'string') fireXhr(v);
+        else if (v && typeof v === 'object') fireTrackers(v);
+      }
+    }
+
+    function textOf(o) {
+      if (o == null) return '';
+      if (typeof o === 'string') return o;
+      if (Array.isArray(o)) return o.map(textOf).join(' ');
+      if (typeof o !== 'object') return '';
+      const parts = [];
+      for (const [k, v] of Object.entries(o)) {
+        if (['text', 'delta', 'title', 'headline', 'adm'].includes(k) && typeof v === 'string') parts.push(v);
+        else if (typeof v === 'object') parts.push(textOf(v));
+      }
+      return parts.filter(Boolean).join(' ');
+    }
+
+    function render(channel, value) {
+      const el = document.getElementById('out-' + channel);
+      const text = textOf(value);
+      if (text) el.append(document.createTextNode(text + ' '));
+      fireTrackers(value);
+    }
+
+    async function runJson() {
+      const res = await fetch('/api/chat.json');
+      render('json', await res.json());
+    }
+
+    async function readStream(url, onUnit, separator) {
+      const res = await fetch(url);
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let i;
+        while ((i = buf.indexOf(separator)) >= 0) {
+          onUnit(buf.slice(0, i));
+          buf = buf.slice(i + separator.length);
+        }
+      }
+      if (buf.trim()) onUnit(buf);
+    }
+
+    async function runSse() {
+      await readStream('/api/stream.sse', block => {
+        const data = block.split('\n').filter(l => l.startsWith('data:')).map(l => l.slice(5).trim()).join('\n');
+        if (!data || data === '[DONE]') return;
+        render('sse', JSON.parse(data));
+      }, '\n\n');
+    }
+
+    async function runNdjson() {
+      await readStream('/api/stream.ndjson', line => { if (line.trim()) render('ndjson', JSON.parse(line)); }, '\n');
+    }
+
+    async function runAiSdk() {
+      await readStream('/api/stream.aisdk', line => {
+        const m = /^([0-9a-z]):(.*)$/.exec(line);
+        if (m) render('aisdk', JSON.parse(m[2]));
+      }, '\n');
+    }
+
+    function runWs() {
+      return new Promise(resolve => {
+        const ws = new WebSocket(location.origin.replace('http', 'ws') + '/ws');
+        ws.addEventListener('message', ev => {
+          const msg = JSON.parse(ev.data);
+          if (msg.type === 'done') { ws.close(); resolve(); return; }
+          render('ws', msg);
+        });
+        ws.onerror = () => resolve();
+        setTimeout(resolve, 3000);
+      });
+    }
+
+    function runEventSource() {
+      return new Promise(resolve => {
+        const es = new EventSource('/api/stream.sse');
+        const onData = ev => {
+          if (ev.data === '[DONE]') { es.close(); resolve(); return; }
+          render('eventsource', JSON.parse(ev.data));
+        };
+        es.onmessage = onData;
+        es.addEventListener('sponsored', onData);
+        es.onerror = () => { es.close(); resolve(); };
+        setTimeout(() => { es.close(); resolve(); }, 3000);
+      });
+    }
+
+    function runXhr() {
+      return new Promise(resolve => {
+        const x = new XMLHttpRequest();
+        x.open('GET', '/api/xhr.json');
+        x.onload = () => { render('xhr', JSON.parse(x.responseText)); resolve(); };
+        x.onerror = () => resolve();
+        x.send();
+      });
+    }
+
+    // Client-side "proof of delivery" a server-side ad might still send.
+    async function runProof() {
+      const post = (url, body) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => {});
+      // Explicit ad event name -> blocked.
+      navigator.sendBeacon('/collect', JSON.stringify({ event: 'ad_impression', placement: 'chat-inline' }));
+      // Delivery event + ad id in the query -> blocked.
+      await fetch('/collect?event=impression&ad_id=ad-html-55667788').catch(() => {});
+      // Mentions the id of an ad Armorly removed from a payload -> blocked.
+      await post('/api/telemetry', { kind: 'render', ref: 'ad-json-90817263' });
+      // Re-uses a tracker URL that appeared inside a removed ad -> blocked.
+      const img = new Image(); img.src = '/t/imp?src=reuse';
+      // Unsubstituted OpenRTB macro in a viewability script URL -> blocked.
+      const s = document.createElement('script');
+      s.setAttribute('src', '/t/js?src=macro&p=${AUCTION_PRICE}');
+      document.head.appendChild(s);
+      // Control: ordinary analytics must still go through.
+      await post('/collect', { event: 'page_view', path: location.pathname });
+      // Browser ad APIs.
+      window.__adApi = {
+        runAdAuction: typeof navigator.runAdAuction === 'function' ? await navigator.runAdAuction({}).then(r => r, e => 'error:' + e.name) : 'absent'
+      };
+    }
+
+    window.runAll = async function () {
+      await runJson();
+      await runSse();
+      await runNdjson();
+      await runAiSdk();
+      await runWs();
+      await runEventSource();
+      await runXhr();
+      await runProof();
+      // Let fire-and-forget trackers reach the server.
+      await new Promise(r => setTimeout(r, 400));
+      return { fired };
+    };
+  </script>
+</body>
+</html>

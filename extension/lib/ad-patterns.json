@@ -1,5 +1,5 @@
 {
-  "version": "2026-05-26",
+  "version": "2026-11-07",
   "_comment": "Auto-updatable subset of the ad-patterns library. Regex-driven detection (scriptPatterns, adLabels.patterns, commercialIntent.*) stays in ad-patterns.js — only flat string data lives here. The background service worker fetches this file from the main branch every 24h; bundled values are the floor.",
   "adSDKs": {
     "grok": {
@@ -48,7 +48,9 @@
     "click_id",
     "campaign_id",
     "source",
-    "tag"
+    "tag",
+    "gclid", "gbraid", "wbraid", "dclid", "gclsrc", "msclkid", "ttclid",
+    "twclid", "li_fat_id", "yclid", "irclickid", "epik", "rdt_cid", "scclid"
   ],
   "affiliateDomains": [
     "amzn.to",
@@ -112,7 +114,20 @@
       "[data-sponsored=\"true\"]",
       "[data-promoted=\"true\"]",
       "[aria-label=\"Sponsored\"]",
-      "[aria-label=\"Advertisement\"]"
+      "[aria-label=\"Advertisement\"]",
+      "[data-is-ad=\"true\"]",
+      "[data-ad=\"true\"]",
+      "[data-is-sponsored=\"true\"]",
+      "[data-ad-slot]",
+      "[data-ad-unit]",
+      "[data-ad-unit-id]",
+      "[data-ad-id]",
+      "[data-ad-placement]",
+      "[data-creative-id]",
+      "[data-impression-url]",
+      "[data-impression-tracker]",
+      "ins.adsbygoogle",
+      "fencedframe"
     ]
   }
 }

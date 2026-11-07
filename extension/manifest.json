@@ -41,20 +41,25 @@
       "matches": ["<all_urls>"],
       "js": [
         "lib/ad-patterns.js",
+        "lib/ad-signatures.js",
         "content/ai-ad-blocker.js",
         "content/hidden-content-blocker.js"
       ],
       "run_at": "document_start",
-      "all_frames": true
+      "all_frames": true,
+      "match_about_blank": true
     },
     {
       "matches": ["<all_urls>"],
       "js": [
         "lib/ad-patterns-main.js",
-        "content/sdk-blocker.js"
+        "lib/ad-signatures-main.js",
+        "content/sdk-blocker.js",
+        "content/payload-shield.js"
       ],
       "run_at": "document_start",
       "all_frames": true,
+      "match_about_blank": true,
       "world": "MAIN"
     }
   ],

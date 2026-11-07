@@ -14,7 +14,7 @@
   // remote copy is newer. Keep in lockstep with the `version` field in the
   // sibling extension/lib/ad-patterns.json — the build script verifies they
   // match before packaging.
-  const BUNDLED_VERSION = '2026-05-26';
+  const BUNDLED_VERSION = '2026-11-07';
 
   // Expose patterns globally for content scripts
   window.ArmorlyAdPatterns = {
@@ -124,6 +124,34 @@
       }
     },
 
+    // Ad verification / viewability vendors. A server-side ad still has to
+    // prove to the brand that it was seen; these are the hosts that measure
+    // it. Blocked as network requests (rules/ad-sdks.json) and in-page
+    // (content/payload-shield.js).
+    verificationDomains: [
+      'adsafeprotected.com',
+      'doubleverify.com',
+      'moatads.com'
+    ],
+
+    // Sites Armorly never touches (not AI chat surfaces). Mirrors the lists
+    // in content/ai-ad-blocker.js and content/hidden-content-blocker.js.
+    skipDomains: [
+      'mail.google.com', 'calendar.google.com', 'docs.google.com',
+      'sheets.google.com', 'slides.google.com', 'drive.google.com',
+      'meet.google.com', 'chat.google.com', 'contacts.google.com',
+      'keep.google.com', 'tasks.google.com', 'photos.google.com',
+      'youtube.com', 'www.youtube.com', 'music.youtube.com',
+      'github.com', 'gitlab.com', 'bitbucket.org', 'stackoverflow.com',
+      'reddit.com', 'twitter.com', 'facebook.com', 'instagram.com',
+      'linkedin.com', 'amazon.com', 'ebay.com', 'netflix.com', 'spotify.com'
+    ],
+
+    isSkippedHost: function(hostname) {
+      const h = String(hostname || '').toLowerCase();
+      return this.skipDomains.some(d => h === d || h.endsWith('.' + d));
+    },
+
     // =========================================================================
     // COMBINED SDK PATTERNS (for easy iteration)
     // =========================================================================
@@ -207,7 +235,10 @@
       'click_id',
       'campaign_id',
       'source',
-      'tag'  // Amazon affiliate
+      'tag',  // Amazon affiliate
+      // Ad-click identifiers: they exist only to credit a paid click.
+      'gclid', 'gbraid', 'wbraid', 'dclid', 'gclsrc', 'msclkid', 'ttclid',
+      'twclid', 'li_fat_id', 'yclid', 'irclickid', 'epik', 'rdt_cid', 'scclid'
     ],
 
     affiliateDomains: [
@@ -308,7 +339,23 @@
         '[data-sponsored="true"]',
         '[data-promoted="true"]',
         '[aria-label="Sponsored"]',
-        '[aria-label="Advertisement"]'
+        '[aria-label="Advertisement"]',
+        // Ad-server markup: the slot/creative/impression attributes ad
+        // renderers stamp on the element they draw into.
+        '[data-is-ad="true"]',
+        '[data-ad="true"]',
+        '[data-is-sponsored="true"]',
+        '[data-ad-slot]',
+        '[data-ad-unit]',
+        '[data-ad-unit-id]',
+        '[data-ad-id]',
+        '[data-ad-placement]',
+        '[data-creative-id]',
+        '[data-impression-url]',
+        '[data-impression-tracker]',
+        'ins.adsbygoogle',
+        // Privacy Sandbox ad rendering surface; only ever holds an ad.
+        'fencedframe'
       ]
     },
 

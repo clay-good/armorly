@@ -4,8 +4,7 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||koah.io^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||koah.io^"
     }
   },
   {
@@ -13,8 +12,7 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||koah.ai^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||koah.ai^"
     }
   },
   {
@@ -22,8 +20,7 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||monetzly.com^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||monetzly.com^"
     }
   },
   {
@@ -31,8 +28,7 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||monetzly.io^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||monetzly.io^"
     }
   },
   {
@@ -40,8 +36,7 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||sponsored.so^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||sponsored.so^"
     }
   },
   {
@@ -49,8 +44,7 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||imprezia.ai^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||imprezia.ai^"
     }
   },
   {
@@ -58,8 +52,34 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||imprezia.com^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"]
+      "urlFilter": "||imprezia.com^"
+    }
+  },
+  {
+    "id": 8,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||adsafeprotected.com^",
+      "excludedInitiatorDomains": ["mail.google.com", "calendar.google.com", "docs.google.com", "sheets.google.com", "slides.google.com", "drive.google.com", "meet.google.com", "chat.google.com", "contacts.google.com", "keep.google.com", "tasks.google.com", "photos.google.com", "youtube.com", "github.com", "gitlab.com", "bitbucket.org", "stackoverflow.com", "reddit.com", "twitter.com", "facebook.com", "instagram.com", "linkedin.com", "amazon.com", "ebay.com", "netflix.com", "spotify.com"]
+    }
+  },
+  {
+    "id": 9,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||doubleverify.com^",
+      "excludedInitiatorDomains": ["mail.google.com", "calendar.google.com", "docs.google.com", "sheets.google.com", "slides.google.com", "drive.google.com", "meet.google.com", "chat.google.com", "contacts.google.com", "keep.google.com", "tasks.google.com", "photos.google.com", "youtube.com", "github.com", "gitlab.com", "bitbucket.org", "stackoverflow.com", "reddit.com", "twitter.com", "facebook.com", "instagram.com", "linkedin.com", "amazon.com", "ebay.com", "netflix.com", "spotify.com"]
+    }
+  },
+  {
+    "id": 10,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||moatads.com^",
+      "excludedInitiatorDomains": ["mail.google.com", "calendar.google.com", "docs.google.com", "sheets.google.com", "slides.google.com", "drive.google.com", "meet.google.com", "chat.google.com", "contacts.google.com", "keep.google.com", "tasks.google.com", "photos.google.com", "youtube.com", "github.com", "gitlab.com", "bitbucket.org", "stackoverflow.com", "reddit.com", "twitter.com", "facebook.com", "instagram.com", "linkedin.com", "amazon.com", "ebay.com", "netflix.com", "spotify.com"]
     }
   }
 ]
