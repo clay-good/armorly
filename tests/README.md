@@ -42,6 +42,27 @@ npm test
   hrefs; unrelated query params are preserved.
 - **Hidden prompt-injection shield** — white-on-white text containing a
   known injection phrase is emptied; visible body content is left alone.
+- **Server-side / OpenRTB ads** (`server-side-ads.spec.ts`). `serve.js`
+  acts as a chatbot backend that stitches ads into JSON, SSE, NDJSON,
+  AI-SDK, WebSocket (text, binary, Socket.IO), EventSource, XHR, RSC,
+  streamed-array, XSSI and Anthropic-style responses (14 channels), and
+  counts every hit on its tracker URLs. A control run without the extension proves every ad
+  renders and every tracker fires; the Armorly run asserts no ad renders,
+  no tracker reaches the server, ordinary analytics still does, disclosed
+  HTML ad cards (zero-width / lookalike / split labels, closed shadow
+  roots, srcdoc iframes) are hidden while neighbouring content and
+  look-alike negatives stay, and a page can't forge the "disable" message.
+- **Signature unit tests** (`unit/signatures.test.js`, `npm run
+  test:unit`). Tables of real ad shapes that must match and everyday
+  chat/web JSON and text that must not.
+- **DOM hardening** (`fixtures/dom-hardening.html`): ads streamed before
+  the answer, answers streaming into an ad's wrapper, localized and
+  CSS-drawn labels, carousels, `<details>`, frame ads, paid inline links,
+  and look-alike negatives (glossaries, headings, table headers,
+  settings switches).
+- **Resilience scorecard** (`resilience.spec.ts`): the 101 real SDK
+  captures run against a build with every network-specific rule removed;
+  prints how many the generic layers still hide and enforces a floor.
 
 ## What's NOT covered
 
@@ -56,8 +77,8 @@ npm test
   The `chrome.alarms` API doesn't accept sub-minute periods, so any test
   here would be a stub.
 
-## Why headed mode
+## Headless
 
-MV3 extensions don't load in the default Chromium headless mode at the
-time of writing. The harness launches with `headless: false` and CI
-prepends `xvfb-run -a` so it works on a headless Linux runner.
+The harness launches Chromium with `headless: true, channel: 'chromium'`,
+which is Chromium's "new" headless mode and loads MV3 extensions. No
+window opens locally and CI doesn't need `xvfb`.

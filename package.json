@@ -6,7 +6,8 @@
   "scripts": {
     "build": "./build.sh chrome",
     "pretest": "./build.sh chrome",
-    "test": "playwright test",
+    "test": "node --test tests/unit/ && playwright test",
+    "test:unit": "node --test tests/unit/",
     "demo": "ARMORLY_DEMO=1 playwright test --grep @demo",
     "stills": "ARMORLY_DEMO=1 playwright test --grep @demo && ./scripts/make-listing-stills.sh"
   },

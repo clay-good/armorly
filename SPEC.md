@@ -362,3 +362,19 @@ If picking one item to do today, do **Phase 0.1** (restore the missing file). Th
 If picking one weekend: **Phase 0 → Phase 1 → Phase 3 (manual video) → Phase 4.1+4.2 (whitelist + lifetime stats).** That sequence produces a publishable launch in ~6 focused hours.
 
 Phase 2 (Playwright) is the highest-value engineering investment but lowest user-facing impact — do it after the launch to make future releases safer.
+
+## Phase 7 — Server-side / OpenRTB ads (unreleased)
+
+Goal: block ads a chatbot's own server stitches into its responses, deterministically and from the browser alone. The ad must reach the page as data, and the advertiser must get proof of delivery from the browser; both are intercepted. Details in CHANGELOG `[Unreleased]`.
+
+- [x] Payload shield over JSON / SSE / NDJSON / AI-SDK / WebSocket / EventSource / XHR (`content/payload-shield.js`)
+- [x] Proof-of-delivery blocking: learned tracker URLs + ad ids, ad-event payloads, RTB macros, verification hosts, `ping`/`attributionsrc`, Privacy Sandbox ad APIs
+- [x] Disclosure-label ad cards incl. obfuscated labels, closed shadow roots, srcdoc iframes
+- [x] Authenticated MAIN-world control channel (page can't forge "disable")
+- [x] Headless control-vs-Armorly suite with server-side hit counting
+- [x] Signatures from real AI ad-network SDK types (15/17 payload shapes), 14 delivery channels, stream repair, tab-scoped learned-tracker rules
+- [x] DOM hardening: streaming scheduler, localized/CSS labels, evasions, false-positive guards; resilience scorecard (74/101 captures with generic rules only)
+- [ ] Real-chatbot capture: record live ad payloads from production chat apps (ChatGPT ad units are reconstructed from a third-party write-up)
+- [ ] Lead-form ads (contain text inputs, which the card logic never hides to protect the composer) and unlabeled formats (EarnLayer) rely on network selectors
+- [ ] Make regex label/prefix lists auto-updatable as data (today they ship with the extension)
+- [ ] Firefox: closed shadow roots via `element.openOrClosedShadowRoot()` (Chrome path uses `chrome.dom`)

@@ -10,8 +10,8 @@ import path from 'node:path';
  *
  * The extension is loaded via launchPersistentContext because the
  * default Playwright `chromium` browser doesn't load extensions on
- * its own. CI runs this under xvfb because MV3 extension loading
- * requires a display server.
+ * its own. channel 'chromium' selects Chromium's new headless mode,
+ * which loads MV3 extensions without opening a window.
  */
 
 const extensionPath = path.resolve(__dirname, '..', 'build');
@@ -21,7 +21,8 @@ let context: BrowserContext;
 
 test.beforeAll(async () => {
   context = await chromium.launchPersistentContext('', {
-    headless: false,
+    headless: true,
+    channel: 'chromium',
     args: [
       `--disable-extensions-except=${extensionPath}`,
       `--load-extension=${extensionPath}`,
@@ -239,11 +240,17 @@ test('Imprezia bundled SDK via same-origin proxy: card removed, r.imprezia.net b
   // the MAIN-world proxy nor the ||imprezia.ai^ rule fires. The card markup
   // and the r.imprezia.net tracker frame are what Armorly has to catch.
   const page = await context.newPage();
-  const blocked: string[] = [];
+  // Every r.imprezia.net request must be stopped by Armorly: either the
+  // network rule rejects it (ERR_BLOCKED_BY_CLIENT) or the payload shield
+  // stops it before it is sent. A request that goes out and fails for any
+  // other reason (DNS, offline) still fails the test.
+  const leaked: string[] = [];
+  page.on('request', (req) => {
+    if (!req.url().includes('imprezia.net')) return;
+    req.response().then(() => leaked.push(req.url()), () => {});
+  });
   page.on('requestfailed', (req) => {
-    if (req.url().includes('imprezia.net') && req.failure()?.errorText === 'net::ERR_BLOCKED_BY_CLIENT') {
-      blocked.push(req.url());
-    }
+    if (req.url().includes('imprezia.net') && req.failure()?.errorText !== 'net::ERR_BLOCKED_BY_CLIENT') leaked.push(req.url());
   });
 
   await page.goto(`${FIXTURES}/imprezia-bundled.html`);
@@ -251,8 +258,8 @@ test('Imprezia bundled SDK via same-origin proxy: card removed, r.imprezia.net b
 
   await expect(page.locator('.imprezia-card:visible')).toHaveCount(0, { timeout: 5000 });
   await expect(page.locator('text=Sponsored by Trip.com >> visible=true')).toHaveCount(0);
-  await expect.poll(() => blocked.length, { timeout: 5000 }).toBeGreaterThan(0);
-  expect(blocked[0]).toContain('r.imprezia.net');
+  await page.waitForTimeout(1000);
+  expect(leaked).toEqual([]);
 });
 
 test('AI ad networks: Kontext, Gravity, EarnLayer and Lulu ads removed, legit content kept', async () => {
@@ -266,18 +273,24 @@ test('AI ad networks: Kontext, Gravity, EarnLayer and Lulu ads removed, legit co
   await expect(page.locator('#legit-link')).toBeVisible();
 });
 
-test('AI ad networks: every ad-network domain is blocked at the network layer', async () => {
+test('AI ad networks: no request to an ad-network domain reaches the network', async () => {
   const page = await context.newPage();
-  const blocked = new Set<string>();
+  // Each host must be stopped by Armorly: rejected by the network rules
+  // (ERR_BLOCKED_BY_CLIENT) or, one step earlier, never sent because the
+  // payload shield caught it. A request that goes out and completes or
+  // fails for another reason (DNS, offline) counts as leaked.
+  const leaked = new Set<string>();
+  page.on('requestfinished', (req) => leaked.add(new URL(req.url()).hostname));
   page.on('requestfailed', (req) => {
-    if (req.failure()?.errorText === 'net::ERR_BLOCKED_BY_CLIENT') blocked.add(new URL(req.url()).hostname);
+    if (req.failure()?.errorText !== 'net::ERR_BLOCKED_BY_CLIENT') leaked.add(new URL(req.url()).hostname);
   });
 
   await page.goto(`${FIXTURES}/ai-ad-networks.html`);
   const hosts: string[] = await page.evaluate(() => (window as any).__adNetworkHosts);
   expect(hosts.length).toBeGreaterThan(10);
 
-  await expect.poll(() => hosts.filter((h) => !blocked.has(h)), { timeout: 5000 }).toEqual([]);
+  await page.waitForTimeout(1000);
+  expect(hosts.filter((h) => leaked.has(h))).toEqual([]);
 });
 
 test('AI ad networks: Thrad and Gravity page globals become no-op proxies', async () => {
@@ -354,8 +367,9 @@ test('Imprezia real SDK markup: every ad format hidden (with and without its wra
   ).toEqual([]);
   await expect(page.locator('text=/Sponsored by/ >> visible=true')).toHaveCount(0);
 
-  // Inline sponsored link: link gone, sentence intact.
-  await expect(page.locator('a.imprezia-link')).toHaveCount(0);
+  // Inline sponsored link: no longer a link (href stripped in place, so
+  // React keeps its node), sentence intact.
+  await expect(page.locator('a.imprezia-link[href]')).toHaveCount(0);
   await expect(page.locator('#answer')).toContainText('the Shinjuku Washington Hotel is a solid pick');
 
   // Ad creative images never load.
@@ -405,6 +419,9 @@ test('real SDK captures: every network ad format is hidden', async () => {
     page.evaluate(() =>
       [...document.querySelectorAll<HTMLElement>('section.capture')]
         .filter((s) => {
+          // The whole slot hidden: caught, unless publisher text had to stay.
+          // (innerText of a hidden element is its full text, so check first.)
+          if (!s.checkVisibility()) return !!s.dataset.allow;
           const text = s.innerText.replace(/\s+/g, ' ').trim();
           const media = [...s.querySelectorAll<HTMLElement>('iframe, img, video')].some((e) => e.offsetWidth || e.offsetHeight);
           return media || text !== (s.dataset.allow ?? '');
@@ -412,7 +429,8 @@ test('real SDK captures: every network ad format is hidden', async () => {
         .map((s) => `${s.dataset.file}: "${s.innerText.replace(/\s+/g, ' ').trim().slice(0, 60)}"`)
     );
   await expect.poll(leaks, { timeout: 5000 }).toEqual([]);
-  await expect(page.locator('section.capture a[rel~="sponsored"] >> visible=true')).toHaveCount(0);
+  // Paid links in an answer keep their words but stop being links.
+  await expect(page.locator('section.capture a[rel~="sponsored"][href] >> visible=true')).toHaveCount(0);
 });
 
 // Lulu ads render as MCP-app frame documents (Claude.ai / ChatGPT apps).

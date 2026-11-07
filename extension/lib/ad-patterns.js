@@ -14,7 +14,7 @@
   // remote copy is newer. Keep in lockstep with the `version` field in the
   // sibling extension/lib/ad-patterns.json — the build script verifies they
   // match before packaging.
-  const BUNDLED_VERSION = '2026-10-17';
+  const BUNDLED_VERSION = '2026-11-07';
 
   // Expose patterns globally for content scripts
   window.ArmorlyAdPatterns = {
@@ -215,6 +215,40 @@
       }
     },
 
+    // Ad verification / viewability vendors. A server-side ad still has to
+    // prove to the brand that it was seen; these are the hosts that measure
+    // it. Blocked as network requests (rules/ad-sdks.json) and in-page
+    // (content/payload-shield.js).
+    verificationDomains: [
+      'adsafeprotected.com',
+      'doubleverify.com',
+      'moatads.com',
+      // ChatGPT's ad-event endpoint (impressions/clicks for its ad units).
+      'bzr.openai.com'
+    ],
+
+    // Sites Armorly never touches (not AI chat surfaces). Mirrors the lists
+    // in content/ai-ad-blocker.js and content/hidden-content-blocker.js.
+    skipDomains: [
+      'mail.google.com', 'calendar.google.com', 'docs.google.com',
+      'sheets.google.com', 'slides.google.com', 'drive.google.com',
+      'meet.google.com', 'chat.google.com', 'contacts.google.com',
+      'keep.google.com', 'tasks.google.com', 'photos.google.com',
+      'youtube.com', 'www.youtube.com', 'music.youtube.com',
+      'github.com', 'gitlab.com', 'bitbucket.org', 'stackoverflow.com',
+      'reddit.com', 'twitter.com', 'facebook.com', 'instagram.com',
+      'linkedin.com', 'amazon.com', 'ebay.com', 'netflix.com', 'spotify.com'
+    ],
+
+    // Ad managers: advertisers' own consoles list their ads as data. The
+    // payload shield (MAIN world) stays off there.
+    adConsoleDomains: ['ads.google.com', 'admanager.google.com', 'displayvideo.google.com', 'searchads.apple.com', 'ads.tiktok.com', 'ads.microsoft.com', 'ads.reddit.com', 'ads.x.com', 'ads.snapchat.com', 'ads.pinterest.com'],
+
+    isSkippedHost: function(hostname) {
+      const h = String(hostname || '').toLowerCase();
+      return this.skipDomains.concat(this.adConsoleDomains || []).some(d => h === d || h.endsWith('.' + d));
+    },
+
     // =========================================================================
     // COMBINED SDK PATTERNS (for easy iteration)
     // =========================================================================
@@ -298,7 +332,10 @@
       'click_id',
       'campaign_id',
       'source',
-      'tag'  // Amazon affiliate
+      'tag',  // Amazon affiliate
+      // Ad-click identifiers: they exist only to credit a paid click.
+      'gclid', 'gbraid', 'wbraid', 'dclid', 'gclsrc', 'msclkid', 'ttclid',
+      'twclid', 'li_fat_id', 'yclid', 'irclickid', 'epik', 'rdt_cid', 'scclid'
     ],
 
     affiliateDomains: [
@@ -493,13 +530,37 @@
         'p:has(> a[href*="ads.getlulu.dev/c/"])'
       ],
 
+      // ads-in-chat-answers (npm) widget: header/badge/brand/products and
+      // its sponsored follow-up chips.
+      qads: [
+        '[class*="qads-ad-"]',
+        '.qads-products',
+        '[class*="qads-followup"]'
+      ],
+
       // Generic patterns - ONLY very specific ad indicators
       generic: [
         '[data-ad-provider]',
         '[data-sponsored="true"]',
         '[data-promoted="true"]',
         '[aria-label="Sponsored"]',
-        '[aria-label="Advertisement"]'
+        '[aria-label="Advertisement"]',
+        // Ad-server markup: the slot/creative/impression attributes ad
+        // renderers stamp on the element they draw into.
+        '[data-is-ad="true"]',
+        '[data-ad="true"]',
+        '[data-is-sponsored="true"]',
+        '[data-ad-slot]',
+        '[data-ad-unit]',
+        '[data-ad-unit-id]',
+        '[data-ad-id]',
+        '[data-ad-placement]',
+        '[data-creative-id]',
+        '[data-impression-url]',
+        '[data-impression-tracker]',
+        'ins.adsbygoogle',
+        // Privacy Sandbox ad rendering surface; only ever holds an ad.
+        'fencedframe'
       ]
     },
 
@@ -654,15 +715,13 @@
         selectors = selectors.concat(this.platformSelectors.characterai);
       }
 
-      // Always include SDK-specific selectors
-      selectors = selectors.concat(this.platformSelectors.koah);
-      selectors = selectors.concat(this.platformSelectors.imprezia);
-      selectors = selectors.concat(this.platformSelectors.kontext);
-      selectors = selectors.concat(this.platformSelectors.gravity);
-      selectors = selectors.concat(this.platformSelectors.earnlayer);
-      selectors = selectors.concat(this.platformSelectors.lulu);
-      selectors = selectors.concat(this.platformSelectors.thrad);
-      selectors = selectors.concat(this.platformSelectors.zeroclick);
+      // Every ad network's selectors, including networks that arrive
+      // through the daily pattern update (mergeCachedPatterns adds new
+      // keys). Site-specific lists above only apply on their own site.
+      const siteOnly = ['grok', 'perplexity', 'chatgpt', 'copilot', 'youcom', 'characterai', 'generic'];
+      for (const [name, list] of Object.entries(this.platformSelectors)) {
+        if (!siteOnly.includes(name) && Array.isArray(list)) selectors = selectors.concat(list);
+      }
       selectors = selectors.concat(this.platformSelectors.generic);
 
       return [...new Set(selectors)]; // Remove duplicates

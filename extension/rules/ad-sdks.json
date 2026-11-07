@@ -5,7 +5,6 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||koah.io^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
       "excludedInitiatorDomains": ["koah.ai", "koah.io", "koahlabs.com"]
     }
   },
@@ -15,7 +14,6 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||koah.ai^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
       "excludedInitiatorDomains": ["koah.ai", "koah.io", "koahlabs.com"]
     }
   },
@@ -25,7 +23,6 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||monetzly.com^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
       "excludedInitiatorDomains": ["monetzly.com"]
     }
   },
@@ -35,7 +32,6 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||imprezia.ai^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
       "excludedInitiatorDomains": ["imprezia.ai", "imprezia.com", "imprezia.net"]
     }
   },
@@ -45,7 +41,6 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||imprezia.com^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
       "excludedInitiatorDomains": ["imprezia.ai", "imprezia.com", "imprezia.net"]
     }
   },
@@ -55,7 +50,6 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||imprezia.net^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
       "excludedInitiatorDomains": ["imprezia.ai", "imprezia.com", "imprezia.net"]
     }
   },
@@ -75,7 +69,6 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||megabrain.co^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
       "excludedInitiatorDomains": ["kontext.so", "megabrain.co"]
     }
   },
@@ -85,7 +78,6 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||kontext.so^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
       "excludedInitiatorDomains": ["kontext.so", "megabrain.co"]
     }
   },
@@ -115,7 +107,6 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||trygravity.ai^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
       "excludedInitiatorDomains": ["trygravity.ai", "trygravity.com"]
     }
   },
@@ -125,7 +116,6 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||trygravity.com^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
       "excludedInitiatorDomains": ["trygravity.ai", "trygravity.com"]
     }
   },
@@ -155,7 +145,6 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||thrad.ai^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
       "excludedInitiatorDomains": ["thrad.ai", "thrads.ai"]
     }
   },
@@ -165,7 +154,6 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||thrads.ai^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
       "excludedInitiatorDomains": ["thrad.ai", "thrads.ai"]
     }
   },
@@ -175,7 +163,6 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||zeroclick.ai^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
       "excludedInitiatorDomains": ["zeroclick.ai", "zeroclick.dev", "zero.click", "zeroclick.io"]
     }
   },
@@ -185,7 +172,6 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||zeroclick.dev^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
       "excludedInitiatorDomains": ["zeroclick.ai", "zeroclick.dev", "zero.click", "zeroclick.io"]
     }
   },
@@ -195,7 +181,6 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||zero.click^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
       "excludedInitiatorDomains": ["zeroclick.ai", "zeroclick.dev", "zero.click", "zeroclick.io"]
     }
   },
@@ -205,7 +190,6 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||getlulu.dev^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
       "excludedInitiatorDomains": ["getlulu.dev"]
     }
   },
@@ -215,7 +199,6 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||getchatads.com^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
       "excludedInitiatorDomains": ["getchatads.com", "chataside.com"]
     }
   },
@@ -225,8 +208,43 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||chataside.com^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image", "ping"],
       "excludedInitiatorDomains": ["getchatads.com", "chataside.com"]
+    }
+  },
+  {
+    "id": 24,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||adsafeprotected.com^",
+      "excludedInitiatorDomains": ["mail.google.com", "calendar.google.com", "docs.google.com", "sheets.google.com", "slides.google.com", "drive.google.com", "meet.google.com", "chat.google.com", "contacts.google.com", "keep.google.com", "tasks.google.com", "photos.google.com", "youtube.com", "github.com", "gitlab.com", "bitbucket.org", "stackoverflow.com", "reddit.com", "twitter.com", "facebook.com", "instagram.com", "linkedin.com", "amazon.com", "ebay.com", "netflix.com", "spotify.com"]
+    }
+  },
+  {
+    "id": 25,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||doubleverify.com^",
+      "excludedInitiatorDomains": ["mail.google.com", "calendar.google.com", "docs.google.com", "sheets.google.com", "slides.google.com", "drive.google.com", "meet.google.com", "chat.google.com", "contacts.google.com", "keep.google.com", "tasks.google.com", "photos.google.com", "youtube.com", "github.com", "gitlab.com", "bitbucket.org", "stackoverflow.com", "reddit.com", "twitter.com", "facebook.com", "instagram.com", "linkedin.com", "amazon.com", "ebay.com", "netflix.com", "spotify.com"]
+    }
+  },
+  {
+    "id": 26,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||moatads.com^",
+      "excludedInitiatorDomains": ["mail.google.com", "calendar.google.com", "docs.google.com", "sheets.google.com", "slides.google.com", "drive.google.com", "meet.google.com", "chat.google.com", "contacts.google.com", "keep.google.com", "tasks.google.com", "photos.google.com", "youtube.com", "github.com", "gitlab.com", "bitbucket.org", "stackoverflow.com", "reddit.com", "twitter.com", "facebook.com", "instagram.com", "linkedin.com", "amazon.com", "ebay.com", "netflix.com", "spotify.com"]
+    }
+  },
+  {
+    "id": 27,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||bzr.openai.com^",
+      "excludedInitiatorDomains": ["mail.google.com", "calendar.google.com", "docs.google.com", "sheets.google.com", "slides.google.com", "drive.google.com", "meet.google.com", "chat.google.com", "contacts.google.com", "keep.google.com", "tasks.google.com", "photos.google.com", "youtube.com", "github.com", "gitlab.com", "bitbucket.org", "stackoverflow.com", "reddit.com", "twitter.com", "facebook.com", "instagram.com", "linkedin.com", "amazon.com", "ebay.com", "netflix.com", "spotify.com"]
     }
   }
 ]
