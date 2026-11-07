@@ -135,7 +135,40 @@ function serialized(fn) {
   return queue;
 }
 
+// Ads blocked inside a tab's frames: { [tabId]: { sdksBlocked, ... } }.
+// The popup adds these to the top frame's own counts.
+const FRAME_STATS_KEY = 'frame_stats';
+const STAT_KEYS = ['sdksBlocked', 'linksCleaned', 'elementsRemoved'];
+
+async function loadFrameStats() {
+  try {
+    const data = await chrome.storage.session.get({ [FRAME_STATS_KEY]: {} });
+    return data[FRAME_STATS_KEY] || {};
+  } catch (_) {
+    return {};
+  }
+}
+
+async function addFrameStats(tabId, delta) {
+  const all = await loadFrameStats();
+  const cur = all[tabId] || { sdksBlocked: 0, linksCleaned: 0, elementsRemoved: 0 };
+  for (const k of STAT_KEYS) {
+    const n = Number(delta[k]);
+    if (Number.isFinite(n) && n > 0 && n < 10000) cur[k] += Math.floor(n);
+  }
+  all[tabId] = cur;
+  try { await chrome.storage.session.set({ [FRAME_STATS_KEY]: all }); } catch (_) { /* noop */ }
+}
+
+async function clearFrameStats(tabId) {
+  const all = await loadFrameStats();
+  if (!(tabId in all)) return;
+  delete all[tabId];
+  try { await chrome.storage.session.set({ [FRAME_STATS_KEY]: all }); } catch (_) { /* noop */ }
+}
+
 async function removeTabRules(tabId) {
+  await clearFrameStats(tabId);
   const state = await loadState();
   const ids = state[tabId];
   if (!ids || !ids.length) return;
@@ -193,6 +226,8 @@ chrome.runtime.onMessage.addListener((message, sender) => {
   if (typeof tabId !== 'number' || tabId < 0 || !message) return;
   if (message.type === 'ARMORLY_LEARNED_TRACKERS' && Array.isArray(message.urls)) {
     serialized(() => addLearnedTrackers(tabId, message.urls.slice(0, 50)));
+  } else if (message.type === 'ARMORLY_FRAME_STATS' && sender.frameId !== 0 && message.delta && typeof message.delta === 'object') {
+    serialized(() => addFrameStats(tabId, message.delta));
   } else if (message.type === 'ARMORLY_PAGE_START' && sender.frameId === 0) {
     serialized(() => removeTabRules(tabId));
   }
@@ -216,6 +251,7 @@ async function pruneClosedTabs() {
     const state = await loadState();
     for (const tabId of Object.keys(state)) if (!open.has(Number(tabId))) delete state[tabId];
     await saveState(state);
+    for (const tabId of Object.keys(await loadFrameStats())) if (!open.has(Number(tabId))) await clearFrameStats(Number(tabId));
   } catch (_) { /* noop */ }
 }
 serialized(pruneClosedTabs);

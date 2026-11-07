@@ -255,6 +255,32 @@ test('armorly: localized, CSS-drawn, <details>, carousel, onclick and frame ads 
   await page.close();
 });
 
+test('armorly: ads hidden inside frames reach the popup counts', async () => {
+  let [worker] = armorly.serviceWorkers();
+  if (!worker) worker = await armorly.waitForEvent('serviceworker');
+  const page = await armorly.newPage();
+  await page.goto(DOM_PAGE);
+  await expect(page.frameLocator('#frame-ad').locator('text=AD:frame')).toBeHidden();
+  // Frames flush their counts after 500ms.
+  await expect.poll(async () => worker.evaluate(async () => {
+    const [tab] = await chrome.tabs.query({ url: '*://127.0.0.1/*dom-hardening*' });
+    const all = (await chrome.storage.session.get({ frame_stats: {} })).frame_stats;
+    return tab ? (all[tab.id] || {}).elementsRemoved || 0 : 0;
+  }), { timeout: 5000 }).toBeGreaterThan(0);
+  await page.close();
+});
+
+test('armorly: all-caps "AD" badges hide link cards, "AD" the abbreviation stays', async () => {
+  const page = await armorly.newPage();
+  await page.goto(DOM_PAGE);
+  await page.waitForTimeout(500);
+  for (const id of ['ad-caps', 'ad-caps-link']) await expect(page.locator(`#${id}`), id).toBeHidden();
+  for (const id of ['neg-caps-prose', 'neg-caps-link', 'neg-caps-abbr', 'neg-caps-tag']) {
+    await expect(page.locator(`#${id}`), id).toBeVisible();
+  }
+  await page.close();
+});
+
 test('armorly: paid links lose their link but keep their words; the sentence stays', async () => {
   const page = await armorly.newPage();
   await page.goto(DOM_PAGE);

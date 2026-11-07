@@ -686,6 +686,14 @@
     return false;
   }
 
+  // A lone all-caps "AD"/"ADS" badge. matchesLabel rejects it because the
+  // same text is an abbreviation; the content script accepts it only as a
+  // standalone badge at the top of a link card in a chat answer or frame.
+  function isCapsAdBadge(text) {
+    if (typeof text !== 'string' || text.length > 12) return false;
+    return /^[\[(【]?\s*ADS?\s*[\])】]?$/.test(text.normalize('NFKC').replace(INVISIBLE, '').trim());
+  }
+
   const api = Object.freeze({
     isAdObject,
     isAdContainerEntry,
@@ -700,6 +708,7 @@
     normalizeLabel,
     isDisclosureLabel,
     isDisclosurePrefix,
+    isCapsAdBadge,
     AD_CLICK_ID_PARAMS: Object.freeze(AD_CLICK_ID_PARAMS.slice())
   });
 
