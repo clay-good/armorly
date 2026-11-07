@@ -303,3 +303,30 @@ for (const t of ['AD: Alzheimer disease, a progressive disorder', 'PROMOTED: v2.
 for (const t of ['【広告】Acme hotels', '[PR] Acme', 'Gesponsert: Acme']) {
   test(`isDisclosurePrefix catches localized: ${JSON.stringify(t)}`, () => assert.equal(S.isDisclosurePrefix(t), true));
 }
+
+// ---------------------------------------------------------------------------
+// Code-review regressions
+// ---------------------------------------------------------------------------
+
+test('pruneAds keeps an ad manager campaign list even with urls', () => {
+  const v = { ads: [{ id: 1, name: 'Spring sale', status: 'ENABLED', url: 'https://shop.example/spring' }] };
+  assert.equal(S.pruneAds(v).changed, false);
+});
+test('pruneAds keeps promoted_by / sponsored_by attribution', () => {
+  assert.equal(S.pruneAds({ promoted_by: { id: 7, url: 'https://ci.example/u/7' } }).changed, false);
+  assert.equal(S.pruneAds({ sponsored_by: { name: 'NIH', url: 'https://nih.gov' } }).changed, false);
+});
+test('pruneAds never rewrites JSON a user pasted into their own message', () => {
+  const pasted = JSON.stringify({ seatbid: [{ bid: [{ impid: '1', adm: '<div/>', nurl: 'https://x' }] }] });
+  const v = { messages: [{ role: 'user', content: pasted }] };
+  const r = S.pruneAds(v);
+  assert.equal(r.changed, false);
+  assert.equal(v.messages[0].content, pasted);
+});
+test('unwrapClickRedirect leaves logout / SSO redirects alone', () => {
+  assert.equal(S.unwrapClickRedirect('https://auth.example.com/logout/redirect?redirect_uri=https://app.example.com/'), null);
+  assert.equal(S.unwrapClickRedirect('https://sso.example.com/go?to=https://app.example.com/'), null);
+});
+test('unwrapClickRedirect still unwraps a generic click path that carries an ad click id', () => {
+  assert.equal(S.unwrapClickRedirect('https://trk.example/click?gclid=1&url=https://shop.example/'), 'https://shop.example/');
+});

@@ -74,6 +74,8 @@
   // content_block crashes the Anthropic SDK).
   const ENVELOPE_KEYS = new Set(['content_block', 'item', 'part', 'message', 'delta', 'data', 'payload', 'annotation']);
 
+  // Destination keys that only ads use (a call-to-action / click-through).
+  const AD_LINK_KEY = /^(cta[_-]?(url|link)|click[_-]?(url|through|through[_-]?url)|landing[_-]?(page|url)|destination[_-]?url)$/i;
   // Keys that carry the destination of a clickable item.
   const LINK_KEY = /^(url|link|href|uri|landing[_-]?(page|url)?|destination([_-]?url)?|cta[_-]?(url|link)|click[_-]?url|target[_-]?url)$/i;
 
@@ -81,7 +83,7 @@
   // mentioning it (a client-side impression report) can be blocked. Only
   // ad-specific ids: a plain `id` may be a chat message id the app sends
   // back later, and placement/campaign ids are shared across many ads.
-  const ID_KEYS_TO_LEARN = /^(crid|adid|bidid|bid[_-]?id|ad[_-]?id|creative[_-]?id|impression[_-]?id|auction[_-]?id|query[_-]?id|tracking[_-]?id|ads?[_-]?request[_-]?id)$/i;
+  const ID_KEYS_TO_LEARN = /^(crid|adid|bidid|bid[_-]?id|ad[_-]?id|creative[_-]?id|impression[_-]?id|auction[_-]?id|ads?[_-]?request[_-]?id)$/i;
   // A learnable id looks like an id: 8-128 id characters, with a digit.
   const LEARNABLE_ID = /^(?=.*\d)[A-Za-z0-9._:-]{8,128}$/;
 
@@ -206,7 +208,11 @@
     return false;
   }
 
-  /** Ad plumbing anywhere in the first two levels of `v`. */
+  /**
+   * Ad plumbing anywhere in the first two levels of `v`: trackers, ad ids,
+   * creatives, RTB fields, an ad-only click-through key. A bare `url` is
+   * not enough ({ads:[{id, name, status, url}]} is a campaign list).
+   */
   function hasAdPlumbing(v, depth) {
     depth = depth || 0;
     if (depth > 2 || v == null || typeof v !== 'object') return false;
@@ -214,7 +220,7 @@
     if (isAdObject(v)) return true;
     for (const [k, x] of Object.entries(v)) {
       const kl = k.toLowerCase();
-      if (LINK_KEY.test(k) && typeof x === 'string' && x) return true;
+      if (AD_LINK_KEY.test(k) && typeof x === 'string' && x) return true;
       if (TRACKING_URL_KEY.test(k) && isNonEmptyValue(x)) return true;
       if (AD_ID_KEY.test(k) && isNonEmptyValue(x)) return true;
       if (RTB_BID_KEYS.includes(kl) || kl === 'creative' || kl === 'creatives' || kl === 'html' || kl === 'markup') return true;
@@ -333,7 +339,7 @@
       return { value: null, changed: true, removedAll: true, collector: c };
     }
 
-    const dropRoot = walk(value, 0);
+    const dropRoot = walk(value, 0, false);
     if (dropRoot) return { value: null, changed: true, removedAll: true, collector: c };
     return { value, changed: state.changed, removedAll: false, collector: c };
 
@@ -356,18 +362,24 @@
       return r.removedAll ? (t[0] === '[' ? '[]' : '{}') : JSON.stringify(r.value);
     }
 
-    /** Returns true when `node` itself must be dropped by its parent. */
-    function walk(node, depth) {
+    /**
+     * Returns true when `node` itself must be dropped by its parent.
+     * `inUser`: inside a message the user wrote. JSON a user pasted into
+     * their own message (e.g. asking about an OpenRTB response) is theirs
+     * and is never rewritten.
+     */
+    function walk(node, depth, inUser) {
       if (node === null || typeof node !== 'object') return false;
       if (depth > MAX_DEPTH || ++state.nodes > MAX_NODES) return false;
+      if (!Array.isArray(node) && node.role === 'user') inUser = true;
       if (Array.isArray(node)) {
         for (let i = node.length - 1; i >= 0; i--) {
           const v = node[i];
           if (isAdValue(null, v)) { remove(v); node.splice(i, 1); continue; }
           if (typeof v === 'string') {
-            const p = prunedString(v);
+            const p = inUser ? null : prunedString(v);
             if (p !== null) node[i] = p;
-          } else if (walk(v, depth + 1)) {
+          } else if (walk(v, depth + 1, inUser)) {
             node.splice(i, 1);
           }
         }
@@ -384,9 +396,9 @@
           continue;
         }
         if (typeof v === 'string') {
-          const p = prunedString(v);
+          const p = inUser ? null : prunedString(v);
           if (p !== null) node[k] = p;
-        } else if (walk(v, depth + 1)) {
+        } else if (walk(v, depth + 1, inUser)) {
           if (ENVELOPE_KEYS.has(k) && typeof node.type === 'string') return true;
           delete node[k];
         }
@@ -468,7 +480,11 @@
   const PAID_MEDIUM = /^(cpc|ppc|cpm|cpa|cpv|paid|paid[_-]?(search|social|media|ads?)|paidsearch|paidsocial|display|sponsored|native|ad|ads|advert|advertising|banner|retargeting|programmatic)$/i;
   // Ad-click identifiers appended by ad platforms.
   const AD_CLICK_ID_PARAMS = ['gclid', 'gbraid', 'wbraid', 'dclid', 'gclsrc', 'msclkid', 'ttclid', 'twclid', 'li_fat_id', 'yclid', 'irclickid', 'epik', 'rdt_cid', 'scclid', 'kad_cid', 'oppref', 'olref'];
-  const REDIRECT_PATH = /\/(aclk|pagead\/aclk|click|clk|clicks|clickthrough|track|tracking|redirect|redir|r|out|go)\/?$/i;
+  // Ad-server click paths. Generic ones (/redirect, /go, /out...) are also
+  // used by logout and SSO flows, so they only count on a known ad host or
+  // when the URL carries an ad click id.
+  const AD_CLICK_PATH = /\/(aclk|pagead\/aclk)\/?$/i;
+  const REDIRECT_PATH = /\/(click|clk|clicks|clickthrough|track|tracking|redirect|redir|r|out|go)\/?$/i;
   const REDIRECT_PARAM = ['adurl', 'dest', 'destination', 'redirect', 'redirect_url', 'redirect_uri', 'url', 'u', 'to', 'target', 'landing', 'landing_url', 'lp', 'dl'];
 
   /** The link was paid for (ad click), by its URL alone. */
@@ -489,7 +505,9 @@
     let u;
     try { u = new URL(url); } catch (_) { return null; }
     const trackerHost = typeof isTrackerHost === 'function' && isTrackerHost(u.hostname);
-    if (!trackerHost && !REDIRECT_PATH.test(u.pathname)) return null;
+    const adClick = AD_CLICK_PATH.test(u.pathname) ||
+      (REDIRECT_PATH.test(u.pathname) && AD_CLICK_ID_PARAMS.some(p => u.searchParams.has(p)));
+    if (!trackerHost && !adClick) return null;
     for (const p of REDIRECT_PARAM) {
       const dest = u.searchParams.get(p);
       if (!dest) continue;

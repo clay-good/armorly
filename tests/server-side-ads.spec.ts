@@ -116,7 +116,7 @@ test('armorly: no proof of delivery reaches the ad server, ordinary analytics st
   let [worker] = armorly.serviceWorkers();
   if (!worker) worker = await armorly.waitForEvent('serviceworker');
   const learned = await worker.evaluate(async () =>
-    (await chrome.declarativeNetRequest.getSessionRules()).map(r => r.condition.regexFilter || ''));
+    (await chrome.declarativeNetRequest.getSessionRules()).map(r => r.condition.urlFilter || ''));
   expect(learned.some(f => f.includes('src=html'))).toBe(true);
 
   const adApi = await page.evaluate(() => (window as any).__adApi);
@@ -267,6 +267,8 @@ test('armorly: paid links lose their link but keep their words; the sentence sta
   await expect(page.locator('#rel-p')).toHaveText('You could buy Acme boots online.');
   // rel="sponsored" in a site's own footer: not a chat ad, left alone.
   await expect(page.locator('#rel-blog')).toHaveAttribute('href', 'https://partner.example');
+  // "(AD)" abbreviation after a link on an ordinary page: link untouched.
+  await expect(page.locator('#neg-ad-abbr a')).toHaveAttribute('href', 'https://en.wikipedia.org/wiki/Alzheimer%27s_disease');
   await page.close();
 });
 
@@ -274,7 +276,7 @@ test('armorly: glossaries, headings, table headers, look-alikes and settings are
   const page = await armorly.newPage();
   await page.goto(DOM_PAGE);
   await page.waitForTimeout(400);
-  for (const id of ['neg-glossary', 'neg-glossary-caps', 'neg-heading', 'neg-table', 'neg-ad5', 'neg-settings', 'neg-footer']) {
+  for (const id of ['neg-glossary', 'neg-glossary-caps', 'neg-heading', 'neg-table', 'neg-ad5', 'neg-settings', 'neg-footer', 'neg-short-answer', 'neg-ad-abbr', 'neg-affiliate-box']) {
     const el = page.locator(`#${id}`);
     await expect(el, id).toBeVisible();
     expect(await el.evaluate(e => e.querySelectorAll('[data-armorly-ad], [data-armorly-hidden]').length), id).toBe(0);

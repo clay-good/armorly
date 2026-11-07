@@ -343,8 +343,9 @@
       navigator.sendBeacon('/collect', JSON.stringify({ event: 'ad_impression', placement: 'chat-inline' }));
       // Delivery event + ad id in the query -> blocked.
       await fetch('/collect?event=impression&ad_id=ad-html-55667788').catch(() => {});
-      // Mentions the id of an ad Armorly removed from a payload -> blocked.
-      await post('/api/telemetry', { kind: 'render', ref: 'ad-json-90817263' });
+      // A beacon carrying the id of an ad Armorly removed -> blocked. (The
+      // site's own fetch/XHR calls are never blocked by a learned id.)
+      navigator.sendBeacon('/api/telemetry', JSON.stringify({ kind: 'render', ref: 'ad-json-90817263' }));
       // Re-uses a tracker URL that appeared inside a removed ad -> blocked.
       const img = new Image(); img.src = '/t/imp?src=reuse';
       // Unsubstituted OpenRTB macro in a viewability script URL -> blocked.

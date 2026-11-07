@@ -242,7 +242,7 @@
 
     // Ad managers: advertisers' own consoles list their ads as data. The
     // payload shield (MAIN world) stays off there.
-    adConsoleDomains: ['ads.google.com', 'ads.tiktok.com', 'ads.microsoft.com', 'ads.reddit.com', 'ads.x.com', 'ads.snapchat.com'],
+    adConsoleDomains: ['ads.google.com', 'admanager.google.com', 'displayvideo.google.com', 'searchads.apple.com', 'ads.tiktok.com', 'ads.microsoft.com', 'ads.reddit.com', 'ads.x.com', 'ads.snapchat.com', 'ads.pinterest.com'],
 
     isSkippedHost: function(hostname) {
       const h = String(hostname || '').toLowerCase();

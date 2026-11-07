@@ -140,6 +140,8 @@
   }
 
   const patterns = window.ArmorlyAdPatterns;
+  // Ad-manager consoles list ads as data; the DOM layer stays off there too.
+  if (typeof patterns.isSkippedHost === 'function' && patterns.isSkippedHost(hostname)) return;
   const signatures = window.ArmorlyAdSignatures || null;
 
   // Control channel to the MAIN-world payload shield. Both scripts run at
@@ -396,7 +398,7 @@
 
   // Open and closed shadow roots, so ad web-components can't hide from us.
   const observedRoots = new WeakSet();
-  const knownRoots = [];
+  const knownRoots = new Set();
   function shadowRootOf(el) {
     if (el.shadowRoot) return el.shadowRoot;
     try {
@@ -409,17 +411,18 @@
   function discoverShadowRoots(scope) {
     const found = [];
     const queue = [scope];
+    const seen = new Set(queue);
     for (let i = 0; i < queue.length; i++) {
       for (const el of queue[i].querySelectorAll('*')) {
         // Closed roots are flagged by payload-shield.js (MAIN world) with
         // data-armorly-shadow; open ones expose .shadowRoot.
         if (!el.shadowRoot && !el.localName.includes('-') && !el.hasAttribute('data-armorly-shadow')) continue;
         const sr = shadowRootOf(el);
-        if (sr && !queue.includes(sr)) { queue.push(sr); found.push(sr); }
+        if (sr && !seen.has(sr)) { seen.add(sr); queue.push(sr); found.push(sr); }
       }
     }
     for (const sr of found) {
-      if (!knownRoots.includes(sr)) knownRoots.push(sr);
+      knownRoots.add(sr);
       if (observer && !observedRoots.has(sr)) { observedRoots.add(sr); observer.observe(sr, OBSERVE_OPTIONS); }
     }
     return found;
@@ -427,7 +430,8 @@
 
   function collectRoots() {
     discoverShadowRoots(document);
-    return [document].concat(knownRoots.filter(r => r.host && r.host.isConnected));
+    for (const r of knownRoots) if (!r.host || !r.host.isConnected) knownRoots.delete(r);
+    return [document].concat(Array.from(knownRoots));
   }
 
   function parentAcrossShadow(el) {
@@ -626,6 +630,12 @@
       return null;
     }
     if (isControlText(labelEl)) return null;
+    // <section aria-labelledby="h"> where h reads "Sponsored": the
+    // labelled element is the ad.
+    if (labelEl.hasAttribute('aria-labelledby') && textLen(labelEl) > 0) {
+      if (!isBoundary(labelEl) && !labelEl.matches(MESSAGE_SELECTOR) && textLen(labelEl) <= MAX_CARD_TEXT && hasAction(labelEl)) return labelEl;
+      return null;
+    }
     let node = labelEl;
     let card = null;
     // The whole ad is one link/clickable wrapper around the label.
@@ -639,7 +649,9 @@
     }
     for (let i = 0; i < 15; i++) {
       const parent = parentAcrossShadow(node);
-      if (!parent || isBoundary(parent)) break;
+      // Never into the chat message itself: a short answer that mentions
+      // "Sponsored" and links somewhere is not an ad.
+      if (!parent || isBoundary(parent) || parent.matches(MESSAGE_SELECTOR)) break;
       const pLen = textLen(parent);
       if (pLen > (card ? MAX_CARD_TEXT : MAX_SEARCH_TEXT)) break;
       // Once we have a card, only climb through pure wrappers.
@@ -666,6 +678,7 @@
    */
   function frameAdBody(labelEl) {
     if (!IN_FRAME || !document.body || !document.body.contains(labelEl)) return null;
+    if (isControlText(labelEl) || labelEl.closest(NOT_A_LABEL_SELECTOR)) return null;
     const body = document.body;
     if (body.isContentEditable || body.querySelector(EDITABLE_SELECTOR)) return null;
     if (textLen(body) > MAX_CARD_TEXT || !hasAction(body)) return null;
@@ -812,11 +825,15 @@
 
   // "the <a>Nike Pegasus</a> is a solid pick (sponsored)": a marker in the
   // text right after a link makes that link paid.
-  const INLINE_MARKER = /[(\[]\s*(sponsored|ad|paid( link)?|affiliate( link)?|promoted|advertisement)\s*[)\]]/i;
+  // Case-sensitive "(ad)"/"(Ad)": "(AD)" is an abbreviation (Alzheimer's
+  // disease, Active Directory). Only inside chat answers and embedded
+  // frames: on ordinary sites "(affiliate link)" is the site's own business.
+  const INLINE_MARKER = /[(\[]\s*([Ss]ponsored|SPONSORED|[Aa]d|[Pp]aid( link)?|[Aa]ffiliate( link)?|[Pp]romoted|[Aa]dvertisement)\s*[)\]]/;
   function neutralizeMarkedLinks(scope) {
     for (const a of scope.querySelectorAll('a[href]')) {
       const next = a.nextSibling;
       if (!next || next.nodeType !== 3) continue;
+      if (!IN_FRAME && !a.closest(CHAT_CONTEXT_SELECTOR)) continue;
       const head = next.nodeValue.slice(0, 80);
       const m = INLINE_MARKER.exec(head);
       // The marker must come before the sentence ends.
@@ -890,11 +907,14 @@
         // A card-shaped sponsored link (image, blocks, or a paragraph of
         // copy) is an ad unit: hide it anywhere. An inline one in a chat
         // answer keeps its words and loses the link.
+        // Only in chat answers and embedded frames: on an ordinary site a
+        // rel="sponsored" link is the site's own affiliate link.
+        if (!IN_FRAME && !link.closest(CHAT_CONTEXT_SELECTOR)) continue;
         const cardLike = link.querySelector('img, picture, video, div, p, h1, h2, h3, h4, h5, h6, ul, ol') || textLen(link) > 80;
         if (cardLike && !isBoundary(link)) {
           if (hideAdElement(link, 'sponsored-link')) bumpStat('elementsRemoved');
-        } else if (IN_FRAME || link.closest(CHAT_CONTEXT_SELECTOR)) {
-          if (neutralizeLink(link)) bumpStat('linksCleaned');
+        } else if (neutralizeLink(link)) {
+          bumpStat('linksCleaned');
         }
       }
       if (!signatures) continue;
@@ -985,10 +1005,17 @@
   const QUIET_MS = 100;
   const MAX_WAIT_MS = 300;
 
+  let fullScanPending = false;
+
   function flushDirty() {
     burstStart = 0;
     const scopes = Array.from(dirty);
     dirty.clear();
+    // A page that never goes quiet (tickers, live logs) must not grow the
+    // burst set forever: drop detached nodes, and past a cap fall back to
+    // one full scan when it does go quiet.
+    for (const n of burstDirty) if (!n.isConnected) burstDirty.delete(n);
+    if (burstDirty.size > 2000) { burstDirty.clear(); fullScanPending = true; }
     // Runs even with nothing new: it re-checks hidden cards that grew.
     scanScopes(scopes);
   }
@@ -1002,6 +1029,7 @@
     const scopes = Array.from(burstDirty);
     burstDirty.clear();
     dirty.clear();
+    if (fullScanPending) { fullScanPending = false; scanAll(); return; }
     scanScopes(scopes);
   }
 

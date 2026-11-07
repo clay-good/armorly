@@ -109,71 +109,113 @@ chrome.runtime.onStartup.addListener(() => {
 
 const LEARNED_RULE_BASE = 900000;
 const MAX_LEARNED_PER_TAB = 100;
-const MAX_LEARNED_TOTAL = 500; // regex rules share a 1,000 budget
-const learnedByTab = new Map(); // tabId -> [ruleId]
-// Offset by time so ids from before a worker restart never collide.
-let nextLearnedId = LEARNED_RULE_BASE + (Date.now() % 50000000);
+const MAX_LEARNED_TOTAL = 2000; // session rules: 5,000 max per extension
+const STATE_KEY = 'learned_tracker_rules'; // { [tabId]: [ruleId] }
 
-function escapeRegex(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// The worker sleeps after ~30s idle and restarts with empty memory, while
+// session rules live on. Keep the tab -> rule map in storage.session so a
+// restart neither forgets nor wipes live rules.
+async function loadState() {
+  try {
+    const data = await chrome.storage.session.get({ [STATE_KEY]: {} });
+    return data[STATE_KEY] || {};
+  } catch (_) {
+    return {};
+  }
 }
 
-async function removeLearnedRules(ids) {
+async function saveState(state) {
+  try { await chrome.storage.session.set({ [STATE_KEY]: state }); } catch (_) { /* noop */ }
+}
+
+// Serialize updates: messages can arrive while a previous one is in flight.
+let queue = Promise.resolve();
+function serialized(fn) {
+  queue = queue.then(fn, fn);
+  return queue;
+}
+
+async function removeTabRules(tabId) {
+  const state = await loadState();
+  const ids = state[tabId];
   if (!ids || !ids.length) return;
+  delete state[tabId];
   try { await chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: ids }); } catch (_) { /* noop */ }
+  await saveState(state);
 }
+
+// urlFilter wildcards/anchors; a URL containing them can't be matched exactly.
+const URL_FILTER_SPECIAL = /[*^|]/;
 
 async function addLearnedTrackers(tabId, urls) {
   if (!chrome.declarativeNetRequest || !chrome.declarativeNetRequest.updateSessionRules) return;
-  const list = learnedByTab.get(tabId) || [];
+  const state = await loadState();
+  const existing = await chrome.declarativeNetRequest.getSessionRules();
+  const used = new Set(existing.map(r => r.id));
+  const tabFilters = new Set(existing.filter(r => r.condition && (r.condition.tabIds || []).includes(tabId)).map(r => r.condition.urlFilter));
+  const total = Object.values(state).reduce((n, ids) => n + ids.length, 0);
+
   const addRules = [];
+  let nextId = LEARNED_RULE_BASE;
   for (const { url, firstParty } of urls) {
     let u;
     try { u = new URL(url); } catch (_) { continue; }
     if (u.protocol !== 'https:' && u.protocol !== 'http:') continue;
     const href = u.href.split('#')[0];
-    if (href.length > 1500) continue;
-    const condition = { regexFilter: '^' + escapeRegex(href) + '$', tabIds: [tabId] };
+    if (href.length > 1500 || URL_FILTER_SPECIAL.test(href)) continue;
+    const urlFilter = '|' + href + '|';
+    if (tabFilters.has(urlFilter)) continue;
+    tabFilters.add(urlFilter);
+    while (used.has(nextId)) nextId++;
+    used.add(nextId);
+    const condition = { urlFilter, tabIds: [tabId], isUrlFilterCaseSensitive: true };
+    // A tracker on the site's own domain: pixels/beacons/scripts/frames
+    // only, never the site's own fetch/XHR.
     if (firstParty) condition.resourceTypes = ['image', 'ping', 'script', 'media', 'sub_frame', 'other'];
-    addRules.push({ id: nextLearnedId++, priority: 2, action: { type: 'block' }, condition });
+    addRules.push({ id: nextId, priority: 2, action: { type: 'block' }, condition });
   }
-  if (!addRules.length) return;
-  const ids = list.concat(addRules.map(r => r.id));
+  if (!addRules.length || total + addRules.length > MAX_LEARNED_TOTAL) return;
+
+  const ids = (state[tabId] || []).concat(addRules.map(r => r.id));
   const overflow = ids.length > MAX_LEARNED_PER_TAB ? ids.splice(0, ids.length - MAX_LEARNED_PER_TAB) : [];
-  let total = 0;
-  for (const v of learnedByTab.values()) total += v.length;
-  if (total + addRules.length > MAX_LEARNED_TOTAL) return;
-  learnedByTab.set(tabId, ids);
   try {
     await chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: overflow, addRules });
   } catch (err) {
     console.warn('[Armorly] Could not add learned tracker rules:', err && err.message);
+    return; // nothing recorded: the budget isn't spent on rules that don't exist
   }
+  state[tabId] = ids;
+  await saveState(state);
 }
 
 chrome.runtime.onMessage.addListener((message, sender) => {
   const tabId = sender && sender.tab && sender.tab.id;
   if (typeof tabId !== 'number' || tabId < 0 || !message) return;
   if (message.type === 'ARMORLY_LEARNED_TRACKERS' && Array.isArray(message.urls)) {
-    addLearnedTrackers(tabId, message.urls.slice(0, 50));
+    serialized(() => addLearnedTrackers(tabId, message.urls.slice(0, 50)));
   } else if (message.type === 'ARMORLY_PAGE_START' && sender.frameId === 0) {
-    removeLearnedRules(learnedByTab.get(tabId));
-    learnedByTab.delete(tabId);
+    serialized(() => removeTabRules(tabId));
   }
 });
 
 if (chrome.tabs && chrome.tabs.onRemoved) {
-  chrome.tabs.onRemoved.addListener((tabId) => {
-    removeLearnedRules(learnedByTab.get(tabId));
-    learnedByTab.delete(tabId);
-  });
+  chrome.tabs.onRemoved.addListener((tabId) => serialized(() => removeTabRules(tabId)));
 }
 
-// Session rules outlive a service-worker restart but our id map doesn't:
-// start clean.
-if (chrome.declarativeNetRequest && chrome.declarativeNetRequest.getSessionRules) {
-  chrome.declarativeNetRequest.getSessionRules().then(rules => {
-    const stale = rules.map(r => r.id).filter(id => id >= LEARNED_RULE_BASE);
-    if (stale.length) removeLearnedRules(stale);
-  }).catch(() => {});
+// On worker start: drop learned rules whose tab is gone (closed while the
+// worker slept). Rules for open tabs stay.
+async function pruneClosedTabs() {
+  if (!chrome.declarativeNetRequest || !chrome.declarativeNetRequest.getSessionRules || !chrome.tabs) return;
+  try {
+    const open = new Set((await chrome.tabs.query({})).map(t => t.id));
+    const rules = await chrome.declarativeNetRequest.getSessionRules();
+    const stale = rules
+      .filter(r => r.id >= LEARNED_RULE_BASE && !((r.condition && r.condition.tabIds) || []).some(id => open.has(id)))
+      .map(r => r.id);
+    if (stale.length) await chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: stale });
+    const state = await loadState();
+    for (const tabId of Object.keys(state)) if (!open.has(Number(tabId))) delete state[tabId];
+    await saveState(state);
+  } catch (_) { /* noop */ }
 }
+serialized(pruneClosedTabs);

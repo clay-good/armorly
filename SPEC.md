@@ -372,6 +372,9 @@ Goal: block ads a chatbot's own server stitches into its responses, deterministi
 - [x] Disclosure-label ad cards incl. obfuscated labels, closed shadow roots, srcdoc iframes
 - [x] Authenticated MAIN-world control channel (page can't forge "disable")
 - [x] Headless control-vs-Armorly suite with server-side hit counting
-- [ ] Real-chatbot capture: record actual ad payload shapes from live AI ad deployments and add them as fixtures
+- [x] Signatures from real AI ad-network SDK types (15/17 payload shapes), 14 delivery channels, stream repair, tab-scoped learned-tracker rules
+- [x] DOM hardening: streaming scheduler, localized/CSS labels, evasions, false-positive guards; resilience scorecard (74/101 captures with generic rules only)
+- [ ] Real-chatbot capture: record live ad payloads from production chat apps (ChatGPT ad units are reconstructed from a third-party write-up)
+- [ ] Lead-form ads (contain text inputs, which the card logic never hides to protect the composer) and unlabeled formats (EarnLayer) rely on network selectors
 - [ ] Make regex label/prefix lists auto-updatable as data (today they ship with the extension)
 - [ ] Firefox: closed shadow roots via `element.openOrClosedShadowRoot()` (Chrome path uses `chrome.dom`)

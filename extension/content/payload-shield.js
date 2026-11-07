@@ -129,6 +129,18 @@
     return h === d || h.endsWith('.' + d);
   }
 
+  // Registrable domain (eTLD+1), close enough without the full public
+  // suffix list: two labels, or three under common two-level suffixes.
+  const TWO_LEVEL_SUFFIX = /\.(co|com|net|org|gov|edu|ac|ne|or|go)\.[a-z]{2}$/;
+  function siteOf(host) {
+    const parts = host.toLowerCase().split('.');
+    if (/^\d+$/.test(parts[parts.length - 1])) return host.toLowerCase(); // IP address
+    const n = TWO_LEVEL_SUFFIX.test(host.toLowerCase()) ? 3 : 2;
+    return parts.slice(-n).join('.');
+  }
+  const pageSite = siteOf(pageHost);
+  const isFirstParty = host => siteOf(host) === pageSite;
+
   // A vendor's own site (docs, dashboard) may load its own domains, the
   // same exemption rules/ad-sdks.json makes via excludedInitiatorDomains.
   const ownVendorHosts = new Set();
@@ -159,7 +171,7 @@
       const href = u.href.split('#')[0];
       if (learnedExact.has(href)) continue;
       learnedExact.add(href);
-      const firstParty = u.hostname.toLowerCase() === pageHost;
+      const firstParty = isFirstParty(u.hostname);
       (firstParty ? learnedFirstParty : learnedThirdParty).add(u.origin + u.pathname);
       fresh.push({ url: href, firstParty });
     }
@@ -202,7 +214,7 @@
     const u = toUrl(raw);
     if (!u || (u.protocol !== 'http:' && u.protocol !== 'https:')) return false;
     const href = u.href.split('#')[0];
-    const firstParty = u.hostname.toLowerCase() === pageHost;
+    const firstParty = isFirstParty(u.hostname);
     // First-party learned trackers: pixels/beacons/scripts/frames only. The
     // site's own fetch/XHR calls are never blocked by a learned URL.
     if (learnedExact.has(href) && (!firstParty || kind === 'beacon')) return true;
@@ -212,7 +224,9 @@
     if (isAdHost(u.hostname)) return true;
     if (S.hasRtbMacro(u.href)) return true;
     if (u.search && S.isAdEventQuery(u.searchParams)) return true;
-    if (urlCarriesLearnedId(u)) return true;
+    // Learned ids are often the chat's own message/query ids too: on the
+    // site's own requests they only count for beacons.
+    if ((kind === 'beacon' || !firstParty) && urlCarriesLearnedId(u)) return true;
     return false;
   }
 
@@ -235,18 +249,20 @@
     return null; // Blob / stream: see asyncBodyText.
   }
 
-  function isBlockedText(text) {
+  /** `ids`: also match learned ad ids (beacons and third-party requests only). */
+  function isBlockedText(text, ids) {
     if (!enabled || !text || text.length > 65536) return false;
     const t = text.trim();
     if (t[0] === '{' || t[0] === '[') {
       let parsed;
       try { parsed = JSON.parse(t); } catch (_) { return false; }
-      return S.isAdEventPayload(parsed) || jsonCarriesLearnedId(parsed, 0, { n: 5000 });
+      return S.isAdEventPayload(parsed) || (ids && jsonCarriesLearnedId(parsed, 0, { n: 5000 }));
     }
     if (t.includes('=')) {
       try {
         const params = new URLSearchParams(t);
         if (S.isAdEventQuery(params)) return true;
+        if (!ids) return false;
         let hit = false;
         params.forEach(v => { if (learnedIds.has(v)) hit = true; });
         return hit;
@@ -255,8 +271,14 @@
     return false;
   }
 
-  function isBlockedBody(body) {
-    return isBlockedText(bodyText(body));
+  function idsApply(url, kind) {
+    if (kind === 'beacon') return true;
+    const u = toUrl(url);
+    return !!u && !isFirstParty(u.hostname);
+  }
+
+  function isBlockedBody(body, url, kind) {
+    return isBlockedText(bodyText(body), idsApply(url, kind));
   }
 
   /** Small text-like Blob bodies, read without consuming them. */
@@ -443,32 +465,47 @@
 
   /**
    * JSON bodies. A top-level array is filtered element by element as it
-   * arrives (chunked JSON-array streams keep streaming); anything else is
-   * buffered, up to a cap past which it passes through untouched.
+   * arrives (chunked JSON-array streams keep streaming). An object is
+   * buffered, up to a cap past which it passes through. Anything else
+   * (length-prefixed frames, plain text mislabelled as JSON) passes through
+   * at once. Unchanged and passed-through bodies keep their original bytes.
    */
   function makeJsonFilter() {
     const decoder = new TextDecoder();
     const encoder = new TextEncoder();
     const state = newStreamState();
     let buf = '';
-    let mode = null; // null | 'array' | 'whole' | 'pass' | 'done'
+    let raw = [];     // original chunks, kept while they may be forwarded as-is
+    let rawLen = 0;
+    let mode = null;  // null | 'array' | 'whole' | 'pass'
     // Array scanner state.
     let depth = 0, inStr = false, esc = false, elemStart = -1, pos = 0, wroteElem = false;
 
-    const out = (controller, s) => { if (s) controller.enqueue(encoder.encode(s)); };
+    const out = (controller, str) => { if (str) controller.enqueue(encoder.encode(str)); };
+    const flushRaw = controller => { for (const c of raw) controller.enqueue(c); raw = []; rawLen = 0; };
 
-    function decide(controller, final) {
+    function decide(controller) {
       const x = XSSI.exec(buf);
-      if (x) { out(controller, x[0]); buf = buf.slice(x[0].length); }
-      const lead = /^\s*/.exec(buf)[0];
-      if (lead.length === buf.length) { if (final) { out(controller, buf); buf = ''; mode = 'done'; } return; }
-      out(controller, lead);
-      buf = buf.slice(lead.length);
-      mode = buf[0] === '[' ? 'array' : 'whole';
+      const rest = x ? buf.slice(x[0].length) : buf;
+      const lead = /^\s*/.exec(rest)[0];
+      if (lead.length === rest.length) return; // need more bytes
+      const first = rest[lead.length];
+      if (first === '[') {
+        mode = 'array';
+        raw = []; rawLen = 0;
+        out(controller, (x ? x[0] : '') + lead);
+        buf = rest.slice(lead.length);
+      } else if (first === '{') {
+        mode = 'whole';
+      } else {
+        mode = 'pass';
+        flushRaw(controller);
+        buf = '';
+      }
     }
 
-    function emitElement(controller, raw) {
-      const trimmed = raw.trim();
+    function emitElement(controller, rawElem) {
+      const trimmed = rawElem.trim();
       if (!trimmed) return;
       let text = trimmed;
       if (enabled) {
@@ -520,7 +557,7 @@
         elemStart = 0;
       }
       if (buf.length > MAX_JSON_CHARS) {
-        // One element too big to judge: give up filtering, keep bytes.
+        // One element too big to judge: give up filtering, keep the text.
         out(controller, (wroteElem ? ',' : '') + buf);
         buf = '';
         pos = 0;
@@ -530,29 +567,27 @@
 
     return new TransformStream({
       transform(chunk, controller) {
+        if (mode === 'pass') { controller.enqueue(chunk); return; }
         buf += decoder.decode(chunk, { stream: true });
-        if (mode === null) {
-          if (buf.length < 16 && !/[[{]/.test(buf)) return;
-          decide(controller, false);
-          if (mode === null) return;
-        }
+        if (mode !== 'array') { raw.push(chunk); rawLen += chunk.byteLength; }
+        if (mode === null) decide(controller);
         if (mode === 'array') scanArray(controller);
-        else if (mode === 'pass' || mode === 'done') { out(controller, buf); buf = ''; }
-        else if (mode === 'whole' && buf.length > MAX_JSON_CHARS) { out(controller, buf); buf = ''; mode = 'pass'; }
+        else if (mode === 'whole' && rawLen > MAX_JSON_CHARS) { mode = 'pass'; flushRaw(controller); buf = ''; }
       },
       flush(controller) {
         buf += decoder.decode();
-        if (mode === null) decide(controller, true);
+        if (mode === null) decide(controller);
         if (mode === 'array') {
           scanArray(controller);
           // Unterminated array: pass what's left through as-is.
           if (mode === 'array') out(controller, (wroteElem && buf.trim() ? ',' : '') + buf);
         } else if (mode === 'whole') {
           let r = null;
-          try { r = filterJsonText(buf, state); } catch (_) { r = null; }
-          out(controller, r ? (r.drop ? '{}' : r.text) : buf);
+          try { r = filterFramed(buf, state); } catch (_) { r = null; }
+          if (r) out(controller, r.drop ? '{}' : r.text);
+          else flushRaw(controller);
         } else {
-          out(controller, buf);
+          flushRaw(controller);
         }
       }
     });
@@ -562,7 +597,8 @@
     const ct = (contentType || '').toLowerCase();
     if (ct.includes('text/event-stream')) return 'sse';
     if (ct.includes('text/x-component')) return 'lines';
-    if (ct.includes('ndjson') || ct.includes('jsonl') || ct.includes('json-seq')) return 'lines';
+    if (ct.includes('ndjson') || ct.includes('jsonl') || ct.includes('json-seq') || ct.includes('stream+json') ||
+        ct.includes('json-lines') || ct.includes('json-stream')) return 'lines';
     if (headers && headers.get && headers.get('x-vercel-ai-data-stream')) return 'lines';
     if (ct.includes('json')) return 'json';
     return null;
@@ -589,8 +625,12 @@
   function filterResponse(res) {
     try {
       if (!enabled || !res || !res.body || res.type === 'opaque' || res.status === 204 || res.status === 304) return res;
-      const kind = streamKind(res.headers.get('content-type'), res.headers);
+      const ct = res.headers.get('content-type') || '';
+      const kind = streamKind(ct, res.headers);
       if (!kind) return res;
+      // We decode as UTF-8; anything else passes through untouched.
+      const charset = /charset\s*=\s*"?([\w-]+)/i.exec(ct);
+      if (charset && !/^utf-?8$/i.test(charset[1])) return res;
       // The body is decoded and re-encoded: its length and encoding change.
       const headers = new Headers(res.headers);
       headers.delete('content-length');
@@ -621,7 +661,7 @@
       const body = init && init.body;
       const kind = body != null || (method !== 'GET' && method !== 'HEAD') ? 'body' : 'get';
 
-      if (isBlockedUrl(url, kind) || isBlockedBody(body)) {
+      if (isBlockedUrl(url, kind) || isBlockedBody(body, url, kind)) {
         report('tracker');
         return blockedResponse();
       }
@@ -646,7 +686,7 @@
       }
       if (!pending) return send();
       return pending.then(
-        text => (isBlockedText(text) ? (report('tracker'), blockedResponse()) : send()),
+        text => (isBlockedText(text, idsApply(url, kind)) ? (report('tracker'), blockedResponse()) : send()),
         () => send()
       );
     };
@@ -672,7 +712,7 @@
     XHR.send = function send(body) {
       const info = xhrInfo.get(this) || {};
       const kind = body != null || (info.method && info.method !== 'GET' && info.method !== 'HEAD') ? 'body' : 'get';
-      if (enabled && (isBlockedUrl(info.url, kind) || isBlockedBody(body))) {
+      if (enabled && (isBlockedUrl(info.url, kind) || isBlockedBody(body, info.url, kind))) {
         report('tracker');
         // Never leaves the browser; settle the request so callers waiting
         // on it don't hang.
@@ -852,7 +892,7 @@
     return nativeAddEventListener.call(this, type, listener, options);
   };
   EventTarget.prototype.removeEventListener = function removeEventListener(type, listener, options) {
-    const w = listener && isMessageSource(this) ? wrappedListeners.get(listener) : null;
+    const w = listener && !PASS_TYPES.has(type) && isMessageSource(this) ? wrappedListeners.get(listener) : null;
     return nativeRemoveEventListener.call(this, type, w || listener, options);
   };
 
@@ -883,7 +923,7 @@
     const nativeBeacon = Navigator.prototype.sendBeacon;
     Navigator.prototype.sendBeacon = function sendBeacon(url, data) {
       if (!enabled) return nativeBeacon.apply(this, arguments);
-      if (isBlockedUrl(url, 'beacon') || isBlockedBody(data)) {
+      if (isBlockedUrl(url, 'beacon') || isBlockedBody(data, url, 'beacon')) {
         report('tracker');
         return true; // pretend it was queued
       }
@@ -893,7 +933,7 @@
       if (readableBlob(data) && document.visibilityState === 'visible') {
         const nav = this;
         data.text().then(
-          text => { if (isBlockedText(text)) report('tracker'); else nativeBeacon.call(nav, url, data); },
+          text => { if (isBlockedText(text, true)) report('tracker'); else nativeBeacon.call(nav, url, data); },
           () => nativeBeacon.call(nav, url, data)
         );
         return true;
