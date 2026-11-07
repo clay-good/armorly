@@ -78,7 +78,10 @@ jobs:
 
   test:
     needs: build
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moved to 26.04, which Playwright's bundled
+    # Chromium doesn't support yet ("does not support chromium on
+    # ubuntu26.04-x64"). Revisit when Playwright adds 26.04.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
