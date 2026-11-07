@@ -42,10 +42,10 @@ AI ads come from the same API as the real chatbot response — there's no separa
 
 ## How it works
 
-1. **SDK interception.** A MAIN-world content script wraps `window.Koah`, `window.Monetzly`, `window.Sponsored`, etc. in no-op proxies *before* any page script runs. Calls return resolved Promises and never reach the network.
-2. **DOM removal.** Per-platform selectors and FTC-disclosure pattern matching delete sponsored cards, promoted suggestions, and ad containers as they appear. Conservative — only elements with explicit ad markers (`data-sponsored`, `data-koah-ad`, `aria-label="Sponsored"`, etc.) are touched.
+1. **SDK interception.** A MAIN-world content script wraps `window.koah`, `window.thrad`, `window.GravityAd`, etc. in no-op proxies *before* any page script runs. Calls resolve to a "no ad" result and never reach the network.
+2. **DOM removal.** Per-platform selectors and FTC-disclosure pattern matching hide sponsored cards, promoted suggestions, and ad containers as they appear. Conservative — only elements with explicit ad markers (`data-sponsored`, `data-koah-ad`, `aria-label="Sponsored"`, etc.) are touched.
 3. **Affiliate-link cleaning.** Outbound links get `tag=`, `utm_*`, `ref`, `affiliate`, etc. stripped from their query strings. Non-affiliate params are preserved.
-4. **Network-level blocking** (v2.3.0+). Static `declarativeNetRequest` rules drop every request type (scripts, XHR, frames, images, beacons, WebSockets, media) to AI ad-network domains and to the ad-verification vendors brands use to confirm an ad was seen.
+4. **Network-level blocking** (v2.3.0+). Static `declarativeNetRequest` rules drop requests to AI ad-network domains — Koah, Imprezia, Kontext, Gravity, Thrad, ZeroClick, Lulu, ChatAds, Monetzly — covering every request type (scripts, XHR, frames, images, beacons, WebSockets, media), plus the ad-verification vendors brands use to confirm an ad was seen. Each vendor's own site (docs, dashboards) is exempt.
 5. **Payload shield, for server-side / OpenRTB ads.** When the chatbot's own server runs the ad auction and stitches the ad into its response, there is no SDK and no ad domain. The ad still has to reach the page as data, so a MAIN-world script filters JSON, streamed (SSE / NDJSON / AI-SDK) responses, WebSocket and EventSource messages, and drops every object that is an ad by structure: OpenRTB bids (`seatbid`, `adm` + `nurl`/`burl`), native-ad trackers (`imptrackers`, `eventtrackers`), or objects that declare themselves sponsored and carry ad plumbing. The page's code never sees the ad.
 6. **Proof-of-delivery blocking.** Advertisers only pay when the browser confirms the ad was shown. Armorly blocks those confirmations: tracker URLs and ad ids learned from removed ads, ad-event analytics (`ad_impression`, `impression` + ad id), unsubstituted OpenRTB macros, `ping`/`attributionsrc` attributes, ad click-redirects (rewritten straight to the destination), and the browser's own ad APIs (Protected Audience auctions, Topics). Ad cards rendered as HTML are hidden by their legally required disclosure label ("Sponsored", "Ad", "Promoted"…), with zero-width characters and lookalike letters normalized away, including inside closed shadow roots and same-origin iframes. Hidden ads are also removed from the accessibility tree, so browser agents reading the page don't see them either.
 
@@ -63,11 +63,14 @@ When the shield fires, a small toast appears in the bottom-right of the page so 
 
 Works on every website. Platform-specific detection for:
 
-- ChatGPT / OpenAI (prepared for upcoming ad rollouts)
+- ChatGPT / OpenAI (live sponsored cards and shopping units)
 - Perplexity AI (active sponsored follow-ups)
 - Grok / X (active promoted suggestions)
+- Microsoft Copilot and You.com (ads cards)
 - Claude, Gemini, Poe
 - Any chatbot that serves ads through an ad SDK, an ad network, or its own server (OpenRTB / server-side insertion)
+- Any chatbot using Koah, Imprezia, Kontext, Gravity, Thrad, ZeroClick, Lulu, ChatAds, EarnLayer, or Monetzly
+- Selectors are tested against ad markup captured from each network's real SDK ([tests/fixtures/captures/](tests/fixtures/captures/))
 
 ## Verify it's working
 

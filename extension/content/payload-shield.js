@@ -100,9 +100,24 @@
   const learnedUrls = new Set(); // origin + pathname of tracker URLs
   const learnedIds = new Set();  // ids of ads we removed
 
+  function hostMatches(h, d) {
+    return h === d || h.endsWith('.' + d);
+  }
+
+  // A vendor's own site (docs, dashboard) may load its own domains, the
+  // same exemption rules/ad-sdks.json makes via excludedInitiatorDomains.
+  const ownVendorHosts = new Set();
+  for (const sdk of Object.values(P.adSDKs || {})) {
+    const domains = (sdk && sdk.domainPatterns) || [];
+    if (domains.some(d => hostMatches(pageHost, d.toLowerCase()))) {
+      for (const d of domains) ownVendorHosts.add(d.toLowerCase());
+    }
+  }
+
   function isAdHost(hostname) {
     const h = hostname.toLowerCase();
-    for (const d of adHosts) if (h === d || h.endsWith('.' + d)) return true;
+    for (const d of ownVendorHosts) if (hostMatches(h, d)) return false;
+    for (const d of adHosts) if (hostMatches(h, d)) return true;
     return false;
   }
 

@@ -10,22 +10,52 @@
     "koah": {
       "functions": ["Koah", "koah", "KoahAds"],
       "methods": ["init", "showAd", "displayAd", "trackImpression", "trackClick", "monetize"],
-      "domainPatterns": ["koah.io", "koah.ai", "api.koah.io", "sdk.koah.io"]
+      "domainPatterns": ["koah.io", "koah.ai", "api.koah.io", "sdk.koah.io", "app.koah.ai"]
     },
     "monetzly": {
-      "functions": ["Monetzly", "monetzly", "MonetzlyAds"],
-      "methods": ["init", "displayAd", "monetize", "showAd", "trackImpression", "trackClick"],
-      "domainPatterns": ["monetzly.com", "monetzly.io", "api.monetzly.com", "sdk.monetzly.com"]
-    },
-    "sponsoredso": {
-      "functions": ["Sponsored", "sponsored", "SponsoredAds", "SponsoredSo"],
-      "methods": ["init", "show", "display", "track", "impression", "click"],
-      "domainPatterns": ["sponsored.so", "api.sponsored.so", "sdk.sponsored.so"]
+      "functions": [],
+      "methods": [],
+      "domainPatterns": ["monetzly.com", "api.monetzly.com"]
     },
     "imprezia": {
       "functions": ["Imprezia", "imprezia"],
       "methods": ["init", "monetize", "showAd", "trackImpression", "trackClick"],
-      "domainPatterns": ["imprezia.ai", "api.imprezia.ai", "sdk.imprezia.ai"]
+      "domainPatterns": ["imprezia.ai", "api.imprezia.ai", "sdk.imprezia.ai", "imprezia.net", "r.imprezia.net"]
+    },
+    "kontext": {
+      "functions": [],
+      "methods": ["addMessage", "render"],
+      "domainPatterns": ["kontext.so", "megabrain.co", "server.megabrain.co"]
+    },
+    "gravity": {
+      "functions": ["gravityPixel", "GravityAd"],
+      "methods": ["track", "getSessionId"],
+      "domainPatterns": ["trygravity.ai", "server.trygravity.ai", "api.trygravity.ai", "trygravity.com"]
+    },
+    "thrad": {
+      "functions": ["thrad"],
+      "methods": ["render"],
+      "domainPatterns": ["thrad.ai", "sdk.thrad.ai", "cdn.thrad.ai", "thrads.ai"]
+    },
+    "zeroclick": {
+      "functions": [],
+      "methods": [],
+      "domainPatterns": ["zeroclick.ai", "mcp.zeroclick.ai", "cdn.zeroclick.ai", "zeroclick.dev", "zero.click"]
+    },
+    "earnlayer": {
+      "functions": [],
+      "methods": [],
+      "domainPatterns": ["api.earnlayerai.com", "api.earnlayer.com"]
+    },
+    "lulu": {
+      "functions": [],
+      "methods": [],
+      "domainPatterns": ["getlulu.dev", "ads.getlulu.dev"]
+    },
+    "chatads": {
+      "functions": [],
+      "methods": [],
+      "domainPatterns": ["getchatads.com", "api.getchatads.com"]
     },
     "adsense": {
       "functions": ["adsbygoogle"],
@@ -90,24 +120,93 @@
       "[data-testid=\"shopping-card\"]",
       "[data-testid=\"product-recommendation\"]",
       ".chatgpt-sponsored",
-      ".openai-ad"
+      ".openai-ad",
+      "aside[data-assistant-ads-unit]",
+      "div[data-assistant-ads]",
+      "[class*=\"_assistantAds\"]",
+      "div[data-message-supplement]:has(aside[data-partial-island=\"assistant-ads\"])",
+      "[data-testid=\"bazaar-v2-elevated-box\"]",
+      "div[data-testid=\"bazaar-single-card-container\"]",
+      "section:has(> [aria-label=\"Sponsored\"])",
+      ".border-token-border-default.mt-2.border-t:has(button[aria-label=\"Ad options\"])",
+      "div.opacity-100.transition-opacity.ease-out:has(button[aria-label=\"Sponsored options\"], button[aria-label=\"Ad options\"])",
+      "div[role=\"complementary\"]:has(a[href*=\"oppref=\"])",
+      "a[rel][target=\"_blank\"][href*=\"?utm_\"][href*=\"&oppref=\"]",
+      ".wm-app-threadContent aside[aria-label^=\"Sponsored\"]",
+      "div[class]:has(> div.flex > button[aria-label=\"Ad options\"])",
+      "div[data-testid] div[class^=\"max-\"] > div[data-ad-card-root]",
+      "div[data-testid] div[class^=\"max-\"] > div[data-testid=\"image-card-v2\"]:has(button[aria-label=\"Sponsored options\"])",
+      "div[data-testid] div[class^=\"relative max-\"]:has(> div[data-testid=\"image-card-v2\"] + .pointer-events-none button[aria-label=\"Sponsored options\"])"
+    ],
+    "copilot": [
+      "div[data-testid=\"ads-card\"]",
+      ".b_ad",
+      "div[data-ads-rg]"
+    ],
+    "youcom": [
+      "[data-testid=\"microsoft-ads\"]",
+      "div[data-testid=\"youchat-ads\"]"
+    ],
+    "characterai": [
+      ".z-40.max-w-\\[970px\\]"
     ],
     "koah": [
       "[data-koah-ad]",
       "[data-ad-provider=\"koah\"]",
       ".koah-ad-container",
-      ".koah-sponsored"
+      ".koah-sponsored",
+      "[data-koah=\"root\"]"
     ],
-    "monetzly": [
-      "[data-monetzly-ad]",
-      "[data-ad-provider=\"monetzly\"]",
-      ".monetzly-ad",
-      ".monetzly-sponsored"
+    "imprezia": [
+      "[data-imprezia-viewability-gate]",
+      ".imprezia-card",
+      ".imprezia-card-banner-html",
+      ".imprezia-cta-container",
+      "a.imprezia-cta-link",
+      "a.imprezia-cta-button",
+      ".imprezia-cta-sponsored"
     ],
-    "sponsoredso": [
-      "[data-sponsored-so]",
-      "[data-ad-provider=\"sponsored.so\"]",
-      ".sponsored-so-ad"
+    "kontext": [
+      ".kontextso-ad-container",
+      "iframe.kontextso-ad-iframe",
+      "iframe.kontextso-modal-iframe",
+      "iframe[data-testid=\"ad-iframe\"][title=\"ad-iframe\"]",
+      "iframe[data-testid=\"modal-ad-iframe\"][title=\"modal-ad-iframe\"]",
+      "div:has(> iframe[data-testid=\"ad-iframe\"][title=\"ad-iframe\"])",
+      "div[data-testid^=\"inline-ad-\"]:has(> .kontextso-ad-container)"
+    ],
+    "gravity": [
+      "[data-gravity-ad]",
+      "[data-gravity-frame]",
+      "[data-gravity-leadform-overlay]",
+      "[data-gravity-state=\"loaded\"][data-gravity-variant]",
+      "a[data-gravity-ad-link]",
+      "[data-gravity-theme-root]:has(> a[data-gravity-ad])",
+      "section[data-gravity-leadform-card]"
+    ],
+    "earnlayer": [
+      ".earnlayer-ad",
+      ".earnlayer-mcp-ads",
+      "a.earnlayer-mcp-ad-link",
+      "div.managed-ad-component[class*=\"ad-type-\"]"
+    ],
+    "thrad": [
+      "div.adsdk-container[data-thrad-format]"
+    ],
+    "zeroclick": [
+      "a[href*=\"mcp.zeroclick.ai/api/v1/offers/\"]",
+      "a[href*=\"mcp.zeroclick.ai/offers/\"]",
+      "a[href*=\"zeroclick.dev/api/v2/clicks\"]",
+      "a[href^=\"https://zero.click/\"]"
+    ],
+    "lulu": [
+      "a[href*=\"ads.getlulu.dev/c/\"]",
+      "body:has(> #lulu-ads-opts) > #root",
+      "#card.lw-card > .lw-strip",
+      "#card.lw-card > .lw-strip-flip",
+      "a[href*=\"getlulu.dev/api/mcps/sponsor-click/\"]",
+      "pre:has(a[href*=\"ads.getlulu.dev/c/\"])",
+      "p:has(> a[href*=\"ads.getlulu.dev/c/\"])"
     ],
     "generic": [
       "[data-ad-provider]",

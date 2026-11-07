@@ -2,7 +2,8 @@
  * Armorly - AI Ad Blocker
  *
  * Blocks AI-native advertising from all major ad networks:
- * - Koah, Monetzly, Sponsored.so, Grok/X, Imprezia, Google AdSense
+ * - Koah, Imprezia, Kontext, Gravity, Thrad, ZeroClick, Lulu, ChatAds,
+ *   EarnLayer, Monetzly (network only), Grok/X, Google AdSense
  * - Server-side / OpenRTB ads stitched into a chatbot's own responses
  *   (see 2b below and content/payload-shield.js)
  *
@@ -198,9 +199,38 @@
   // =========================================================================
 
   /**
-   * Remove ad elements from the DOM
+   * Hide an ad element. We hide rather than remove: chat apps are mostly
+   * React, and deleting a node React still owns makes its next re-render
+   * throw (`removeChild ... not a child of this node`) and blank the whole
+   * app. An inline `display: none !important` keeps React's tree intact.
+   * Returns false if the element was already hidden by us.
+   */
+  function hideAd(el) {
+    if (el.hasAttribute('data-armorly-hidden')) return false;
+    el.style.setProperty('display', 'none', 'important');
+    el.setAttribute('data-armorly-hidden', '');
+    return true;
+  }
+
+  /**
+   * Remove ad elements from the page
    */
   function removeAdElements() {
+    // Sponsored links woven into the AI's own answer (e.g. Imprezia's
+    // `${link-X}` placeholders): drop the link but keep the word so the
+    // sentence still reads. This content is set via innerHTML, so React
+    // doesn't own these nodes and replacing them is safe.
+    (patterns.inlineAdLinks || []).forEach(selector => {
+      try {
+        document.querySelectorAll(selector).forEach(link => {
+          link.replaceWith(document.createTextNode(link.textContent));
+          bumpStat('elementsRemoved');
+        });
+      } catch {
+        // Invalid selector, skip
+      }
+    });
+
     const selectors = patterns.getSelectorsForPlatform();
     const roots = collectRoots();
 
@@ -208,8 +238,7 @@
       try {
         const elements = roots.flatMap(r => Array.from(r.querySelectorAll(selector)));
         elements.forEach(el => {
-          el.remove();
-          bumpStat('elementsRemoved');
+          if (hideAd(el)) bumpStat('elementsRemoved');
         });
       } catch {
         // Invalid selector, skip
@@ -238,6 +267,9 @@
       // Skip empty or very short text
       if (text.length < 2 || text.length > 50) continue;
 
+      // Skip ads we've already hidden
+      if (node.parentElement && node.parentElement.closest('[data-armorly-hidden]')) continue;
+
       // Check for ad labels
       if (patterns.containsAdLabel(text)) {
         // Find the containing ad element (usually a few levels up)
@@ -248,10 +280,9 @@
           // ONLY remove if element has CLEAR ad-specific indicators
           // Be very conservative to avoid false positives
           if (
-            classes.match(/\bsponsored\b|\bkoah\b|\bmonetzly\b|\bpplx-sponsored\b/i) ||
+            classes.match(/\bsponsored\b|\bkoah\b|\bpplx-sponsored\b|\bimprezia-card\b|\bimprezia-cta-container\b/i) ||
             container.hasAttribute('data-ad-provider') ||
             container.hasAttribute('data-koah-ad') ||
-            container.hasAttribute('data-monetzly-ad') ||
             container.hasAttribute('data-sponsored')
           ) {
             elementsToRemove.add(container);
@@ -264,7 +295,7 @@
     }
 
     elementsToRemove.forEach(el => {
-      el.remove();
+      if (!hideAd(el)) return;
       bumpStat('elementsRemoved');
     });
   }
@@ -411,7 +442,7 @@
   }
 
   function hideAdElement(el, reason) {
-    if (el.hasAttribute('data-armorly-ad')) return false;
+    if (el.hasAttribute('data-armorly-ad') || el.hasAttribute('data-armorly-hidden')) return false;
     el.setAttribute('data-armorly-ad', reason);
     el.setAttribute('aria-hidden', 'true');
     el.inert = true;
@@ -436,12 +467,12 @@
       const prefixed = new Set();
       const labels = findDisclosureLabels(root, prefixed);
       for (const label of labels) {
-        if (label.closest('[data-armorly-ad]')) continue;
+        if (label.closest('[data-armorly-ad], [data-armorly-hidden]')) continue;
         const card = cardFor(label, labels);
         if (card && hideAdElement(card, 'disclosure')) bumpStat('elementsRemoved');
       }
       for (const el of prefixed) {
-        if (!el || el.closest('[data-armorly-ad]')) continue;
+        if (!el || el.closest('[data-armorly-ad], [data-armorly-hidden]')) continue;
         const block = prefixedBlock(el);
         if (block && hideAdElement(block, 'disclosure-prefix')) bumpStat('elementsRemoved');
       }

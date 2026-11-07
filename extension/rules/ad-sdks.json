@@ -4,7 +4,8 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||koah.io^"
+      "urlFilter": "||koah.io^",
+      "excludedInitiatorDomains": ["koah.ai", "koah.io", "koahlabs.com"]
     }
   },
   {
@@ -12,7 +13,8 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||koah.ai^"
+      "urlFilter": "||koah.ai^",
+      "excludedInitiatorDomains": ["koah.ai", "koah.io", "koahlabs.com"]
     }
   },
   {
@@ -20,7 +22,8 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||monetzly.com^"
+      "urlFilter": "||monetzly.com^",
+      "excludedInitiatorDomains": ["monetzly.com"]
     }
   },
   {
@@ -28,7 +31,8 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||monetzly.io^"
+      "urlFilter": "||imprezia.ai^",
+      "excludedInitiatorDomains": ["imprezia.ai", "imprezia.com", "imprezia.net"]
     }
   },
   {
@@ -36,7 +40,8 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||sponsored.so^"
+      "urlFilter": "||imprezia.com^",
+      "excludedInitiatorDomains": ["imprezia.ai", "imprezia.com", "imprezia.net"]
     }
   },
   {
@@ -44,7 +49,8 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||imprezia.ai^"
+      "urlFilter": "||imprezia.net^",
+      "excludedInitiatorDomains": ["imprezia.ai", "imprezia.com", "imprezia.net"]
     }
   },
   {
@@ -52,11 +58,161 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||imprezia.com^"
+      "urlFilter": "||storage.googleapis.com/imprezia-assets/",
+      "resourceTypes": ["image", "media"],
+      "excludedInitiatorDomains": ["imprezia.ai", "imprezia.com", "imprezia.net"]
     }
   },
   {
     "id": 8,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||megabrain.co^",
+      "excludedInitiatorDomains": ["kontext.so", "megabrain.co"]
+    }
+  },
+  {
+    "id": 9,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||kontext.so^",
+      "excludedInitiatorDomains": ["kontext.so", "megabrain.co"]
+    }
+  },
+  {
+    "id": 10,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||cdn.jsdelivr.net/npm/@kontextso/",
+      "resourceTypes": ["script"],
+      "excludedInitiatorDomains": ["kontext.so", "megabrain.co"]
+    }
+  },
+  {
+    "id": 11,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||unpkg.com/@kontextso/",
+      "resourceTypes": ["script"],
+      "excludedInitiatorDomains": ["kontext.so", "megabrain.co"]
+    }
+  },
+  {
+    "id": 12,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||trygravity.ai^",
+      "excludedInitiatorDomains": ["trygravity.ai", "trygravity.com"]
+    }
+  },
+  {
+    "id": 13,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||trygravity.com^",
+      "excludedInitiatorDomains": ["trygravity.ai", "trygravity.com"]
+    }
+  },
+  {
+    "id": 14,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||cdn.jsdelivr.net/npm/@gravity-ai/",
+      "resourceTypes": ["script"],
+      "excludedInitiatorDomains": ["trygravity.ai", "trygravity.com"]
+    }
+  },
+  {
+    "id": 15,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||unpkg.com/@gravity-ai/",
+      "resourceTypes": ["script"],
+      "excludedInitiatorDomains": ["trygravity.ai", "trygravity.com"]
+    }
+  },
+  {
+    "id": 16,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||thrad.ai^",
+      "excludedInitiatorDomains": ["thrad.ai", "thrads.ai"]
+    }
+  },
+  {
+    "id": 17,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||thrads.ai^",
+      "excludedInitiatorDomains": ["thrad.ai", "thrads.ai"]
+    }
+  },
+  {
+    "id": 18,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||zeroclick.ai^",
+      "excludedInitiatorDomains": ["zeroclick.ai", "zeroclick.dev", "zero.click", "zeroclick.io"]
+    }
+  },
+  {
+    "id": 19,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||zeroclick.dev^",
+      "excludedInitiatorDomains": ["zeroclick.ai", "zeroclick.dev", "zero.click", "zeroclick.io"]
+    }
+  },
+  {
+    "id": 20,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||zero.click^",
+      "excludedInitiatorDomains": ["zeroclick.ai", "zeroclick.dev", "zero.click", "zeroclick.io"]
+    }
+  },
+  {
+    "id": 21,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||getlulu.dev^",
+      "excludedInitiatorDomains": ["getlulu.dev"]
+    }
+  },
+  {
+    "id": 22,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||getchatads.com^",
+      "excludedInitiatorDomains": ["getchatads.com", "chataside.com"]
+    }
+  },
+  {
+    "id": 23,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||chataside.com^",
+      "excludedInitiatorDomains": ["getchatads.com", "chataside.com"]
+    }
+  },
+  {
+    "id": 24,
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
@@ -65,7 +221,7 @@
     }
   },
   {
-    "id": 9,
+    "id": 25,
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
@@ -74,7 +230,7 @@
     }
   },
   {
-    "id": 10,
+    "id": 26,
     "priority": 1,
     "action": { "type": "block" },
     "condition": {

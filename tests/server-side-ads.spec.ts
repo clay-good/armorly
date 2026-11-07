@@ -113,7 +113,7 @@ test('armorly: server-stitched HTML ads are hidden by their disclosure label, ne
   for (const id of ['ad-card-zero-width', 'ad-prefix', 'ad-card-cyrillic', 'ad-card-icon', 'ad-card-split']) {
     await expect(page.locator(`#${id}`), id).toBeHidden();
   }
-  await expect(page.locator('#ad-slot')).toHaveCount(0);
+  await expect(page.locator('#ad-slot')).toBeHidden();
 
   // Same message, right next to the ad: untouched.
   for (const id of ['neg-prose-1', 'neg-prose-2', 'neg-prose-3', 'neg-prose-4', 'neg-prose-5']) {

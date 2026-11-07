@@ -17,6 +17,27 @@ npm test
 - **SDK global-object interception** — `window.Koah` becomes a no-op proxy.
 - **DOM ad removal** — `[data-sponsored="true"]` and `[data-koah-ad]` are
   deleted by the selector pass.
+- **Imprezia real markup** — every ad format, captured verbatim from
+  Imprezia's own playground (demo.imprezia.ai), is hidden both inside and
+  outside the SDK's viewability wrapper; inline sponsored links are
+  unwrapped to plain text.
+- **Real SDK captures** — 101 ad formats captured verbatim from the real
+  SDKs of Koah, Imprezia, Kontext, Gravity, Thrad, ZeroClick, Lulu,
+  ChatAds and EarnLayer (`tests/fixtures/captures/`), plus Lulu's MCP-app
+  frame documents (`tests/fixtures/captures-frames/`, also loaded inside
+  `srcdoc` iframes). Every one must end up hidden.
+- **No page breakage** — ordinary page globals (`var sponsored`) are left
+  alone, and proxied SDK calls resolve to a destructurable "no ad" result.
+- **Vendor sites exempt** — network rules don't block a vendor's own docs
+  and dashboards.
+- **No React crashes** — ads are hidden, not detached, so a framework that
+  later calls `removeChild` on them doesn't throw and blank the app.
+- **AI ad networks** — Imprezia (bundled SDK behind a same-origin proxy),
+  Kontext, Gravity, EarnLayer and Lulu ad markup is removed; every
+  ad-network domain is blocked by a DNR rule; Thrad and Gravity globals
+  become no-op proxies.
+- **First-party chatbot ads** — ChatGPT and Copilot ad units are removed
+  when the fixture is served on the real hostname via `page.route`.
 - **Affiliate-link cleaning** — `tag=` and `utm_source=` are stripped from
   hrefs; unrelated query params are preserved.
 - **Hidden prompt-injection shield** — white-on-white text containing a

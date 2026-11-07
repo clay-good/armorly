@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ChatGPT ads fixture</title>
+</head>
+<body>
+  <!-- Served by the test at https://chatgpt.com/ via page.route so the
+       hostname-scoped selectors apply. Markup mirrors what EasyList's
+       chatgpt.com rules target on the live site (2026-10). -->
+  <div data-message-role="assistant">
+    <section class="markdown">
+      <p id="gpt-answer">Here are three good trail running shoes for beginners.</p>
+    </section>
+  </div>
+
+  <aside id="gpt-ad-unit" data-assistant-ads-unit>
+    <span>Sponsored</span><a href="https://example.com/shoes">Brooks Ghost</a>
+  </aside>
+
+  <div id="gpt-ad-border" class="border-token-border-default mt-2 border-t">
+    <span>Ad</span><button aria-label="Ad options">⋯</button>
+  </div>
+
+  <div id="gpt-ad-bazaar" data-testid="bazaar-single-card-container">Hoka Speedgoat · $155</div>
+
+  <section id="gpt-ad-section">
+    <div aria-label="Sponsored">Shop running shoes at REI</div>
+  </section>
+
+  <div class="wm-app-threadContent">
+    <aside id="gpt-ad-aside" aria-label="Sponsored content">Hilton Tokyo · Book now</aside>
+  </div>
+
+  <div data-testid="conversation-turn-3">
+    <div class="max-w-full">
+      <div id="gpt-ad-card-root" data-ad-card-root>Expedia · Tokyo packages</div>
+    </div>
+  </div>
+
+  <div id="gpt-ad-options" class="relative">
+    <div class="flex"><button aria-label="Ad options">⋯</button></div>
+    <span>Sponsored · Allbirds</span>
+  </div>
+
+  <!-- Must stay: same shape as an ad section, but not labeled Sponsored. -->
+  <section id="gpt-sources">
+    <div aria-label="Sources">wikipedia.org</div>
+  </section>
+</body>
+</html>

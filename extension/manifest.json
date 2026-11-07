@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Armorly",
-  "version": "2.9.0",
+  "version": "2.10.1",
   "description": "Protect against AI chatbot ads. Blocks ad SDKs, removes sponsored labels, cleans affiliate tracking.",
 
   "permissions": ["storage", "declarativeNetRequest", "alarms"],
@@ -47,7 +47,8 @@
       ],
       "run_at": "document_start",
       "all_frames": true,
-      "match_about_blank": true
+      "match_about_blank": true,
+      "match_origin_as_fallback": true
     },
     {
       "matches": ["<all_urls>"],
@@ -60,6 +61,7 @@
       "run_at": "document_start",
       "all_frames": true,
       "match_about_blank": true,
+      "match_origin_as_fallback": true,
       "world": "MAIN"
     }
   ],

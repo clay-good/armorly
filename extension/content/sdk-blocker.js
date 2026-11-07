@@ -32,7 +32,10 @@
           try {
             window.postMessage({ source: 'armorly', type: 'sdk-blocked' }, '*');
           } catch (_) { /* noop */ }
-          return Promise.resolve();
+          // Resolve to a "no fill" result rather than undefined: publisher
+          // code written per Koah's docs does `const { filled } = await
+          // koah.requestAd(...)`, which throws on undefined.
+          return Promise.resolve({ filled: false });
         };
       },
       set: function () {

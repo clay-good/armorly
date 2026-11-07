@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>page globals fixture</title>
+</head>
+<body>
+  <p id="out">running</p>
+  <script>
+    // Ordinary page code that happens to use names close to ad SDKs. Armorly
+    // must not hijack these: an earlier build proxied `window.sponsored`.
+    var sponsored = { count: 3 };
+    window.__sponsoredCount = sponsored.count;
+  </script>
+  <script>
+    // Publisher code written per Koah's docs. The proxied call must resolve
+    // to something destructurable, or the chat's async handler throws.
+    (async function () {
+      for (let i = 0; i < 60 && typeof window.koah === 'undefined'; i++) {
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      try {
+        const { filled } = await window.koah.requestAd({ target: document.body, context: {} });
+        window.__koahResult = filled === false ? 'no-fill' : 'filled:' + filled;
+      } catch (e) {
+        window.__koahResult = 'threw: ' + e.message;
+      }
+    })();
+  </script>
+</body>
+</html>
