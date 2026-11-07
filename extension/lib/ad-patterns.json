@@ -208,6 +208,11 @@
       "pre:has(a[href*=\"ads.getlulu.dev/c/\"])",
       "p:has(> a[href*=\"ads.getlulu.dev/c/\"])"
     ],
+    "qads": [
+      "[class*=\"qads-ad-\"]",
+      ".qads-products",
+      "[class*=\"qads-followup\"]"
+    ],
     "generic": [
       "[data-ad-provider]",
       "[data-sponsored=\"true\"]",

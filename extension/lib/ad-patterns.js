@@ -222,7 +222,9 @@
     verificationDomains: [
       'adsafeprotected.com',
       'doubleverify.com',
-      'moatads.com'
+      'moatads.com',
+      // ChatGPT's ad-event endpoint (impressions/clicks for its ad units).
+      'bzr.openai.com'
     ],
 
     // Sites Armorly never touches (not AI chat surfaces). Mirrors the lists
@@ -238,9 +240,13 @@
       'linkedin.com', 'amazon.com', 'ebay.com', 'netflix.com', 'spotify.com'
     ],
 
+    // Ad managers: advertisers' own consoles list their ads as data. The
+    // payload shield (MAIN world) stays off there.
+    adConsoleDomains: ['ads.google.com', 'ads.tiktok.com', 'ads.microsoft.com', 'ads.reddit.com', 'ads.x.com', 'ads.snapchat.com'],
+
     isSkippedHost: function(hostname) {
       const h = String(hostname || '').toLowerCase();
-      return this.skipDomains.some(d => h === d || h.endsWith('.' + d));
+      return this.skipDomains.concat(this.adConsoleDomains || []).some(d => h === d || h.endsWith('.' + d));
     },
 
     // =========================================================================
@@ -524,6 +530,14 @@
         'p:has(> a[href*="ads.getlulu.dev/c/"])'
       ],
 
+      // ads-in-chat-answers (npm) widget: header/badge/brand/products and
+      // its sponsored follow-up chips.
+      qads: [
+        '[class*="qads-ad-"]',
+        '.qads-products',
+        '[class*="qads-followup"]'
+      ],
+
       // Generic patterns - ONLY very specific ad indicators
       generic: [
         '[data-ad-provider]',
@@ -701,15 +715,13 @@
         selectors = selectors.concat(this.platformSelectors.characterai);
       }
 
-      // Always include SDK-specific selectors
-      selectors = selectors.concat(this.platformSelectors.koah);
-      selectors = selectors.concat(this.platformSelectors.imprezia);
-      selectors = selectors.concat(this.platformSelectors.kontext);
-      selectors = selectors.concat(this.platformSelectors.gravity);
-      selectors = selectors.concat(this.platformSelectors.earnlayer);
-      selectors = selectors.concat(this.platformSelectors.lulu);
-      selectors = selectors.concat(this.platformSelectors.thrad);
-      selectors = selectors.concat(this.platformSelectors.zeroclick);
+      // Every ad network's selectors, including networks that arrive
+      // through the daily pattern update (mergeCachedPatterns adds new
+      // keys). Site-specific lists above only apply on their own site.
+      const siteOnly = ['grok', 'perplexity', 'chatgpt', 'copilot', 'youcom', 'characterai', 'generic'];
+      for (const [name, list] of Object.entries(this.platformSelectors)) {
+        if (!siteOnly.includes(name) && Array.isArray(list)) selectors = selectors.concat(list);
+      }
       selectors = selectors.concat(this.platformSelectors.generic);
 
       return [...new Set(selectors)]; // Remove duplicates

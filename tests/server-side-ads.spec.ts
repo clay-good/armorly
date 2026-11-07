@@ -22,7 +22,7 @@ import path from 'node:path';
 const extensionPath = path.resolve(__dirname, '..', 'build');
 const ORIGIN = 'http://127.0.0.1:8421';
 const PAGE = `${ORIGIN}/server-side-ads.html`;
-const CHANNELS = ['json', 'sse', 'ndjson', 'aisdk', 'ws', 'eventsource', 'xhr'];
+const CHANNELS = ['json', 'sse', 'ndjson', 'aisdk', 'ws', 'eventsource', 'xhr', 'io', 'bin', 'rsc', 'jsonarr', 'xssi', 'anth', 'xhrsse'];
 
 let armorly: BrowserContext;
 let plain: Browser;
@@ -62,7 +62,8 @@ async function runScenario(page: Page) {
 const AD_TRACKER_HITS = [
   'imp:json', 'imp:sse', 'view:sse', 'imp:sse-named', 'win:ndjson', 'bill:ndjson',
   'view:aisdk', 'win:ws', 'imp:xhr', 'imp:reuse', 'js:macro',
-  'collect:ad_impression', 'collect:impression', 'api/telemetry:render'
+  'imp:io', 'imp:bin', 'imp:rsc', 'imp:jsonarr', 'imp:xssi', 'imp:anth', 'view:html',
+  'collect:ad_impression', 'collect:impression', 'collect:ad_view', 'collect:ad_click', 'api/telemetry:render'
 ];
 
 test('control: without Armorly every server-side ad renders and every tracker fires', async () => {
@@ -89,6 +90,10 @@ test('armorly: ads are stripped from JSON, SSE, NDJSON, AI-SDK, WebSocket, Event
     await expect(out, `channel ${ch} kept the real answer`).toContainText(/Logitech MX Master 3S|MX Master 3S review/);
     await expect(out, `channel ${ch} dropped the ad`).not.toContainText('AD:');
   }
+  // The Anthropic-style stream stayed well-formed: no hole where the
+  // sponsored block was, later blocks renumbered.
+  expect(await page.evaluate(() => (window as any).__anthError)).toBeNull();
+  await expect(page.locator('#out-anth')).toContainText('The Logitech MX Master 3S is the best all-round wireless mouse for a Mac.');
   await page.close();
 });
 
@@ -100,6 +105,19 @@ test('armorly: no proof of delivery reaches the ad server, ordinary analytics st
     expect(hits[key] || 0, `tracker ${key}`).toBe(0);
   }
   expect(hits['collect:page_view'], 'non-ad analytics untouched').toBe(1);
+  // A poisoned ad naming the site's own API / a JSON fragment as its
+  // tracker or id must not block the chat's own requests.
+  expect(hits['api/echo'], 'chat send still works').toBe(1);
+  expect(await page.evaluate(() => (window as any).__echo)).toMatchObject({ ok: true });
+  await expect(page.locator('#out-xhr')).toContainText('MX Master 3S review');
+
+  // The innerHTML pixel was stopped by a tab-scoped rule the background
+  // learned from the removed JSON ad (no in-page hook sees parsed <img>).
+  let [worker] = armorly.serviceWorkers();
+  if (!worker) worker = await armorly.waitForEvent('serviceworker');
+  const learned = await worker.evaluate(async () =>
+    (await chrome.declarativeNetRequest.getSessionRules()).map(r => r.condition.regexFilter || ''));
+  expect(learned.some(f => f.includes('src=html'))).toBe(true);
 
   const adApi = await page.evaluate(() => (window as any).__adApi);
   expect([null, 'absent']).toContain(adApi.runAdAuction);
@@ -188,4 +206,78 @@ test('armorly: per-site disable really turns the shield off (user escape hatch)'
   } finally {
     await worker.evaluate(() => chrome.storage.local.set({ disabled_domains: [] }));
   }
+});
+
+// ---------------------------------------------------------------------------
+// DOM hardening (tests/fixtures/dom-hardening.html)
+// ---------------------------------------------------------------------------
+
+const DOM_PAGE = `${ORIGIN}/dom-hardening.html`;
+
+test('armorly: an ad streamed before the answer is hidden mid-stream, the answer stays', async () => {
+  const page = await armorly.newPage();
+  await page.goto(DOM_PAGE);
+  const run = page.evaluate(() => (window as any).runStream());
+  // Tokens arrive every 30ms, so the page never goes quiet; the ad must
+  // still be gone well before the stream ends (~2.4s).
+  await page.waitForTimeout(800);
+  expect(await page.evaluate(() => (window as any).__streamDone)).toBe(false);
+  await expect(page.locator('#stream-ad')).toBeHidden();
+  await run;
+  await page.waitForTimeout(300);
+  await expect(page.locator('#stream-answer')).toBeVisible();
+  await expect(page.locator('#stream-answer')).toContainText('tok79');
+  await page.close();
+});
+
+test('armorly: an answer streaming into the ad\'s wrapper is not swallowed', async () => {
+  const page = await armorly.newPage();
+  await page.goto(DOM_PAGE);
+  await page.evaluate(() => (window as any).runGrow());
+  await expect(page.locator('#grow-ad')).toBeHidden();
+  await expect(page.locator('.grow-answer').first()).toBeVisible();
+  await expect(page.locator('.grow-answer')).toHaveCount(6);
+  for (const el of await page.locator('.grow-answer').all()) await expect(el).toBeVisible();
+  await page.close();
+});
+
+test('armorly: localized, CSS-drawn, <details>, carousel, onclick and frame ads are hidden', async () => {
+  const page = await armorly.newPage();
+  await page.goto(DOM_PAGE);
+  for (const id of ['ad-de-strong', 'ad-de-lang', 'ad-ja', 'ad-css', 'ad-attr', 'ad-details', 'ad-carousel', 'ad-onclick', 'sup-label']) {
+    await expect(page.locator(`#${id}`), id).toBeHidden();
+  }
+  await expect(page.frameLocator('#frame-ad').locator('text=AD:frame')).toBeHidden();
+  await expect(page.frameLocator('#frame-neg').locator('#fneg')).toBeVisible();
+  for (const id of ['neg-prose-i18n', 'neg-anzeige-en', 'neg-prose-css']) {
+    await expect(page.locator(`#${id}`), id).toBeVisible();
+  }
+  await page.close();
+});
+
+test('armorly: paid links lose their link but keep their words; the sentence stays', async () => {
+  const page = await armorly.newPage();
+  await page.goto(DOM_PAGE);
+  // <a>Acme</a><sup>Ad</sup>: link neutralized, paragraph intact.
+  await expect(page.locator('#sup-p')).toBeVisible();
+  await expect(page.locator('#sup-link')).not.toHaveAttribute('href', /.*/);
+  expect(await page.locator('#sup-p').evaluate(e => (e as HTMLElement).innerText)).toContain('For trail shoes, try Acme or a pair');
+  // rel="sponsored" inside a chat answer: neutralized in place.
+  await expect(page.locator('#rel-chat')).not.toHaveAttribute('href', /.*/);
+  await expect(page.locator('#rel-p')).toHaveText('You could buy Acme boots online.');
+  // rel="sponsored" in a site's own footer: not a chat ad, left alone.
+  await expect(page.locator('#rel-blog')).toHaveAttribute('href', 'https://partner.example');
+  await page.close();
+});
+
+test('armorly: glossaries, headings, table headers, look-alikes and settings are left alone', async () => {
+  const page = await armorly.newPage();
+  await page.goto(DOM_PAGE);
+  await page.waitForTimeout(400);
+  for (const id of ['neg-glossary', 'neg-glossary-caps', 'neg-heading', 'neg-table', 'neg-ad5', 'neg-settings', 'neg-footer']) {
+    const el = page.locator(`#${id}`);
+    await expect(el, id).toBeVisible();
+    expect(await el.evaluate(e => e.querySelectorAll('[data-armorly-ad], [data-armorly-hidden]').length), id).toBe(0);
+  }
+  await page.close();
 });

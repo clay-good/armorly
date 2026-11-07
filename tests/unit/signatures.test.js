@@ -168,3 +168,138 @@ const NOT_PREFIXED = ['Ad hoc analysis', 'Sponsored content is labeled on this s
 
 for (const t of PREFIXED) test(`isDisclosurePrefix catches: ${JSON.stringify(t)}`, () => assert.equal(S.isDisclosurePrefix(t), true));
 for (const t of NOT_PREFIXED) test(`isDisclosurePrefix ignores: ${JSON.stringify(t)}`, () => assert.equal(S.isDisclosurePrefix(t), false));
+
+// ---------------------------------------------------------------------------
+// Real AI-chat ad network payloads (shapes from each network's published
+// SDK types / live SDK; see the PR for sources). Each must be pruned.
+// ---------------------------------------------------------------------------
+
+const NETWORK_PAYLOADS = {
+  'Kontext preload': { sessionId: 's_9f1', bids: [{ bidId: 'b_7c2e4a91d0', code: 'inlineAd', revenue: 0.0042, impressionTrigger: 'immediate' }] },
+  'Thrad response': { queryId: 'q_81f2', creative: { html: '<div>Acme</div>', css: '', clickUrl: 'https://ssp.thrads.ai/c/q_81f2' }, meta: { advertiser: 'Acme' } },
+  'Gravity ad': [{ adText: 'Try Acme', brandName: 'Acme', url: 'https://acme.example', impUrl: 'https://api.trygravity.ai/i/1', clickUrl: 'https://api.trygravity.ai/c/1' }],
+  'Imprezia append item': { ads: [{ trackingId: 'trk_123456789', advertiser: 'Trip.com', title: 'Tokyo hotels', url: 'https://go.imprezia.ai/go/x', trackerUrl: 'https://r.imprezia.net/t?id=trk_123456789' }] },
+  'Lulu MCP result': { content: [{ type: 'text', text: '{"result":1}' }], structuredContent: { result: 1, sponsored: { label: 'Sponsored', text: 'Acme', url: 'https://ads.getlulu.dev/c/9f2a1c', impUrl: 'https://ads.getlulu.dev/i/9f2a1c' } }, _meta: { 'ads.getlulu.dev/sponsored': { label: 'Sponsored', text: 'Acme', url: 'https://ads.getlulu.dev/c/9f2a1c', impUrl: 'https://ads.getlulu.dev/i/9f2a1c' } } },
+  'ChatAds envelope': { data: { status: 'filled', offers: [{ link_text: 'running shoes', url: 'https://www.amazon.com/dp/B0X?tag=chatads-20' }], requested: 1, returned: 1, billed: true }, meta: { request_id: 'req_1' } },
+  'EarnLayer display ad': { id: 'ad1', impressionId: 'imp-123456789', title: 'Acme', url: 'https://acme.example', adType: 'banner' },
+  'ChatGPT ad unit (stream)': { type: 'message', message: { type: 'single_advertiser_ad_unit', ads_request_id: 'adreq_1f2e', ads_spam_integrity_payload: 'gAAAA', advertiser_brand: { name: 'Grubhub' }, cards: [{ title: 'Order now', ad_data_token: 'eyJ' }] } },
+  'OpenRTB 3.0 bid': { openrtb: { response: { seatbid: [{ bid: [{ id: 'b1', item: '1', price: 1.2, purl: 'https://x/win', media: { ad: { id: 'ad1' } } }] }] } } },
+  'VAST in a field': { answer: 'hi', video: { vast: '<VAST version="4.0"><Ad><InLine><Impression><![CDATA[https://t.example/imp]]></Impression></InLine></Ad></VAST>' } },
+  'AI SDK v5 data part': { parts: [{ type: 'text', text: 'hi' }, { type: 'data-ad', data: { title: 'Acme', url: 'https://a' } }] },
+  'tracker map': { items: [{ title: 'Acme', url: 'https://a', trackers: { impression: ['https://t/i'], click: ['https://t/c'] } }] },
+  'sponsored:"true"': { results: [{ sponsored: 'true', title: 'Acme', url: 'https://a' }] },
+  'label + impression url': { cards: [{ label: 'Sponsored', title: 'Acme', impression_tracking_url: 'https://t/i' }] }
+};
+for (const [name, payload] of Object.entries(NETWORK_PAYLOADS)) {
+  test(`pruneAds catches network payload: ${name}`, () => {
+    const r = S.pruneAds(JSON.parse(JSON.stringify(payload)));
+    assert.equal(r.changed, true);
+  });
+}
+
+test('pruneAds strips an ad hidden in JSON-encoded string content (MCP text)', () => {
+  const inner = JSON.stringify({ result: 'ok', sponsored: { label: 'Sponsored', url: 'https://a', impUrl: 'https://t/i' } });
+  const v = { content: [{ type: 'text', text: inner }] };
+  const r = S.pruneAds(v);
+  assert.equal(r.changed, true);
+  assert.deepEqual(JSON.parse(r.value.content[0].text), { result: 'ok' });
+});
+
+test('pruneAds drops a whole stream envelope instead of leaving a broken event', () => {
+  const ev = { type: 'content_block_start', index: 1, content_block: { type: 'sponsored_message', url: 'https://a', ad_id: 'ad-123456789' } };
+  assert.equal(S.pruneAds(ev).removedAll, true);
+});
+
+test('pruneAds survives deep nesting and huge primitive arrays', () => {
+  let deep = { type: 'sponsored', url: 'https://a', ad_id: 'x' };
+  for (let i = 0; i < 40; i++) deep = { child: deep };
+  assert.equal(S.pruneAds(deep).changed, true);
+  const big = { nums: new Array(150000).fill(1), ad: { type: 'sponsored', url: 'https://a', ad_id: 'x' } };
+  assert.equal(S.pruneAds(big).changed, true);
+});
+
+test('pruneAds turns an ad React element (RSC row) into nothing', () => {
+  const row = ['$', 'div', null, { children: [['$', 'p', null, { children: 'hi' }], ['$', 'AdCard', null, { type: 'sponsored', url: 'https://a', ad_id: 'ad-1' }]] }];
+  const r = S.pruneAds(row);
+  assert.equal(r.changed, true);
+  assert.equal(r.value[3].children.length, 1);
+});
+
+// ---------------------------------------------------------------------------
+// False positives the red-team found: must NOT be pruned or blocked.
+// ---------------------------------------------------------------------------
+
+const MUST_NOT_PRUNE = {
+  'ad manager campaign list': { ads: [{ id: 1, name: 'My ad', status: 'ENABLED' }] },
+  'CI promotion record': { promoted_build: { id: 7, sha: 'abc', env: 'prod' } },
+  'UI variant ad': { variant: 'ad', label: 'Ad styles', url: '/design/ad' },
+  'menu item labelled Sponsored': { label: 'Sponsored', url: '/settings/sponsored' },
+  'auction site bid': { bid_id: 'b123', price: 12.5, url: 'https://auction.example/item/1' },
+  'shipment tracking': { trackingId: '1Z999', trackingUrl: 'https://ups.example/track/1Z999' },
+  'recommender impression id': { title: 'Movie', view_url: 'https://cdn/v', impression_id: 'imp-1' },
+  'MCP outputTemplate meta': { _meta: { 'openai/outputTemplate': 'ui://widget/x.html' }, content: [] },
+  'Anthropic text block start': { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }
+};
+for (const [name, payload] of Object.entries(MUST_NOT_PRUNE)) {
+  test(`pruneAds leaves alone: ${name}`, () => assert.equal(S.pruneAds(JSON.parse(JSON.stringify(payload))).changed, false));
+}
+
+const MUST_NOT_BLOCK_BODY = {
+  'chat request carrying history with an ad': { messages: [{ role: 'assistant', content: [{ type: 'text', text: 'x' }, { type: 'sponsored', title: 'x', url: 'https://a' }] }, { role: 'user', content: 'next' }] },
+  'auction click with bid id': { event: 'click', bid_id: 'b1' },
+  'email shown with campaign id': { event: 'shown', campaign_id: 'c1' },
+  'feed impression id': { type: 'impression', impression_id: 'i1' },
+  'LangSmith run named click': { runs: [{ name: 'click', bid_id: 'b1' }] },
+  'button action view': { action: 'view', item: 'settings' }
+};
+for (const [name, body] of Object.entries(MUST_NOT_BLOCK_BODY)) {
+  test(`isAdEventPayload allows: ${name}`, () => assert.equal(S.isAdEventPayload(body), false));
+}
+test('isAdEventQuery allows ?action=view&placement_id=home', () => assert.equal(S.isAdEventQuery(new URLSearchParams('action=view&placement_id=home')), false));
+
+const MUST_BLOCK_BODY = {
+  'Segment "Ad Viewed"': { event: 'Ad Viewed', properties: { ad_id: 'a1' } },
+  'Thrad impression': { type: 'impression', queryId: 'q1', impressionState: 'viewable' },
+  'video ad started': { event: 'video_ad_started' },
+  'batched impression with creative id': { batch: [{ type: 'impression', creative_id: 'c1' }] }
+};
+for (const [name, body] of Object.entries(MUST_BLOCK_BODY)) {
+  test(`isAdEventPayload blocks: ${name}`, () => assert.equal(S.isAdEventPayload(body), true));
+}
+
+test('learned ids must look like ids (no poisoning with JSON fragments)', () => {
+  const r = S.pruneAds([{ sponsored: true, url: 'https://a', crid: '"role":"user"', ad_id: 'ad-998877' }]);
+  assert.equal(r.collector.ids.has('"role":"user"'), false);
+  assert.equal(r.collector.ids.has('ad-998877'), true);
+});
+
+test('click ids from AI ad networks are paid-click markers', () => {
+  assert.equal(S.isPaidClickUrl('https://shop.example/?kad_cid=123'), true);
+  assert.equal(S.isPaidClickUrl('https://shop.example/?oppref=abc'), true);
+});
+
+// ---------------------------------------------------------------------------
+// Labels: localized, evasions, and false positives
+// ---------------------------------------------------------------------------
+
+for (const t of ['Gesponsert', 'Sponsorisé', 'Patrocinado', 'Sponsorizzato', 'Gesponsord', 'Sponsorowane', 'Спонсировано', 'Sponsorlu', '広告', '광고', '广告', '贊助', 'ממומן', 'प्रायोजित', 'Được tài trợ']) {
+  test(`isDisclosureLabel catches localized: ${t}`, () => assert.equal(S.isDisclosureLabel(t), true));
+}
+test('ambiguous localized labels need the page language', () => {
+  assert.equal(S.isDisclosureLabel('Anzeige', 'de'), true);
+  assert.equal(S.isDisclosureLabel('Anzeige', 'en'), false);
+  assert.equal(S.isDisclosureLabel('Реклама', 'ru-RU'), true);
+  assert.equal(S.isDisclosureLabel('Реклама'), false);
+});
+for (const t of ['Ad 1 of 3', 'Sponsored · 2/3', 'Ad (1/3)', 'S p o n s o r e d', '‮derosnops', 'ꜱponsored']) {
+  test(`isDisclosureLabel catches evasion: ${JSON.stringify(t)}`, () => assert.equal(S.isDisclosureLabel(t), true));
+}
+for (const t of ['AD', 'Ad5', '@d', 'ADS', 'PR', '提供']) {
+  test(`isDisclosureLabel ignores look-alike: ${JSON.stringify(t)}`, () => assert.equal(S.isDisclosureLabel(t), false));
+}
+for (const t of ['AD: Alzheimer disease, a progressive disorder', 'PROMOTED: v2.1 to stable', 'PR: fixes #12']) {
+  test(`isDisclosurePrefix ignores: ${JSON.stringify(t)}`, () => assert.equal(S.isDisclosurePrefix(t), false));
+}
+for (const t of ['【広告】Acme hotels', '[PR] Acme', 'Gesponsert: Acme']) {
+  test(`isDisclosurePrefix catches localized: ${JSON.stringify(t)}`, () => assert.equal(S.isDisclosurePrefix(t), true));
+}

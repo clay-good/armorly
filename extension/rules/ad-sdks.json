@@ -237,5 +237,14 @@
       "urlFilter": "||moatads.com^",
       "excludedInitiatorDomains": ["mail.google.com", "calendar.google.com", "docs.google.com", "sheets.google.com", "slides.google.com", "drive.google.com", "meet.google.com", "chat.google.com", "contacts.google.com", "keep.google.com", "tasks.google.com", "photos.google.com", "youtube.com", "github.com", "gitlab.com", "bitbucket.org", "stackoverflow.com", "reddit.com", "twitter.com", "facebook.com", "instagram.com", "linkedin.com", "amazon.com", "ebay.com", "netflix.com", "spotify.com"]
     }
+  },
+  {
+    "id": 27,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||bzr.openai.com^",
+      "excludedInitiatorDomains": ["mail.google.com", "calendar.google.com", "docs.google.com", "sheets.google.com", "slides.google.com", "drive.google.com", "meet.google.com", "chat.google.com", "contacts.google.com", "keep.google.com", "tasks.google.com", "photos.google.com", "youtube.com", "github.com", "gitlab.com", "bitbucket.org", "stackoverflow.com", "reddit.com", "twitter.com", "facebook.com", "instagram.com", "linkedin.com", "amazon.com", "ebay.com", "netflix.com", "spotify.com"]
+    }
   }
 ]

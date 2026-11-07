@@ -53,7 +53,19 @@ const jsonChat = {
       title: 'AD:json PrecisionGlide Mouse',
       url: 'https://shop.example/precisionglide',
       impression_url: t('imp', 'json'),
+      // Fired later as an <img> parsed from innerHTML: only the
+      // background's tab-scoped rule can stop that one.
+      view_url: t('view', 'html'),
       ad_id: 'ad-json-90817263'
+    },
+    {
+      // Poisoned: names the site's own API as its tracker and a JSON
+      // fragment as its id. Blocking either would break the chat.
+      type: 'sponsored',
+      title: 'AD:json-poison',
+      url: 'https://evil.example',
+      view_url: `${ORIGIN}/api/xhr.json`,
+      crid: '"role":"user"'
     }
   ]
 };
@@ -125,18 +137,62 @@ const xhrResults = {
   ]
 };
 
+// Socket.IO-framed messages (Engine.IO "42" event packets).
+const ioMessages = [
+  '0{"sid":"abc","upgrades":[],"pingInterval":25000,"pingTimeout":20000}',
+  '40',
+  '42' + JSON.stringify(['msg', { type: 'text', text: LEGIT_TEXT }]),
+  '42' + JSON.stringify(['msg', { type: 'sponsored', title: 'AD:io QuickLoans', url: 'https://loans.example', impression_url: t('imp', 'io') }])
+];
+
+// Binary frames: JSON sent as bytes.
+const binMessages = [
+  { type: 'text', text: LEGIT_TEXT },
+  { is_ad: true, title: 'AD:bin CloudCam', url: 'https://cam.example', impression_url: t('imp', 'bin') }
+];
+
+// React Server Components rows.
+const rscRows = [
+  '0:' + JSON.stringify(['$', 'p', null, { children: LEGIT_TEXT }]),
+  '1:' + JSON.stringify({ type: 'sponsored', title: 'AD:rsc FlyNow', url: 'https://fly.example', impression_url: t('imp', 'rsc') }),
+  '2:T1c,plain text row, untouched'
+];
+
+// A JSON array streamed element by element.
+const jsonArrayParts = [
+  '[' + JSON.stringify({ type: 'text', text: 'The Logitech MX Master 3S ' }),
+  ',' + JSON.stringify({ type: 'sponsored', title: 'AD:jsonarr TentCo', url: 'https://tent.example', impression_url: t('imp', 'jsonarr') }),
+  ',' + JSON.stringify({ type: 'text', text: 'is the best all-round wireless mouse for a Mac.' }) + ']'
+];
+
+// Anthropic-style message stream with a sponsored content block at index 1.
+const anthropicEvents = [
+  { event: 'message_start', data: { type: 'message_start', message: { id: 'msg_1', content: [] } } },
+  { event: 'content_block_start', data: { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } } },
+  { event: 'content_block_delta', data: { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'The Logitech MX Master 3S ' } } },
+  { event: 'content_block_stop', data: { type: 'content_block_stop', index: 0 } },
+  { event: 'content_block_start', data: { type: 'content_block_start', index: 1, content_block: { type: 'sponsored_message', text: 'AD:anth ', url: 'https://acme.example', ad_id: 'ad-anth-5544332211', impression_url: t('imp', 'anth') } } },
+  { event: 'content_block_delta', data: { type: 'content_block_delta', index: 1, delta: { type: 'text_delta', text: 'AD:anth-delta Acme' } } },
+  { event: 'content_block_stop', data: { type: 'content_block_stop', index: 1 } },
+  { event: 'content_block_start', data: { type: 'content_block_start', index: 2, content_block: { type: 'text', text: '' } } },
+  { event: 'content_block_delta', data: { type: 'content_block_delta', index: 2, delta: { type: 'text_delta', text: 'is the best all-round wireless mouse for a Mac.' } } },
+  { event: 'content_block_stop', data: { type: 'content_block_stop', index: 2 } },
+  { event: 'message_stop', data: { type: 'message_stop' } }
+];
+
 // ---------------------------------------------------------------------------
 // Minimal WebSocket server (RFC 6455, unmasked text frames out, enough of
 // the inbound side to ignore client frames). Keeps the harness dep-free.
 // ---------------------------------------------------------------------------
 
-function wsFrame(text) {
+function wsFrame(text, binary) {
   const payload = Buffer.from(text);
   const len = payload.length;
+  const op = binary ? 0x82 : 0x81;
   let header;
-  if (len < 126) header = Buffer.from([0x81, len]);
-  else if (len < 65536) { header = Buffer.alloc(4); header[0] = 0x81; header[1] = 126; header.writeUInt16BE(len, 2); }
-  else { header = Buffer.alloc(10); header[0] = 0x81; header[1] = 127; header.writeBigUInt64BE(BigInt(len), 2); }
+  if (len < 126) header = Buffer.from([op, len]);
+  else if (len < 65536) { header = Buffer.alloc(4); header[0] = op; header[1] = 126; header.writeUInt16BE(len, 2); }
+  else { header = Buffer.alloc(10); header[0] = op; header[1] = 127; header.writeBigUInt64BE(BigInt(len), 2); }
   return Buffer.concat([header, payload]);
 }
 
@@ -152,10 +208,16 @@ function handleUpgrade(req, socket) {
   );
   socket.on('error', () => {});
   socket.on('data', () => {}); // ignore client frames
+  const path = req.url.split('?')[0];
+  const frames = path === '/ws-io'
+    ? ioMessages.map(m => wsFrame(m)).concat(wsFrame('42' + JSON.stringify(['done'])))
+    : path === '/ws-bin'
+      ? binMessages.map(m => wsFrame(JSON.stringify(m), true)).concat(wsFrame(JSON.stringify({ type: 'done' }), true))
+      : wsMessages.map(m => wsFrame(JSON.stringify(m))).concat(wsFrame(JSON.stringify({ type: 'done' })));
   let i = 0;
   const timer = setInterval(() => {
-    if (i < wsMessages.length) socket.write(wsFrame(JSON.stringify(wsMessages[i++])));
-    else { clearInterval(timer); socket.write(wsFrame(JSON.stringify({ type: 'done' }))); }
+    if (i < frames.length) socket.write(frames[i++]);
+    else clearInterval(timer);
   }, 20);
   socket.on('close', () => clearInterval(timer));
 }
@@ -225,6 +287,31 @@ async function route(req, res) {
   }
 
   if (p === '/api/chat.json') return sendJson(res, jsonChat);
+
+  if (p === '/api/echo') {
+    // Stands in for the chatbot's own "send message" endpoint.
+    const body = await readBody(req);
+    hit('api/echo');
+    return sendJson(res, { ok: true, received: body.length });
+  }
+
+  if (p === '/api/xssi.json') {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    return res.end(")]}'\n" + JSON.stringify({ blocks: [{ type: 'text', text: LEGIT_TEXT }, { sponsored: true, title: 'AD:xssi SunTrips', url: 'https://sun.example', impression_url: t('imp', 'xssi') }] }));
+  }
+
+  if (p === '/api/stream.rsc') {
+    return streamLines(res, rscRows.map(l => l + '\n'), 'text/x-component');
+  }
+
+  if (p === '/api/stream.jsonarray') {
+    return streamLines(res, jsonArrayParts, 'application/json; charset=utf-8');
+  }
+
+  if (p === '/api/stream.anthropic') {
+    const frames = anthropicEvents.map(e => `event: ${e.event}\ndata: ${JSON.stringify(e.data)}\n\n`);
+    return streamLines(res, frames, 'text/event-stream; charset=utf-8');
+  }
   if (p === '/api/xhr.json') return sendJson(res, xhrResults);
 
   if (p === '/api/stream.sse') {

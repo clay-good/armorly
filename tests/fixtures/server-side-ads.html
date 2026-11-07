@@ -28,6 +28,14 @@
       <div class="out" id="out-ws"></div>
       <div class="out" id="out-eventsource"></div>
       <div class="out" id="out-xhr"></div>
+      <div class="out" id="out-io"></div>
+      <div class="out" id="out-bin"></div>
+      <div class="out" id="out-rsc"></div>
+      <div class="out" id="out-jsonarr"></div>
+      <div class="out" id="out-xssi"></div>
+      <div class="out" id="out-anth"></div>
+      <div class="out" id="out-xhrsse"></div>
+      <div class="out" id="out-pixel"></div>
     </div>
 
     <!-- 2. Ads the server stitched straight into HTML: no SDK, no ad class
@@ -244,6 +252,90 @@
       });
     }
 
+    function runIo() {
+      return new Promise(resolve => {
+        const ws = new WebSocket(location.origin.replace('http', 'ws') + '/ws-io');
+        // Bound through EventTarget.prototype, the way some bundles do it.
+        EventTarget.prototype.addEventListener.call(ws, 'message', ev => {
+          const m = /^42(\[.*\])$/.exec(ev.data);
+          if (!m) return;
+          const [name, payload] = JSON.parse(m[1]);
+          if (name === 'done') { ws.close(); resolve(); return; }
+          render('io', payload);
+        });
+        ws.onerror = () => resolve();
+        setTimeout(resolve, 3000);
+      });
+    }
+
+    function runBin() {
+      return new Promise(resolve => {
+        const ws = new WebSocket(location.origin.replace('http', 'ws') + '/ws-bin');
+        ws.binaryType = 'arraybuffer';
+        ws.onmessage = ev => {
+          const msg = JSON.parse(new TextDecoder().decode(ev.data));
+          if (msg.type === 'done') { ws.close(); resolve(); return; }
+          render('bin', msg);
+        };
+        ws.onerror = () => resolve();
+        setTimeout(resolve, 3000);
+      });
+    }
+
+    async function runRsc() {
+      await readStream('/api/stream.rsc', line => {
+        const m = /^([0-9a-f]+):(.*)$/.exec(line);
+        if (!m || m[2][0] === 'T') return;
+        const v = JSON.parse(m[2]);
+        render('rsc', Array.isArray(v) && v[0] === '$' ? { text: v[3].children } : v);
+      }, '\n');
+    }
+
+    async function runJsonArray() {
+      const res = await fetch('/api/stream.jsonarray');
+      render('jsonarr', await res.json());
+    }
+
+    async function runXssi() {
+      const res = await fetch('/api/xssi.json');
+      const text = await res.text();
+      render('xssi', JSON.parse(text.replace(/^\)\]\}'\n?/, '')));
+    }
+
+    // A minimal Anthropic-SDK-style accumulator: content[index] must exist
+    // when a delta arrives, exactly like the real SDK.
+    async function runAnthropic() {
+      const content = [];
+      window.__anthError = null;
+      await readStream('/api/stream.anthropic', block => {
+        const data = block.split('\n').filter(l => l.startsWith('data:')).map(l => l.slice(5).trim()).join('');
+        if (!data) return;
+        const ev = JSON.parse(data);
+        try {
+          if (ev.type === 'content_block_start') { content[ev.index] = Object.assign({}, ev.content_block); fireTrackers(ev.content_block); }
+          if (ev.type === 'content_block_delta') content[ev.index].text += ev.delta.text;
+        } catch (e) { window.__anthError = String(e); }
+      }, '\n\n');
+      if (content.some(c => c === undefined)) window.__anthError = 'hole in content[]';
+      render('anth', content.map(c => c && c.text).join(''));
+    }
+
+    function runXhrSse() {
+      return new Promise(resolve => {
+        const x = new XMLHttpRequest();
+        x.open('GET', '/api/stream.sse');
+        x.onload = () => {
+          for (const block of x.responseText.split('\n\n')) {
+            const data = block.split('\n').filter(l => l.startsWith('data:')).map(l => l.slice(5).trim()).join('');
+            if (data && data !== '[DONE]') render('xhrsse', JSON.parse(data));
+          }
+          resolve();
+        };
+        x.onerror = () => resolve();
+        x.send();
+      });
+    }
+
     // Client-side "proof of delivery" a server-side ad might still send.
     async function runProof() {
       const post = (url, body) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => {});
@@ -259,6 +351,18 @@
       const s = document.createElement('script');
       s.setAttribute('src', '/t/js?src=macro&p=${AUCTION_PRICE}');
       document.head.appendChild(s);
+      // Blob beacon (the usual analytics beacon shape).
+      navigator.sendBeacon('/collect', new Blob([JSON.stringify({ event: 'ad_view', ad_id: 'x' })], { type: 'application/json' }));
+      // Request object carrying the body.
+      await fetch(new Request('/collect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'ad_click' }) })).catch(() => {});
+      // Pixel parsed from HTML: no JS setter runs, only the tab-scoped rule
+      // learned from the removed JSON ad can stop it.
+      await new Promise(r => setTimeout(r, 300));
+      document.getElementById('out-pixel').innerHTML = '<img alt="" width="1" height="1" src="' + location.origin + '/t/view?src=html">';
+      // The chat's own send, carrying text that a poisoned ad tried to
+      // register as an ad id: must go through.
+      window.__echo = await fetch('/api/echo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: [{ '"role":"user"': 1, role: 'user', content: 'hi' }] }) })
+        .then(r => r.json()).catch(e => ({ error: String(e) }));
       // Control: ordinary analytics must still go through.
       await post('/collect', { event: 'page_view', path: location.pathname });
       // Browser ad APIs.
@@ -275,6 +379,13 @@
       await runWs();
       await runEventSource();
       await runXhr();
+      await runIo();
+      await runBin();
+      await runRsc();
+      await runJsonArray();
+      await runXssi();
+      await runAnthropic();
+      await runXhrSse();
       await runProof();
       // Let fire-and-forget trackers reach the server.
       await new Promise(r => setTimeout(r, 400));

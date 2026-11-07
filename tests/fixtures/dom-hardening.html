@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>DOM hardening fixture</title>
+  <style>
+    body { font: 15px/1.5 system-ui, sans-serif; max-width: 760px; margin: 24px auto; padding: 0 16px; }
+    .card { border: 1px solid #c90; border-radius: 8px; padding: 8px 12px; margin: 8px 0; }
+    /* Labels drawn by CSS, not text nodes. */
+    .badge-css::before { content: "Sponsored"; font-size: 11px; color: #a60; }
+    .badge-attr::before { content: attr(data-label); font-size: 11px; color: #a60; }
+  </style>
+</head>
+<body>
+  <!--
+    Ads carry "AD:" in their visible text. Negative controls (must stay
+    visible) have ids starting with neg-.
+  -->
+  <div role="log" id="conversation">
+
+    <!-- Streaming: the ad arrives first, the answer streams in next to it. -->
+    <div class="turn" id="stream-turn">
+      <div class="msg"><div class="md" id="stream-md"></div></div>
+    </div>
+
+    <!-- Growth: label delivered alone in a wrapper, answer streams into the
+         same wrapper afterwards. -->
+    <div class="turn" id="grow-turn">
+      <div class="msg" id="grow-msg"><div class="md" id="grow-md"></div></div>
+    </div>
+
+    <!-- Localized labels. -->
+    <div class="turn">
+      <p id="neg-prose-i18n">Hier sind ein paar gute Hotels in Tokio für den ersten Besuch.</p>
+      <div class="card" id="ad-de-strong"><span>Gesponsert</span><p>AD:de-strong Tokio Hotels</p><a href="https://hotel.example">Buchen</a></div>
+      <div class="card" id="ad-de-lang" lang="de"><span>Anzeige</span><p>AD:de-lang Reisebüro</p><a href="https://reise.example">Mehr</a></div>
+      <div class="card" id="ad-ja"><span>広告</span><p>AD:ja ホテル</p><a href="https://hotel.example/ja">予約</a></div>
+      <div class="card" id="neg-anzeige-en"><span>Anzeige</span><p>Display settings for the German keyboard layout.</p><a href="/settings">Open</a></div>
+    </div>
+
+    <!-- CSS-drawn labels, <details>, carousel, onclick card, superscript. -->
+    <div class="turn">
+      <p id="neg-prose-css">Here are a few more options worth comparing.</p>
+      <div class="card" id="ad-css"><span class="badge-css"></span><p>AD:css BrightBank</p><a href="https://bank.example">Apply</a></div>
+      <div class="card" id="ad-attr"><span class="badge-attr" data-label="Ad"></span><p>AD:attr CloudVPN</p><a href="https://vpn.example">Get</a></div>
+      <details id="ad-details"><summary>Sponsored</summary><p>AD:details SunTrips</p><a href="https://sun.example">Go</a></details>
+      <div id="ad-carousel">
+        <div>Sponsored</div>
+        <div class="card"><span>Ad</span><p>AD:car1 Tent</p><a href="https://tent.example/1">x</a></div>
+        <div class="card"><span>Ad</span><p>AD:car2 Stove</p><a href="https://tent.example/2">y</a></div>
+      </div>
+      <div class="card" id="ad-onclick" onclick="void 0"><span>Sponsored</span><p>AD:onclick ZipCar rentals</p></div>
+      <p id="sup-p">For trail shoes, try <a id="sup-link" href="https://acme.example/shoes">Acme</a><sup id="sup-label">Ad</sup> or a pair from your local store.</p>
+    </div>
+
+    <!-- Paid links in an answer (rel="sponsored"). -->
+    <div class="message" id="rel-msg">
+      <p id="rel-p">You could buy <a id="rel-chat" rel="sponsored" href="https://acme.example/buy">Acme boots</a> online.</p>
+    </div>
+
+    <!-- A whole ad frame (MCP-app / srcdoc). -->
+    <iframe id="frame-ad" title="widget" srcdoc="<span>Sponsored</span><p>AD:frame Nimbus</p><a href='https://nimbus.example'>Go</a>"></iframe>
+    <iframe id="frame-neg" title="widget2" srcdoc="<p id=fneg>A calculator widget with a <a href='https://calc.example'>help link</a>.</p>"></iframe>
+  </div>
+
+  <!-- Negative controls. -->
+  <section id="negatives">
+    <ul id="neg-glossary">
+      <li><strong>Ad:</strong> a paid message shown to users. <a href="https://glossary.example/ad">source</a></li>
+      <li><strong>CPM:</strong> cost per thousand impressions. <a href="https://glossary.example/cpm">source</a></li>
+      <li><strong>CTR:</strong> the share of impressions that get a click. <a href="https://glossary.example/ctr">source</a></li>
+    </ul>
+    <ul id="neg-glossary-caps">
+      <li><strong>AD:</strong> Alzheimer disease. <a href="https://med.example/ad">source</a></li>
+      <li><strong>MS:</strong> multiple sclerosis. <a href="https://med.example/ms">source</a></li>
+    </ul>
+    <div id="neg-heading"><h3>Sponsored</h3><p>Sponsored posts on most social networks are bought per impression. <a href="https://docs.example/ads">Read the docs</a></p></div>
+    <table id="neg-table"><tr><th>Ad</th><th>Clicks</th></tr><tr><td>Spring sale</td><td><a href="https://dash.example/1">120</a></td></tr></table>
+    <table id="neg-ad5"><tr><td>Ad5</td><td>adenovirus 5 vector</td><td><a href="https://bio.example">ref</a></td></tr></table>
+    <section id="neg-settings"><h4>Ads</h4><div role="switch" aria-checked="false" tabindex="0">Personalized ads</div><a href="/privacy">Learn more</a></section>
+    <footer id="neg-footer"><a id="rel-blog" rel="sponsored" href="https://partner.example">Our partner</a> · <a href="/about">About</a></footer>
+  </section>
+
+  <script>
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    // Ad first, then 80 answer tokens 30ms apart (~2.4s of streaming).
+    window.runStream = async function () {
+      window.__streamDone = false;
+      const md = document.getElementById('stream-md');
+      const ad = document.createElement('div');
+      ad.id = 'stream-ad';
+      ad.innerHTML = '<span>Sponsored</span><p>AD:stream Acme</p><a href="https://acme.example">Shop</a>';
+      md.append(ad);
+      const p = document.createElement('p');
+      p.id = 'stream-answer';
+      md.append(p);
+      for (let i = 0; i < 80; i++) { p.append('tok' + i + ' '); await sleep(30); }
+      window.__streamDone = true;
+    };
+
+    // Label + link first in a wrapper, then the answer into that wrapper.
+    window.runGrow = async function () {
+      const md = document.getElementById('grow-md');
+      md.innerHTML = '<div id="grow-ad"><span>Sponsored</span> <a href="https://rent.example">Acme</a> AD:grow rentals</div>';
+      await sleep(500);
+      for (let i = 0; i < 6; i++) {
+        const p = document.createElement('p');
+        p.className = 'grow-answer';
+        p.textContent = 'Answer paragraph ' + i + ' about Tokyo neighbourhoods and train lines.';
+        md.append(p);
+        await sleep(40);
+      }
+      await sleep(600);
+    };
+  </script>
+</body>
+</html>

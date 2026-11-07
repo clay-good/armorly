@@ -367,8 +367,9 @@ test('Imprezia real SDK markup: every ad format hidden (with and without its wra
   ).toEqual([]);
   await expect(page.locator('text=/Sponsored by/ >> visible=true')).toHaveCount(0);
 
-  // Inline sponsored link: link gone, sentence intact.
-  await expect(page.locator('a.imprezia-link')).toHaveCount(0);
+  // Inline sponsored link: no longer a link (href stripped in place, so
+  // React keeps its node), sentence intact.
+  await expect(page.locator('a.imprezia-link[href]')).toHaveCount(0);
   await expect(page.locator('#answer')).toContainText('the Shinjuku Washington Hotel is a solid pick');
 
   // Ad creative images never load.
@@ -418,6 +419,9 @@ test('real SDK captures: every network ad format is hidden', async () => {
     page.evaluate(() =>
       [...document.querySelectorAll<HTMLElement>('section.capture')]
         .filter((s) => {
+          // The whole slot hidden: caught, unless publisher text had to stay.
+          // (innerText of a hidden element is its full text, so check first.)
+          if (!s.checkVisibility()) return !!s.dataset.allow;
           const text = s.innerText.replace(/\s+/g, ' ').trim();
           const media = [...s.querySelectorAll<HTMLElement>('iframe, img, video')].some((e) => e.offsetWidth || e.offsetHeight);
           return media || text !== (s.dataset.allow ?? '');
@@ -425,7 +429,8 @@ test('real SDK captures: every network ad format is hidden', async () => {
         .map((s) => `${s.dataset.file}: "${s.innerText.replace(/\s+/g, ' ').trim().slice(0, 60)}"`)
     );
   await expect.poll(leaks, { timeout: 5000 }).toEqual([]);
-  await expect(page.locator('section.capture a[rel~="sponsored"] >> visible=true')).toHaveCount(0);
+  // Paid links in an answer keep their words but stop being links.
+  await expect(page.locator('section.capture a[rel~="sponsored"][href] >> visible=true')).toHaveCount(0);
 });
 
 // Lulu ads render as MCP-app frame documents (Claude.ai / ChatGPT apps).

@@ -93,3 +93,87 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 chrome.runtime.onStartup.addListener(() => {
   chrome.alarms.create(ALARM_NAME, { periodInMinutes: UPDATE_PERIOD_MIN });
 });
+
+// ---------------------------------------------------------------------------
+// Learned tracker URLs (server-side / OpenRTB ads).
+//
+// content/payload-shield.js strips ads out of a page's responses and learns
+// the impression/win/billing URLs those ads carried. In-page hooks block
+// most of the follow-up requests, but a pixel created by HTML parsing
+// (innerHTML) loads without any JS hook running. These session rules close
+// that gap: exact URLs, scoped to the one tab that saw the ad, cleared when
+// the tab navigates or closes. A tracker on the page's own host is blocked
+// only for pixel/beacon/script/frame loads, never for the site's own
+// fetch/XHR calls.
+// ---------------------------------------------------------------------------
+
+const LEARNED_RULE_BASE = 900000;
+const MAX_LEARNED_PER_TAB = 100;
+const MAX_LEARNED_TOTAL = 500; // regex rules share a 1,000 budget
+const learnedByTab = new Map(); // tabId -> [ruleId]
+// Offset by time so ids from before a worker restart never collide.
+let nextLearnedId = LEARNED_RULE_BASE + (Date.now() % 50000000);
+
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+async function removeLearnedRules(ids) {
+  if (!ids || !ids.length) return;
+  try { await chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: ids }); } catch (_) { /* noop */ }
+}
+
+async function addLearnedTrackers(tabId, urls) {
+  if (!chrome.declarativeNetRequest || !chrome.declarativeNetRequest.updateSessionRules) return;
+  const list = learnedByTab.get(tabId) || [];
+  const addRules = [];
+  for (const { url, firstParty } of urls) {
+    let u;
+    try { u = new URL(url); } catch (_) { continue; }
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') continue;
+    const href = u.href.split('#')[0];
+    if (href.length > 1500) continue;
+    const condition = { regexFilter: '^' + escapeRegex(href) + '$', tabIds: [tabId] };
+    if (firstParty) condition.resourceTypes = ['image', 'ping', 'script', 'media', 'sub_frame', 'other'];
+    addRules.push({ id: nextLearnedId++, priority: 2, action: { type: 'block' }, condition });
+  }
+  if (!addRules.length) return;
+  const ids = list.concat(addRules.map(r => r.id));
+  const overflow = ids.length > MAX_LEARNED_PER_TAB ? ids.splice(0, ids.length - MAX_LEARNED_PER_TAB) : [];
+  let total = 0;
+  for (const v of learnedByTab.values()) total += v.length;
+  if (total + addRules.length > MAX_LEARNED_TOTAL) return;
+  learnedByTab.set(tabId, ids);
+  try {
+    await chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: overflow, addRules });
+  } catch (err) {
+    console.warn('[Armorly] Could not add learned tracker rules:', err && err.message);
+  }
+}
+
+chrome.runtime.onMessage.addListener((message, sender) => {
+  const tabId = sender && sender.tab && sender.tab.id;
+  if (typeof tabId !== 'number' || tabId < 0 || !message) return;
+  if (message.type === 'ARMORLY_LEARNED_TRACKERS' && Array.isArray(message.urls)) {
+    addLearnedTrackers(tabId, message.urls.slice(0, 50));
+  } else if (message.type === 'ARMORLY_PAGE_START' && sender.frameId === 0) {
+    removeLearnedRules(learnedByTab.get(tabId));
+    learnedByTab.delete(tabId);
+  }
+});
+
+if (chrome.tabs && chrome.tabs.onRemoved) {
+  chrome.tabs.onRemoved.addListener((tabId) => {
+    removeLearnedRules(learnedByTab.get(tabId));
+    learnedByTab.delete(tabId);
+  });
+}
+
+// Session rules outlive a service-worker restart but our id map doesn't:
+// start clean.
+if (chrome.declarativeNetRequest && chrome.declarativeNetRequest.getSessionRules) {
+  chrome.declarativeNetRequest.getSessionRules().then(rules => {
+    const stale = rules.map(r => r.id).filter(id => id >= LEARNED_RULE_BASE);
+    if (stale.length) removeLearnedRules(stale);
+  }).catch(() => {});
+}
