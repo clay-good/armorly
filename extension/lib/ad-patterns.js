@@ -635,9 +635,11 @@
      * Check if a URL is from a known affiliate domain
      */
     isAffiliateDomain: function(url) {
+      // Exact host or subdomain: a substring match made "t.co" hit
+      // microsoft.com and copilot.com.
       try {
         const hostname = new URL(url).hostname.toLowerCase();
-        return this.affiliateDomains.some(domain => hostname.includes(domain));
+        return this.affiliateDomains.some(domain => hostname === domain || hostname.endsWith('.' + domain));
       } catch {
         return false;
       }
@@ -649,7 +651,7 @@
     isAdSDKDomain: function(url) {
       try {
         const hostname = new URL(url).hostname.toLowerCase();
-        return this.getAllSDKDomains().some(domain => hostname.includes(domain));
+        return this.getAllSDKDomains().some(domain => hostname === domain || hostname.endsWith('.' + domain));
       } catch {
         return false;
       }

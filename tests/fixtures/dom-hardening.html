@@ -58,6 +58,17 @@
       <p id="rel-p">You could buy <a id="rel-chat" rel="sponsored" href="https://acme.example/buy">Acme boots</a> online.</p>
     </div>
 
+    <!-- All-caps "AD" badges: ads when they head a link card, an
+         abbreviation everywhere else. -->
+    <div class="turn">
+      <div class="card" id="ad-caps"><span class="badge">AD</span><p>AD:caps HostCo web hosting</p><a href="https://host.example">Try</a></div>
+      <a class="card" id="ad-caps-link" href="https://vpn.example/caps"><span>[AD]</span><p>AD:caps-link FastVPN, 50% off</p></a>
+      <p id="neg-caps-prose"><span>AD</span> stands for Active Directory; see <a href="https://learn.example/ad">the docs</a>.</p>
+      <p id="neg-caps-link">Open the <a href="https://admin.example/ad">AD</a> console to add the user.</p>
+      <p id="neg-caps-abbr"><abbr title="Active Directory">AD</abbr> groups map to roles. <a href="https://learn.example/groups">More</a></p>
+      <div id="neg-caps-tag"><span>Tags:</span> <span>AD</span> <span>LDAP</span> <a href="https://learn.example/tags">browse</a></div>
+    </div>
+
     <!-- A whole ad frame (MCP-app / srcdoc). -->
     <iframe id="frame-ad" title="widget" srcdoc="<span>Sponsored</span><p>AD:frame Nimbus</p><a href='https://nimbus.example'>Go</a>"></iframe>
     <iframe id="frame-neg" title="widget2" srcdoc="<p id=fneg>A calculator widget with a <a href='https://calc.example'>help link</a>.</p>"></iframe>

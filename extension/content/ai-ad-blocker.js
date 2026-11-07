@@ -42,9 +42,28 @@
     elementsRemoved: 0
   };
 
+  // The popup asks only the top frame for stats, so ads blocked inside
+  // frames (MCP apps, ad iframes) are tallied per tab by the background.
+  const isSubframe = window !== window.top;
+  const frameDelta = { sdksBlocked: 0, linksCleaned: 0, elementsRemoved: 0 };
+  let frameFlushTimer = null;
+  function flushFrameStats() {
+    frameFlushTimer = null;
+    const delta = { ...frameDelta };
+    frameDelta.sdksBlocked = frameDelta.linksCleaned = frameDelta.elementsRemoved = 0;
+    try {
+      const p = chrome.runtime.sendMessage({ type: 'ARMORLY_FRAME_STATS', delta });
+      if (p && typeof p.catch === 'function') p.catch(() => {});
+    } catch (_) { /* noop */ }
+  }
+
   function bumpStat(key) {
     stats[key]++;
     if (key in lifetimeDelta) lifetimeDelta[key]++;
+    if (isSubframe && key in frameDelta && typeof chrome !== 'undefined' && chrome.runtime) {
+      frameDelta[key]++;
+      if (!frameFlushTimer) frameFlushTimer = setTimeout(flushFrameStats, 500);
+    }
   }
 
   // Listen for stats requests from popup
@@ -539,6 +558,22 @@
     });
   }
 
+  // All-caps "AD" is usually an abbreviation (Active Directory, Alzheimer's
+  // disease), so it counts only as a badge: its own element, first in its
+  // box, with no prose beside it, inside a chat answer or embedded frame.
+  // cardFor() still has to find a link card around it.
+  const CAPS_NOT_A_BADGE = 'a, abbr, acronym, dfn, dt, td, strong, b, em, i, code';
+  function isCapsBadge(el) {
+    if (!signatures.isCapsAdBadge(el.textContent) || el.matches(CAPS_NOT_A_BADGE)) return false;
+    if (!IN_FRAME && !el.closest(CHAT_CONTEXT_SELECTOR)) return false;
+    const box = el.parentElement;
+    if (!box || !box.textContent.trimStart().startsWith(el.textContent.trim())) return false;
+    for (const n of box.childNodes) {
+      if (n.nodeType === 3 && n.nodeValue.replace(/\s+/g, '').length > 2) return false;
+    }
+    return true;
+  }
+
   function findDisclosureLabels(root, scope, prefixed) {
     const found = new Set();
     const start = scope.body || scope;
@@ -569,6 +604,7 @@
         if (signatures.isDisclosureLabel(t, lang)) { found.add(el); break; }
         el = el.parentElement;
       }
+      if (isCapsBadge(parent)) found.add(parent);
     }
     const attrScope = scope.querySelectorAll ? scope : root;
     for (const el of attrScope.querySelectorAll('[aria-label], [title], img[alt], [aria-labelledby]')) {

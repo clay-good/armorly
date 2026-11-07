@@ -297,6 +297,12 @@ for (const t of ['Ad 1 of 3', 'Sponsored · 2/3', 'Ad (1/3)', 'S p o n s o r e d
 for (const t of ['AD', 'Ad5', '@d', 'ADS', 'PR', '提供']) {
   test(`isDisclosureLabel ignores look-alike: ${JSON.stringify(t)}`, () => assert.equal(S.isDisclosureLabel(t), false));
 }
+for (const t of ['AD', 'ADS', ' [AD] ', '(AD)', '【AD】', 'A​D']) {
+  test(`isCapsAdBadge accepts badge text: ${JSON.stringify(t)}`, () => assert.equal(S.isCapsAdBadge(t), true));
+}
+for (const t of ['Ad', 'AD:', 'AD sync', 'ADD', 'AD5', 'BAD', 'Active Directory (AD)']) {
+  test(`isCapsAdBadge rejects: ${JSON.stringify(t)}`, () => assert.equal(S.isCapsAdBadge(t), false));
+}
 for (const t of ['AD: Alzheimer disease, a progressive disorder', 'PROMOTED: v2.1 to stable', 'PR: fixes #12']) {
   test(`isDisclosurePrefix ignores: ${JSON.stringify(t)}`, () => assert.equal(S.isDisclosurePrefix(t), false));
 }

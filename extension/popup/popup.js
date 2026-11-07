@@ -93,11 +93,17 @@
 
         if (response && response.active) {
           setActiveState();
-          document.getElementById('sdks-blocked').textContent = response.sdksBlocked || 0;
-          document.getElementById('links-cleaned').textContent = response.linksCleaned || 0;
+          // Ads blocked in the page itself plus inside its frames; "Ads
+          // Blocked" covers both blocked ad payloads/SDKs and hidden ads.
+          const frames = await getFrameStats(tab.id);
+          const adsBlocked = (response.sdksBlocked || 0) + (response.elementsRemoved || 0) +
+            frames.sdksBlocked + frames.elementsRemoved;
+          const linksCleaned = (response.linksCleaned || 0) + frames.linksCleaned;
+          document.getElementById('sdks-blocked').textContent = adsBlocked;
+          document.getElementById('links-cleaned').textContent = linksCleaned;
 
           // Show note if no ads detected
-          if ((response.sdksBlocked || 0) === 0 && (response.linksCleaned || 0) === 0) {
+          if (adsBlocked === 0 && linksCleaned === 0) {
             showNote('No ads detected on this page. This site may not currently serve AI ads.');
           }
         } else {
@@ -123,6 +129,16 @@
       console.error('Popup error:', error);
       setInactiveState('Error');
     }
+  }
+
+  async function getFrameStats(tabId) {
+    const out = { sdksBlocked: 0, linksCleaned: 0, elementsRemoved: 0 };
+    try {
+      const data = await chrome.storage.session.get({ frame_stats: {} });
+      const t = (data.frame_stats || {})[tabId] || {};
+      for (const k of Object.keys(out)) out[k] = Number(t[k]) || 0;
+    } catch (_) { /* noop */ }
+    return out;
   }
 
   /**
